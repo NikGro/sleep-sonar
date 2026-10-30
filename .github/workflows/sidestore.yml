@@ -1,0 +1,86 @@
+name: Build SideStore (HealthKit)
+
+# Baut SideStore aus dem offiziellen Quellcode und erlaubt per Patch
+# HealthKit auch für kostenlose Apple-IDs (siehe sidestore/README.md).
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "SideStore-Branch oder Commit"
+        default: develop
+  push:
+    branches: [main]
+    paths:
+      - "sidestore/**"
+      - ".github/workflows/sidestore.yml"
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout SideStore
+        uses: actions/checkout@v4
+        with:
+          repository: SideStore/SideStore
+          ref: ${{ inputs.ref || 'develop' }}
+          submodules: recursive
+          path: SideStore
+
+      - name: Select newest Xcode
+        run: |
+          ls -d /Applications/Xcode*.app
+          XC=$(ls -d /Applications/Xcode_*.app | grep -vi beta | sort -V | tail -1)
+          sudo xcode-select -s "$XC"
+          xcodebuild -version
+
+      - name: Install tools
+        run: brew install ldid xcbeautify
+
+      - name: Apply HealthKit patch
+        working-directory: SideStore
+        run: |
+          python3 ../sidestore/patch_healthkit.py
+          git -C Dependencies/SideSign diff
+
+      - name: Version
+        working-directory: SideStore
+        run: |
+          SHORT=$(git rev-parse --short HEAD)
+          BASE=$(grep -E '^MARKETING_VERSION' Build.xcconfig | awk '{print $3}')
+          VERSION="${BASE}-$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}+hk${SHORT}"
+          echo "MARKETING_VERSION=$VERSION" >> "$GITHUB_ENV"
+          {
+            echo "### SideStore (HealthKit)"
+            echo "- Version: \`$VERSION\`"
+            echo "- SideStore-Commit: \`$(git rev-parse HEAD)\`"
+            echo "- SideSign-Commit: \`$(git -C Dependencies/SideSign rev-parse HEAD)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build
+        working-directory: SideStore
+        run: |
+          set -o pipefail
+          NSUnbufferedIO=YES make -B build 2>&1 | tee build.log | xcbeautify --renderer github-actions
+
+      - name: Fake-sign and package
+        working-directory: SideStore
+        run: |
+          make fakesign
+          make ipa
+          ls -la SideStore.ipa
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sidestore-build-log
+          path: SideStore/build.log
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SideStore-HealthKit-ipa
+          path: SideStore/SideStore.ipa
