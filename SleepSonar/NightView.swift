@@ -147,6 +147,13 @@ private struct NightRow: View {
                 if isExporting { ProgressView() }
             }
             if !isRecording && !isExporting {
+                if hasLevels {
+                    NavigationLink {
+                        NightAnalysisView(folder: url)
+                    } label: {
+                        Label("Auswerten", systemImage: "chart.bar.xaxis").font(.callout.bold())
+                    }
+                }
                 HStack {
                     Button("Daten + Watch (ZIP)", action: onExport).buttonStyle(.bordered)
                     if hasAudio {
@@ -159,6 +166,9 @@ private struct NightRow: View {
     }
 
     private var hasAudio: Bool { !NightExport.audioFiles(in: url).isEmpty }
+    private var hasLevels: Bool {
+        FileManager.default.fileExists(atPath: url.appendingPathComponent("levels.csv").path)
+    }
 
     private var sizeText: String {
         let files = (try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: [.fileSizeKey])) ?? []
