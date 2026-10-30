@@ -77,6 +77,15 @@ struct SonarTestView: View {
                                                 r.heartConfidence),
                                  reliable: r.isHeartReliable)
                     }
+                    Section {
+                        LevelChart(values: sonar.levelHistory)
+                            .frame(height: 120)
+                    } header: {
+                        Text("Empfangspegel (letzte 60 s)")
+                    } footer: {
+                        Text("Das Mikrofon hört den eigenen Ton mit. Bleibt die Linie flach, wird durchgehend gesendet. "
+                             + "Fällt sie ab, regelt das iPhone den Lautsprecher herunter.")
+                    }
                     Section("Signal") {
                         LabeledContent("Empfangspegel", value: String(format: "%.0f dBFS", r.levelDB))
                         LabeledContent("Körperecho / Rauschen", value: String(format: "%.1f (ab 1,8 brauchbar)", r.snr))
@@ -190,6 +199,26 @@ private struct MovementRow: View {
                 .tint(mmPerSecond > SonarProcessor.movementThreshold ? .orange : .green)
             Text("Atmen allein ≈ 2–8 mm/s, ab 15 mm/s gilt es als Bewegung")
                 .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct LevelChart: View {
+    let values: [Double]
+
+    var body: some View {
+        if values.count < 2 {
+            Text("Noch keine Daten").foregroundStyle(.secondary)
+        } else {
+            let lo = (values.min() ?? -60) - 3, hi = (values.max() ?? 0) + 3
+            Chart {
+                ForEach(Array(values.enumerated()), id: \.offset) { i, v in
+                    LineMark(x: .value("s", Double(i - values.count + 1) / 2), y: .value("dBFS", v))
+                }
+            }
+            .chartYScale(domain: lo...hi)
+            .chartXAxisLabel("Sekunden")
+            .chartYAxisLabel("dBFS")
         }
     }
 }

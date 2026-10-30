@@ -12,6 +12,8 @@ final class SonarEngine: ObservableObject {
     @Published private(set) var reading: SonarReading?
     @Published private(set) var errorMessage: String?
     @Published private(set) var diagnostics = Diagnostics()
+    /// Empfangspegel des Trägers (dBFS), 2 Werte pro Sekunde, letzte 60 s
+    @Published private(set) var levelHistory: [Double] = []
 
     struct Diagnostics {
         var inputRate: Double = 0
@@ -32,8 +34,12 @@ final class SonarEngine: ObservableObject {
 
     func start(carrierHz: Double, volume: Float) async {
         guard !isRunning else { return }
+        teardown()
+        tone = nil
+        worker = nil
         errorMessage = nil
         reading = nil
+        levelHistory = []
         diagnostics = Diagnostics()
         self.carrierHz = carrierHz
         self.volume = volume
@@ -70,17 +76,30 @@ final class SonarEngine: ObservableObject {
         tone?.targetAmplitude = v
     }
 
+    private func receive(_ r: SonarReading) {
+        reading = r
+        levelHistory.append(r.levelDB)
+        if levelHistory.count > 120 { levelHistory.removeFirst(levelHistory.count - 120) }
+    }
+
+    /// Blendet den Ton aus (kein Knacken) und stoppt dann.
     func stop() {
+        guard isRunning || engine != nil else { return }
+        isRunning = false            // verhindert Neustarts
         watchdog?.invalidate()
         watchdog = nil
         observers.forEach { NotificationCenter.default.removeObserver($0) }
         observers.removeAll()
-        teardown()
-        tone = nil
-        worker = nil
-        isRunning = false
+        tone?.targetAmplitude = 0
         UIApplication.shared.isIdleTimerDisabled = false
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(1500))
+            guard !self.isRunning else { return }   // inzwischen neu gestartet
+            self.teardown()
+            self.tone = nil
+            self.worker = nil
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
     }
 
     // MARK: - Engine
@@ -112,7 +131,7 @@ final class SonarEngine: ObservableObject {
             worker = w
         } else {
             worker = Worker(sampleRate: rate, carrierHz: carrierHz) { [weak self] r in
-                Task { @MainActor in self?.reading = r }
+                Task { @MainActor in self?.receive(r) }
             }
         }
         Self.installTap(on: input, format: inFormat, worker: worker)
