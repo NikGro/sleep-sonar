@@ -186,6 +186,14 @@ final class SonarProcessorTests: XCTestCase {
         XCTAssertEqual(end.levelDB, 20 * log10(0.1), accuracy: 3)
     }
 
+    func testSampleHandlerRate() {
+        let p = SonarProcessor()
+        var count = 0
+        p.sampleHandler = { _ in count += 1 }
+        p.process([Float](repeating: 0.1, count: 48_000 * 3))
+        XCTAssertEqual(count, 150)   // 3 s × 50 Hz
+    }
+
     func testCircleFit() {
         let pts = (0..<100).map { i -> Complex in
             let a = Double(i) / 100 * 1.2

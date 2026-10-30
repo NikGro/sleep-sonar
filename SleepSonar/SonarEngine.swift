@@ -19,6 +19,11 @@ final class SonarEngine: ObservableObject {
     /// Obergrenze; sinkt, wenn der Lautsprecherschutz erkannt wird
     @Published private(set) var ceiling: Float = SonarEngine.maxLevel
     @Published var autoLevel = true
+    /// Nachtmessung: protokolliert alles, Bildschirm darf sperren
+    @Published private(set) var nightRecorder: NightRecorder?
+    @Published private(set) var motionActivity: Double = 0
+    @Published private(set) var startDate: Date?
+    private var motion: MotionLogger?
 
     static let maxLevel: Float = 0.85
     static let minAutoLevel: Float = 0.05
@@ -41,7 +46,7 @@ final class SonarEngine: ObservableObject {
     private var observers: [NSObjectProtocol] = []
     private var watchdog: Timer?
 
-    func start(carrierHz: Double, volume: Float, auto: Bool) async {
+    func start(carrierHz: Double, volume: Float, auto: Bool, night: Bool = false) async {
         guard !isRunning else { return }
         teardown()
         tone = nil
@@ -73,10 +78,31 @@ final class SonarEngine: ObservableObject {
             try session.setActive(true)
             try session.overrideOutputAudioPort(.speaker)
             observeSession()
+            if night {
+                UIDevice.current.isBatteryMonitoringEnabled = true
+                nightRecorder = try NightRecorder(meta: [
+                    "app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "",
+                    "device": Self.deviceModel(),
+                    "ios": UIDevice.current.systemVersion,
+                    "carrier_hz": carrierHz,
+                    "auto_level": auto,
+                    "max_level": Double(Self.maxLevel),
+                ])
+                let rec = nightRecorder
+                let m = MotionLogger { [weak self] activity, maxDelta, pitch, roll in
+                    rec?.appendMotion(activity: activity, maxDelta: maxDelta, pitch: pitch, roll: roll)
+                    Task { @MainActor in self?.motionActivity = activity }
+                }
+                m.start()
+                motion = m
+            }
             try buildAndStart()
             isRunning = true
-            UIApplication.shared.isIdleTimerDisabled = true
-            log("Gestartet")
+            startDate = Date()
+            // Nachts darf der Bildschirm sperren (Audio läuft im Hintergrund weiter)
+            UIApplication.shared.isIdleTimerDisabled = !night
+            log(night ? "Nachtmessung gestartet" : "Gestartet")
+            if night { logBattery() }
             // Falls iOS die Engine ohne Benachrichtigung anhält
             watchdog = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
                 Task { @MainActor in self?.checkAlive() }
@@ -109,9 +135,30 @@ final class SonarEngine: ObservableObject {
 
     private func receive(_ r: SonarReading) {
         reading = r
+        nightRecorder?.appendReading(r, txLevel: currentLevel, ceiling: ceiling)
         levelHistory.append(r.levelDB)
         if levelHistory.count > 120 { levelHistory.removeFirst(levelHistory.count - 120) }
         autoAdjust(r)
+    }
+
+    private func logBattery() {
+        let d = UIDevice.current
+        let state: String
+        switch d.batteryState {
+        case .charging: state = "lädt"
+        case .full: state = "voll"
+        case .unplugged: state = "NICHT am Strom"
+        default: state = "unbekannt"
+        }
+        log(String(format: "Akku %.0f %%, %@", d.batteryLevel * 100, state))
+    }
+
+    private static func deviceModel() -> String {
+        var info = utsname()
+        uname(&info)
+        return withUnsafeBytes(of: &info.machine) { raw in
+            String(decoding: raw.prefix(while: { $0 != 0 }), as: UTF8.self)
+        }
     }
 
     // MARK: - Automatischer Pegel
@@ -172,6 +219,15 @@ final class SonarEngine: ObservableObject {
         observers.removeAll()
         tone?.targetAmplitude = 0
         UIApplication.shared.isIdleTimerDisabled = false
+        if let rec = nightRecorder {
+            logBattery()
+            log("Gestoppt")
+            motion?.stop()
+            motion = nil
+            worker?.recorder = nil
+            rec.finish()
+            nightRecorder = nil
+        }
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(1500))
             guard !self.isRunning else { return }   // inzwischen neu gestartet
@@ -215,6 +271,8 @@ final class SonarEngine: ObservableObject {
             }
         }
         worker.tone = tone
+        worker.recorder = nightRecorder
+        nightRecorder?.setMeta("sample_rate", rate)
         Self.installTap(on: input, format: inFormat, worker: worker)
 
         observers.append(NotificationCenter.default.addObserver(
@@ -288,6 +346,7 @@ final class SonarEngine: ObservableObject {
     }
 
     private func log(_ text: String) {
+        nightRecorder?.event(text)
         let f = DateFormatter()
         f.dateFormat = "HH:mm:ss"
         diagnostics.events.insert("\(f.string(from: Date()))  \(text)", at: 0)
@@ -347,6 +406,15 @@ final class Worker: @unchecked Sendable {
     private let publish: @Sendable (SonarReading) -> Void
     private var lastAnalysis = Date.distantPast
     weak var tone: ToneState?
+    var recorder: NightRecorder? {
+        didSet {
+            processor.sampleHandler = { [weak self] z in
+                guard let self, let rec = self.recorder else { return }
+                rec.appendIQ(z, gain: self.currentGain)
+            }
+        }
+    }
+    private var currentGain: Float = 1
 
     init(sampleRate: Double, carrierHz: Double, publish: @escaping @Sendable (SonarReading) -> Void) {
         self.sampleRate = sampleRate
@@ -364,8 +432,8 @@ final class Worker: @unchecked Sendable {
         lock.lock(); defer { lock.unlock() }
         let n = Int(buffer.frameLength)
         let st: Int64? = time.isSampleTimeValid ? time.sampleTime : nil
-        let gain = Double(tone?.amplitude ?? 1)
-        processor.process(UnsafeBufferPointer(start: data, count: n), sampleTime: st, gain: gain)
+        currentGain = tone?.amplitude ?? 1
+        processor.process(UnsafeBufferPointer(start: data, count: n), sampleTime: st, gain: Double(currentGain))
         let now = Date()
         if now.timeIntervalSince(lastAnalysis) >= 0.5 {
             lastAnalysis = now

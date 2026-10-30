@@ -125,7 +125,7 @@ final class HealthManager: ObservableObject {
         }
     }
 
-    static func name(for raw: Int) -> String {
+    nonisolated static func name(for raw: Int) -> String {
         switch HKCategoryValueSleepAnalysis(rawValue: raw) {
         case .inBed: return "Im Bett"
         case .awake: return "Wach"

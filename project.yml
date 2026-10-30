@@ -21,6 +21,7 @@ targets:
         CFBundleShortVersionString: "0.2.0"
         CFBundleVersion: "2"
         UILaunchScreen: {}
+        UIBackgroundModes: [audio]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSMicrophoneUsageDescription: "SleepSonar empfängt über das Mikrofon das Echo eines unhörbaren Tons, um Atmung und Bewegung zu erkennen. Es wird nichts aufgenommen oder gespeichert."
         NSHealthShareUsageDescription: "SleepSonar liest deine Schlafdaten, um die Einträge der App anzuzeigen."

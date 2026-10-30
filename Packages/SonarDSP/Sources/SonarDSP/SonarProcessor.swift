@@ -65,6 +65,10 @@ public final class SonarProcessor {
     private var nextSampleTime: Int64 = 0
     private var gain = 1.0
 
+    /// Wird für jeden 50-Hz-Wert (normiertes I/Q) aufgerufen, z. B. zum Mitschreiben.
+    /// Läuft auf dem Thread, der `process` aufruft.
+    public var sampleHandler: ((Complex) -> Void)?
+
     public init(sampleRate: Double = 48_000, carrierHz: Double = 20_000) {
         self.sampleRate = sampleRate
         self.carrierHz = carrierHz
@@ -122,7 +126,9 @@ public final class SonarProcessor {
 
     private func on100Hz(_ z: Complex) {
         if let p = pending {
-            z50.append((p + z) / 2)
+            let v = (p + z) / 2
+            sampleHandler?(v)
+            z50.append(v)
             pending = nil
             if z50.count > maxSamples { z50.removeFirst(z50.count - maxSamples) }
         } else {
