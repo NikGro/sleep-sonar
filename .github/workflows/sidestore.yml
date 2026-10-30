@@ -28,7 +28,7 @@ jobs:
           repository: SideStore/SideStore
           ref: ${{ inputs.ref || 'develop' }}
           submodules: recursive
-          path: SideStore
+          path: upstream
 
       - name: Select newest Xcode
         run: |
@@ -41,13 +41,13 @@ jobs:
         run: brew install ldid xcbeautify
 
       - name: Apply HealthKit patch
-        working-directory: SideStore
+        working-directory: upstream
         run: |
           python3 ../sidestore/patch_healthkit.py
           git -C Dependencies/SideSign diff
 
       - name: Version
-        working-directory: SideStore
+        working-directory: upstream
         run: |
           SHORT=$(git rev-parse --short HEAD)
           BASE=$(grep -E '^MARKETING_VERSION' Build.xcconfig | awk '{print $3}')
@@ -61,13 +61,13 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build
-        working-directory: SideStore
+        working-directory: upstream
         run: |
           set -o pipefail
           NSUnbufferedIO=YES make -B build 2>&1 | tee build.log | xcbeautify --renderer github-actions
 
       - name: Fake-sign and package
-        working-directory: SideStore
+        working-directory: upstream
         run: |
           make fakesign
           make ipa
@@ -78,9 +78,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sidestore-build-log
-          path: SideStore/build.log
+          path: upstream/build.log
 
       - uses: actions/upload-artifact@v4
         with:
           name: SideStore-HealthKit-ipa
-          path: SideStore/SideStore.ipa
+          path: upstream/SideStore.ipa
