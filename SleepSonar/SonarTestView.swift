@@ -5,9 +5,9 @@ import SwiftUI
 struct SonarTestView: View {
     @StateObject private var sonar = SonarEngine()
     @AppStorage("sonar.carrier") private var carrier = 20_000.0
-    @AppStorage("sonar.volume") private var volume = 0.5
+    @AppStorage("sonar.level") private var volume = 0.15
 
-    private let carriers: [Double] = [18_500, 19_500, 20_000, 21_000]
+    private let carriers: [Double] = [18_500, 19_500, 20_000, 21_000, 22_000]
 
     var body: some View {
         NavigationStack {
@@ -16,7 +16,8 @@ struct SonarTestView: View {
                     Section("So geht's") {
                         Label("iPhone 30–100 cm neben dich legen, Unterseite (Lautsprecher) zu dir.",
                               systemImage: "iphone.gen3")
-                        Label("Lautstärke etwa 70 %. Der Ton ist für die meisten Erwachsenen unhörbar.",
+                        Label("Hört ihr etwas (Zirpen, Rauschen, Pfeifen), den Sendepegel senken, bis Ruhe ist. "
+                              + "Das sind Verzerrungen des Lautsprechers, nicht der Ultraschall selbst.",
                               systemImage: "speaker.wave.2")
                         Label("Haustiere können 18–21 kHz hören.", systemImage: "pawprint")
                         Label("Ruhig liegen und normal atmen. Nach ca. 10 s kommen die ersten Werte.",
@@ -33,7 +34,7 @@ struct SonarTestView: View {
                     .disabled(sonar.isRunning)
                     VStack(alignment: .leading) {
                         Text("Sendepegel \(Int(volume * 100)) %")
-                        Slider(value: $volume, in: 0.05...1)
+                        Slider(value: $volume, in: 0.01...1)
                             .onChange(of: volume) { _, v in sonar.setVolume(Float(v)) }
                     }
                     Button {
@@ -77,8 +78,22 @@ struct SonarTestView: View {
                     }
                     Section("Signal") {
                         LabeledContent("Empfangspegel", value: String(format: "%.0f dBFS", r.levelDB))
-                        LabeledContent("Körperecho / Rauschen", value: String(format: "%.1f", r.snr))
-                        LabeledContent("Abtastrate", value: "\(Int(sonar.sampleRate)) Hz")
+                        LabeledContent("Körperecho / Rauschen", value: String(format: "%.1f (ab 1,8 brauchbar)", r.snr))
+                    }
+                    .font(.callout)
+                }
+
+                if sonar.isRunning || !sonar.diagnostics.events.isEmpty {
+                    Section("Diagnose") {
+                        let d = sonar.diagnostics
+                        LabeledContent("Abtastrate ein/aus",
+                                       value: "\(Int(d.inputRate)) / \(Int(d.outputRate)) Hz")
+                        LabeledContent("Puffer", value: String(format: "%.0f ms", d.ioBufferMS))
+                        LabeledContent("Route", value: d.route)
+                        LabeledContent("Neustarts", value: "\(d.restarts)")
+                        ForEach(d.events, id: \.self) { e in
+                            Text(e).font(.caption.monospaced())
+                        }
                     }
                     .font(.callout)
                 }
