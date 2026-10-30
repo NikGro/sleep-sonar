@@ -1,0 +1,28 @@
+name: SleepSonar
+options:
+  bundleIdPrefix: de.nikgro
+  deploymentTarget:
+    iOS: "17.0"
+targets:
+  SleepSonar:
+    type: application
+    platform: iOS
+    sources: [SleepSonar]
+    info:
+      path: SleepSonar/Info.plist
+      properties:
+        CFBundleDisplayName: SleepSonar
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSHealthShareUsageDescription: "SleepSonar liest deine Schlafdaten, um die Einträge der App anzuzeigen."
+        NSHealthUpdateUsageDescription: "SleepSonar schreibt deine Schlafphasen (Wach, Kern, Tief, REM) in Apple Health."
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.nikgro.sleepsonar
+        CODE_SIGN_ENTITLEMENTS: SleepSonar/SleepSonar.entitlements
+        CODE_SIGNING_ALLOWED: "NO"
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: "NO"
