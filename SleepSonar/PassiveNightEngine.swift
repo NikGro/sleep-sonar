@@ -6,6 +6,10 @@ import UIKit
 /// (Instagram & Co. unterbrechen die Aufnahme nicht) und startet nach Störungen neu.
 @MainActor
 final class PassiveNightEngine: ObservableObject {
+    /// Eine Instanz für App und Kurzbefehle
+    static let shared = PassiveNightEngine()
+    private init() {}
+
     @Published private(set) var isRunning = false
     @Published private(set) var startDate: Date?
     @Published private(set) var levelDB: Double = -120

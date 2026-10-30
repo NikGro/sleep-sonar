@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 struct NightView: View {
-    @StateObject private var rec = PassiveNightEngine()
+    @ObservedObject private var rec = PassiveNightEngine.shared
     @State private var nights: [URL] = []
     @State private var confirmStop = false
     @State private var exporting: URL?
@@ -24,6 +24,8 @@ struct NightView: View {
                               systemImage: "lock")
                         Label("Es wird nur zugehört, kein Ton gesendet. Die Aufnahme bleibt auf dem iPhone, "
                               + "bis du sie selbst teilst.", systemImage: "mic")
+                        Label("Tipp: In der Kurzbefehle-App gibt es „Schlafaufnahme starten/beenden“, "
+                              + "z. B. als Automation beim Schlaf-Fokus.", systemImage: "wand.and.stars")
                     }
                     Section {
                         Button {
