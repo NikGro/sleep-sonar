@@ -14,33 +14,47 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      - name: Test SonarDSP
+        run: swift test --package-path Packages/SonarDSP -c release
+
       - name: Generate Xcode project
         run: xcodegen generate
 
       - name: Build (unsigned)
         run: |
+          set -o pipefail
           xcodebuild -project SleepSonar.xcodeproj \
-            -target SleepSonar \
+            -scheme SleepSonar \
             -configuration Release \
             -sdk iphoneos \
-            SYMROOT="$PWD/build" \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/dd \
             CODE_SIGNING_ALLOWED=NO \
-            build
+            build | tee build.log | grep -E "error:|warning:|BUILD" || true
+          test -d build/dd/Build/Products/Release-iphoneos/SleepSonar.app
+          cp -R build/dd/Build/Products/Release-iphoneos/SleepSonar.app build/
 
       - name: Ad-hoc sign with entitlements (AltStore re-signs later)
         run: |
           codesign --force --sign - \
             --entitlements SleepSonar/SleepSonar.entitlements \
-            build/Release-iphoneos/SleepSonar.app
-          codesign -d --entitlements - build/Release-iphoneos/SleepSonar.app
+            build/SleepSonar.app
+          codesign -d --entitlements - build/SleepSonar.app
 
       - name: Package IPA
         run: |
           mkdir Payload
-          cp -R build/Release-iphoneos/SleepSonar.app Payload/
+          cp -R build/SleepSonar.app Payload/
           zip -qry SleepSonar.ipa Payload
 
       - uses: actions/upload-artifact@v4
         with:
           name: SleepSonar-ipa
           path: SleepSonar.ipa
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log

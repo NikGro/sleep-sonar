@@ -3,19 +3,26 @@ options:
   bundleIdPrefix: de.nikgro
   deploymentTarget:
     iOS: "17.0"
+packages:
+  SonarDSP:
+    path: Packages/SonarDSP
 targets:
   SleepSonar:
     type: application
     platform: iOS
     sources: [SleepSonar]
+    dependencies:
+      - package: SonarDSP
+    scheme: {}
     info:
       path: SleepSonar/Info.plist
       properties:
         CFBundleDisplayName: SleepSonar
-        CFBundleShortVersionString: "0.1.0"
-        CFBundleVersion: "1"
+        CFBundleShortVersionString: "0.2.0"
+        CFBundleVersion: "2"
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSMicrophoneUsageDescription: "SleepSonar empfängt über das Mikrofon das Echo eines unhörbaren Tons, um Atmung und Bewegung zu erkennen. Es wird nichts aufgenommen oder gespeichert."
         NSHealthShareUsageDescription: "SleepSonar liest deine Schlafdaten, um die Einträge der App anzuzeigen."
         NSHealthUpdateUsageDescription: "SleepSonar schreibt deine Schlafphasen (Wach, Kern, Tief, REM) in Apple Health."
     settings:

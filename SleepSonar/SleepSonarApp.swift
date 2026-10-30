@@ -4,7 +4,12 @@ import SwiftUI
 struct SleepSonarApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            TabView {
+                SonarTestView()
+                    .tabItem { Label("Sonar", systemImage: "waveform") }
+                HealthTestView()
+                    .tabItem { Label("Health", systemImage: "heart.text.square") }
+            }
         }
     }
 }

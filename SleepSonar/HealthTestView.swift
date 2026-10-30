@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ContentView: View {
+struct HealthTestView: View {
     @StateObject private var health = HealthManager()
     @State private var busy = false
 
