@@ -27,7 +27,8 @@ public struct SonarReading: Sendable, Equatable {
     public var quietSeconds: Double
     /// Körperecho / Rauschen
     public var snr: Double
-    /// Gesamtpegel des empfangenen Trägers in dBFS
+    /// Pegel des empfangenen Trägers in dB relativ zum Sendepegel
+    /// (= dBFS bei 100 % Sendepegel). Fällt er ohne Bewegung ab, regelt der Lautsprecher herunter.
     public var levelDB: Double
     /// Wegkurve der letzten bis zu 30 s in mm, 10 Hz, mittelwertfrei
     public var waveform: [Double]
@@ -62,6 +63,7 @@ public final class SonarProcessor {
     private var z50: [Complex] = []
     private let maxSamples: Int
     private var nextSampleTime: Int64 = 0
+    private var gain = 1.0
 
     public init(sampleRate: Double = 48_000, carrierHz: Double = 20_000) {
         self.sampleRate = sampleRate
@@ -82,8 +84,12 @@ public final class SonarProcessor {
 
     /// Samples verarbeiten. `sampleTime` = absolute Position des ersten Samples
     /// (gleiche Uhr wie der Sender); nil = direkt an den vorigen Block anschließen.
-    public func process(_ samples: UnsafeBufferPointer<Float>, sampleTime: Int64? = nil) {
+    /// `gain` = aktueller Sendepegel (0…1). Das Signal wird darauf normiert, damit
+    /// Pegeländerungen nicht als Bewegung erscheinen. Unter 0,5 % keine Normierung
+    /// (Kontrolltest ohne Ton).
+    public func process(_ samples: UnsafeBufferPointer<Float>, sampleTime: Int64? = nil, gain: Double = 1) {
         guard !samples.isEmpty else { return }
+        self.gain = gain >= 0.005 ? gain : 1
         let start = sampleTime ?? nextSampleTime
         nextSampleTime = start + Int64(samples.count)
         // Trägerphase exakt aus der absoluten Position, dann per Rotation weiter
@@ -102,7 +108,7 @@ public final class SonarProcessor {
             c = nc
             count += 1
             if count == block {
-                on100Hz(Complex(re, im) / Double(block))
+                on100Hz(Complex(re, im) / (Double(block) * self.gain))
                 re = 0; im = 0; count = 0
             }
         }
@@ -110,8 +116,8 @@ public final class SonarProcessor {
         accCount = count
     }
 
-    public func process(_ samples: [Float], sampleTime: Int64? = nil) {
-        samples.withUnsafeBufferPointer { process($0, sampleTime: sampleTime) }
+    public func process(_ samples: [Float], sampleTime: Int64? = nil, gain: Double = 1) {
+        samples.withUnsafeBufferPointer { process($0, sampleTime: sampleTime, gain: gain) }
     }
 
     private func on100Hz(_ z: Complex) {

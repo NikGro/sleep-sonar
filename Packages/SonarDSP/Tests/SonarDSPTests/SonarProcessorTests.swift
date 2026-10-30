@@ -152,6 +152,40 @@ final class SonarProcessorTests: XCTestCase {
         XCTAssertEqual(r.breathsPerMinute ?? 0, 15, accuracy: 0.5)
     }
 
+    func testGainChangeIsNotMovement() {
+        // Sendepegel springt bei 20 s von 50 % auf 25 %, Prozessor bekommt den Pegel mitgeteilt
+        let p = SonarProcessor()
+        var rng = SplitMix64(state: 3)
+        let carrier = 20_000.0, sr = 48_000.0
+        let lambda = SonarProcessor.speedOfSound / carrier
+        var pos = 0
+        let total = Int(40 * sr)
+        var at25: SonarReading?
+        while pos < total {
+            let n = min(4096, total - pos)
+            let t0 = Double(pos) / sr
+            let g = t0 < 20 ? 0.5 : 0.25
+            var buf = [Float](repeating: 0, count: n)
+            for i in 0..<n {
+                let t = Double(pos + i) / sr
+                let d = 0.5 + 0.004 * sin(2 * .pi * 0.25 * t)
+                let ph = 2 * Double.pi * carrier * t
+                buf[i] = Float(g * (0.2 * cos(ph + 0.7) + 0.01 * cos(ph - 4 * .pi * d / lambda + 1.3))
+                               + 0.005 * rng.gaussian())
+            }
+            p.process(buf, sampleTime: Int64(pos), gain: g)
+            pos += n
+            if at25 == nil && pos >= Int(25 * sr) { at25 = p.analyze() }
+        }
+        XCTAssertNotEqual(at25?.status, .moving)
+        XCTAssertLessThan(at25?.movementMMPerSecond ?? 99, SonarProcessor.movementThreshold)
+        let end = p.analyze()
+        XCTAssertEqual(end.status, .ok)
+        XCTAssertEqual(end.breathsPerMinute ?? 0, 15, accuracy: 0.5)
+        // normierter Pegel: 0.2/2 Amplitude -> ca. -20 dB
+        XCTAssertEqual(end.levelDB, 20 * log10(0.1), accuracy: 3)
+    }
+
     func testCircleFit() {
         let pts = (0..<100).map { i -> Complex in
             let a = Double(i) / 100 * 1.2

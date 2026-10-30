@@ -5,7 +5,8 @@ import SwiftUI
 struct SonarTestView: View {
     @StateObject private var sonar = SonarEngine()
     @AppStorage("sonar.carrier") private var carrier = 20_000.0
-    @AppStorage("sonar.level") private var volume = 0.15
+    @AppStorage("sonar.level") private var volume = 0.5
+    @AppStorage("sonar.auto") private var autoLevel = true
 
     private let carriers: [Double] = [18_500, 19_500, 20_000, 21_000, 22_000]
 
@@ -32,16 +33,32 @@ struct SonarTestView: View {
                         }
                     }
                     .disabled(sonar.isRunning)
-                    VStack(alignment: .leading) {
-                        Text(volume < 0.005 ? "Sendepegel: aus (Kontrolltest ohne Ton)"
-                                            : "Sendepegel \(Int((volume * 100).rounded())) %")
-                        Slider(value: $volume, in: 0...1, step: 0.01)
-                            .onChange(of: volume) { _, v in sonar.setVolume(Float(v)) }
+                    Toggle("Automatischer Pegel", isOn: $autoLevel)
+                        .onChange(of: autoLevel) { _, on in
+                            sonar.setAuto(on)
+                            if !on { sonar.setVolume(Float(min(volume, Double(SonarEngine.maxLevel)))) }
+                        }
+                    if autoLevel && sonar.isRunning {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Sendepegel \(Int((sonar.currentLevel * 100).rounded())) % "
+                                 + "(max. \(Int((sonar.ceiling * 100).rounded())) %)")
+                            ProgressView(value: Double(sonar.currentLevel), total: Double(SonarEngine.maxLevel))
+                            Text("So leise wie möglich bei ausreichendem Echo. Senkt die Obergrenze, "
+                                 + "wenn der Lautsprecherschutz eingreift.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    } else if !autoLevel {
+                        VStack(alignment: .leading) {
+                            Text(volume < 0.005 ? "Sendepegel: aus (Kontrolltest ohne Ton)"
+                                                : "Sendepegel \(Int((volume * 100).rounded())) %")
+                            Slider(value: $volume, in: 0...Double(SonarEngine.maxLevel), step: 0.01)
+                                .onChange(of: volume) { _, v in sonar.setVolume(Float(v)) }
+                        }
                     }
                     Button {
                         Task {
                             if sonar.isRunning { sonar.stop() }
-                            else { await sonar.start(carrierHz: carrier, volume: Float(volume)) }
+                            else { await sonar.start(carrierHz: carrier, volume: Float(volume), auto: autoLevel) }
                         }
                     } label: {
                         Label(sonar.isRunning ? "Stoppen" : "Live-Test starten",
@@ -81,13 +98,14 @@ struct SonarTestView: View {
                         LevelChart(values: sonar.levelHistory)
                             .frame(height: 120)
                     } header: {
-                        Text("Empfangspegel (letzte 60 s)")
+                        Text("Empfang relativ zum Sendepegel (60 s)")
                     } footer: {
-                        Text("Das Mikrofon hört den eigenen Ton mit. Bleibt die Linie flach, wird durchgehend gesendet. "
+                        Text("Das Mikrofon hört den eigenen Ton mit, umgerechnet auf 100 % Sendepegel. "
+                             + "Bleibt die Linie trotz Pegeländerungen flach, ist alles gut. "
                              + "Fällt sie ab, regelt das iPhone den Lautsprecher herunter.")
                     }
                     Section("Signal") {
-                        LabeledContent("Empfangspegel", value: String(format: "%.0f dBFS", r.levelDB))
+                        LabeledContent("Empfang (relativ)", value: String(format: "%.0f dB", r.levelDB))
                         LabeledContent("Körperecho / Rauschen", value: String(format: "%.1f (ab 1,8 brauchbar)", r.snr))
                     }
                     .font(.callout)
@@ -213,12 +231,12 @@ private struct LevelChart: View {
             let lo = (values.min() ?? -60) - 3, hi = (values.max() ?? 0) + 3
             Chart {
                 ForEach(Array(values.enumerated()), id: \.offset) { i, v in
-                    LineMark(x: .value("s", Double(i - values.count + 1) / 2), y: .value("dBFS", v))
+                    LineMark(x: .value("s", Double(i - values.count + 1) / 2), y: .value("dB", v))
                 }
             }
             .chartYScale(domain: lo...hi)
             .chartXAxisLabel("Sekunden")
-            .chartYAxisLabel("dBFS")
+            .chartYAxisLabel("dB")
         }
     }
 }

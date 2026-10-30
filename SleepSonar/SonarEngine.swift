@@ -12,8 +12,17 @@ final class SonarEngine: ObservableObject {
     @Published private(set) var reading: SonarReading?
     @Published private(set) var errorMessage: String?
     @Published private(set) var diagnostics = Diagnostics()
-    /// Empfangspegel des Trägers (dBFS), 2 Werte pro Sekunde, letzte 60 s
+    /// Empfangspegel relativ zum Sendepegel (dB), 2 Werte pro Sekunde, letzte 60 s
     @Published private(set) var levelHistory: [Double] = []
+    /// Aktueller Sendepegel 0…1
+    @Published private(set) var currentLevel: Float = 0
+    /// Obergrenze; sinkt, wenn der Lautsprecherschutz erkannt wird
+    @Published private(set) var ceiling: Float = SonarEngine.maxLevel
+    @Published var autoLevel = true
+
+    static let maxLevel: Float = 0.85
+    static let minAutoLevel: Float = 0.05
+    static let autoStartLevel: Float = 0.4
 
     struct Diagnostics {
         var inputRate: Double = 0
@@ -32,17 +41,24 @@ final class SonarEngine: ObservableObject {
     private var observers: [NSObjectProtocol] = []
     private var watchdog: Timer?
 
-    func start(carrierHz: Double, volume: Float) async {
+    func start(carrierHz: Double, volume: Float, auto: Bool) async {
         guard !isRunning else { return }
         teardown()
         tone = nil
         worker = nil
+        autoLevel = auto
+        ceiling = Self.maxLevel
+        reference = nil
+        recentLevels = []
+        lastLevelChange = Date()
+        let startLevel = auto ? Self.autoStartLevel : min(volume, Self.maxLevel)
+        currentLevel = startLevel
         errorMessage = nil
         reading = nil
         levelHistory = []
         diagnostics = Diagnostics()
         self.carrierHz = carrierHz
-        self.volume = volume
+        self.volume = startLevel
 
         guard await AVAudioApplication.requestRecordPermission() else {
             errorMessage = "Kein Mikrofonzugriff. Einstellungen → SleepSonar → Mikrofon erlauben."
@@ -72,14 +88,78 @@ final class SonarEngine: ObservableObject {
     }
 
     func setVolume(_ v: Float) {
+        guard !autoLevel else { return }
+        apply(min(v, Self.maxLevel))
+    }
+
+    func setAuto(_ on: Bool) {
+        autoLevel = on
+        reference = nil
+        recentLevels = []
+        lastLevelChange = Date()
+    }
+
+    private func apply(_ v: Float) {
         volume = v
+        currentLevel = v
         tone?.targetAmplitude = v
+        lastLevelChange = Date()
+        recentLevels.removeAll()
     }
 
     private func receive(_ r: SonarReading) {
         reading = r
         levelHistory.append(r.levelDB)
         if levelHistory.count > 120 { levelHistory.removeFirst(levelHistory.count - 120) }
+        autoAdjust(r)
+    }
+
+    // MARK: - Automatischer Pegel
+
+    private var reference: Double?
+    private var recentLevels: [Double] = []
+    private var lastLevelChange = Date()
+    private var dropCount = 0
+
+    /// Regelt den Sendepegel: so leise wie möglich bei ausreichendem Körperecho,
+    /// nie über der Obergrenze. Fällt der (auf den Sendepegel normierte) Empfangspegel
+    /// ohne Bewegung deutlich ab, regelt der Lautsprecherschutz → Obergrenze senken.
+    private func autoAdjust(_ r: SonarReading) {
+        recentLevels.append(r.levelDB)
+        if recentLevels.count > 20 { recentLevels.removeFirst() }
+        guard autoLevel, isRunning, volume > 0, r.status != .warmingUp else { return }
+        // nach einer Änderung erst einschwingen lassen
+        guard Date().timeIntervalSince(lastLevelChange) > 6, recentLevels.count >= 8 else { return }
+        let med = recentLevels.suffix(8).sorted()[4]
+
+        if r.status != .moving {
+            if let ref = reference, med < ref - 3 {
+                dropCount += 1
+                if dropCount >= 2 {
+                    dropCount = 0
+                    ceiling = max(Self.minAutoLevel, volume * 0.7)
+                    log(String(format: "Lautsprecherschutz (−%.0f dB) → Obergrenze %d %%",
+                               ref - med, Int(ceiling * 100)))
+                    reference = nil
+                    apply(ceiling)
+                    return
+                }
+            } else {
+                dropCount = 0
+                // Referenz folgt nach oben sofort, nach unten nur langsam (1 dB / 10 s)
+                reference = max(med, (reference ?? med) - 0.05)
+            }
+        }
+
+        if r.status == .noEcho || r.snr < 3 {
+            if volume < ceiling - 0.005 {
+                let v = min(ceiling, volume * 1.41)   // +3 dB
+                log(String(format: "Echo schwach → Pegel %d %%", Int(v * 100)))
+                apply(v)
+            }
+        } else if r.snr > 8, volume > Self.minAutoLevel + 0.005 {
+            apply(max(Self.minAutoLevel, volume / 1.19))   // −1,5 dB
+        }
     }
 
     /// Blendet den Ton aus (kein Knacken) und stoppt dann.
@@ -134,6 +214,7 @@ final class SonarEngine: ObservableObject {
                 Task { @MainActor in self?.receive(r) }
             }
         }
+        worker.tone = tone
         Self.installTap(on: input, format: inFormat, worker: worker)
 
         observers.append(NotificationCenter.default.addObserver(
@@ -233,7 +314,7 @@ final class ToneState: @unchecked Sendable {
     private var phase = 0.0
     private let increment: Double
     private let smoothing: Float
-    private var amplitude: Float = 0
+    private(set) var amplitude: Float = 0
     var targetAmplitude: Float
 
     init(frequency: Double, sampleRate: Double, amplitude: Float) {
@@ -265,6 +346,7 @@ final class Worker: @unchecked Sendable {
     private let lock = NSLock()
     private let publish: @Sendable (SonarReading) -> Void
     private var lastAnalysis = Date.distantPast
+    weak var tone: ToneState?
 
     init(sampleRate: Double, carrierHz: Double, publish: @escaping @Sendable (SonarReading) -> Void) {
         self.sampleRate = sampleRate
@@ -282,7 +364,8 @@ final class Worker: @unchecked Sendable {
         lock.lock(); defer { lock.unlock() }
         let n = Int(buffer.frameLength)
         let st: Int64? = time.isSampleTimeValid ? time.sampleTime : nil
-        processor.process(UnsafeBufferPointer(start: data, count: n), sampleTime: st)
+        let gain = Double(tone?.amplitude ?? 1)
+        processor.process(UnsafeBufferPointer(start: data, count: n), sampleTime: st, gain: gain)
         let now = Date()
         if now.timeIntervalSince(lastAnalysis) >= 0.5 {
             lastAnalysis = now
