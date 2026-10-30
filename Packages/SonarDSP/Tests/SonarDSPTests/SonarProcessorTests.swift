@@ -36,7 +36,7 @@ struct SplitMix64 {
 }
 
 /// Lässt das Szenario laufen; ruft `check` jede volle Sekunde mit (Sekunde, Ergebnis) auf.
-func run(_ s: Scenario, chunk: Int = 4096, check: ((Int, SonarReading) -> Void)? = nil) -> SonarReading {
+func simulate(_ s: Scenario, chunk: Int = 4096, check: ((Int, SonarReading) -> Void)? = nil) -> SonarReading {
     let p = SonarProcessor(sampleRate: s.sampleRate, carrierHz: s.carrier)
     var rng = SplitMix64(state: s.seed)
     let lambda = SonarProcessor.speedOfSound / s.carrier
@@ -72,7 +72,7 @@ func run(_ s: Scenario, chunk: Int = 4096, check: ((Int, SonarReading) -> Void)?
 
 final class SonarProcessorTests: XCTestCase {
     func testBaseline() {
-        let r = run(Scenario())
+        let r = simulate(Scenario())
         XCTAssertEqual(r.status, .ok)
         XCTAssertEqual(r.breathsPerMinute ?? 0, 15, accuracy: 0.5)
         XCTAssertTrue(r.isBreathReliable)
@@ -85,30 +85,30 @@ final class SonarProcessorTests: XCTestCase {
     }
 
     func testFastBreathingAndPulse() {
-        let r = run(Scenario(breathsPerMinute: 22, heartBPM: 92))
+        let r = simulate(Scenario(breathsPerMinute: 22, heartBPM: 92))
         XCTAssertEqual(r.breathsPerMinute ?? 0, 22, accuracy: 0.7)
         XCTAssertEqual(r.heartBPM ?? 0, 92, accuracy: 3)
     }
 
     func testSlowBreathing() {
-        let r = run(Scenario(breathsPerMinute: 9, heartBPM: 62))
+        let r = simulate(Scenario(breathsPerMinute: 9, heartBPM: 62))
         XCTAssertEqual(r.breathsPerMinute ?? 0, 9, accuracy: 0.5)
     }
 
     func testIrregularBreathingDoesNotFoolPulse() {
-        let r = run(Scenario(harmonic: 0.4))
+        let r = simulate(Scenario(harmonic: 0.4))
         XCTAssertEqual(r.breathsPerMinute ?? 0, 15, accuracy: 0.5)
         XCTAssertEqual(r.heartBPM ?? 0, 68, accuracy: 3)
     }
 
     func testShallowBreathing() {
-        let r = run(Scenario(breathMM: 1.5))
+        let r = simulate(Scenario(breathMM: 1.5))
         XCTAssertEqual(r.breathsPerMinute ?? 0, 15, accuracy: 0.5)
         XCTAssertEqual(r.breathAmplitudeMM ?? 0, 3, accuracy: 1)
     }
 
     func testEmptyBedReportsNoEcho() {
-        let r = run(Scenario(bodyAmplitude: 0))
+        let r = simulate(Scenario(bodyAmplitude: 0))
         XCTAssertEqual(r.status, .noEcho)
         XCTAssertNil(r.breathsPerMinute)
     }
@@ -116,7 +116,7 @@ final class SonarProcessorTests: XCTestCase {
     func testMovementDetectedAndRecovers() {
         var during: SonarReading?
         var after: SonarReading?
-        _ = run(Scenario(seconds: 60, move: (40, 42))) { sec, r in
+        _ = simulate(Scenario(seconds: 60, move: (40, 42))) { sec, r in
             if sec == 42 { during = r }
             if sec == 58 { after = r }
         }
