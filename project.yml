@@ -18,12 +18,12 @@ targets:
       path: SleepSonar/Info.plist
       properties:
         CFBundleDisplayName: SleepSonar
-        CFBundleShortVersionString: "0.2.0"
+        CFBundleShortVersionString: "0.3.0"
         CFBundleVersion: "2"
         UILaunchScreen: {}
         UIBackgroundModes: [audio]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
-        NSMicrophoneUsageDescription: "SleepSonar empfängt über das Mikrofon das Echo eines unhörbaren Tons, um Atmung und Bewegung zu erkennen. Es wird nichts aufgenommen oder gespeichert."
+        NSMicrophoneUsageDescription: "SleepSonar nimmt nachts Atem- und Bewegungsgeräusche auf, um deinen Schlaf auszuwerten. Die Aufnahmen bleiben auf deinem iPhone, bis du sie selbst teilst."
         NSHealthShareUsageDescription: "SleepSonar liest deine Schlafdaten, um die Einträge der App anzuzeigen."
         NSHealthUpdateUsageDescription: "SleepSonar schreibt deine Schlafphasen (Wach, Kern, Tief, REM) in Apple Health."
     settings:

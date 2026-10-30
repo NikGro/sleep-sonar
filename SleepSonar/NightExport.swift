@@ -72,14 +72,28 @@ enum NightExport {
         s.replacingOccurrences(of: ",", with: " ").replacingOccurrences(of: "\n", with: " ")
     }
 
+    /// Audiodateien einer Nacht (für separates Teilen).
+    static func audioFiles(in folder: URL) -> [URL] {
+        let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
+        return files.filter { $0.pathExtension == "m4a" }.sorted { $0.lastPathComponent < $1.lastPathComponent }
+    }
+
     /// Packt den Ordner als ZIP (über NSFileCoordinator, ohne Zusatzbibliothek).
+    /// Audiodateien werden weggelassen (zu groß für den Chat, separat teilen).
     static func zip(folder: URL) throws -> URL {
-        let target = FileManager.default.temporaryDirectory
+        let fm = FileManager.default
+        let staging = fm.temporaryDirectory.appendingPathComponent("export_" + folder.lastPathComponent, isDirectory: true)
+        try? fm.removeItem(at: staging)
+        try fm.createDirectory(at: staging, withIntermediateDirectories: true)
+        for f in try fm.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil) where f.pathExtension != "m4a" {
+            try fm.copyItem(at: f, to: staging.appendingPathComponent(f.lastPathComponent))
+        }
+        let target = fm.temporaryDirectory
             .appendingPathComponent("SleepSonar_\(folder.lastPathComponent).zip")
-        try? FileManager.default.removeItem(at: target)
+        try? fm.removeItem(at: target)
         var coordError: NSError?
         var copyError: Error?
-        NSFileCoordinator().coordinate(readingItemAt: folder, options: .forUploading, error: &coordError) { zipped in
+        NSFileCoordinator().coordinate(readingItemAt: staging, options: .forUploading, error: &coordError) { zipped in
             do { try FileManager.default.copyItem(at: zipped, to: target) } catch { copyError = error }
         }
         if let e = coordError ?? (copyError as NSError?) { throw e }
