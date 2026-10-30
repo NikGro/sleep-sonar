@@ -3,7 +3,19 @@ name: Build IPA
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "sidestore/**"
+      - ".github/workflows/sidestore.yml"
+      - "Packages/SonarDSP/prototype/**"
   workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -34,6 +46,16 @@ jobs:
           test -d build/dd/Build/Products/Release-iphoneos/SleepSonar.app
           cp -R build/dd/Build/Products/Release-iphoneos/SleepSonar.app build/
 
+      - name: Set version (patch = Build-Nummer)
+        run: |
+          PL=build/SleepSonar.app/Info.plist
+          BASE=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$PL")
+          VERSION="$(echo "$BASE" | cut -d. -f1-2).${GITHUB_RUN_NUMBER}"
+          /usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString $VERSION" "$PL"
+          /usr/libexec/PlistBuddy -c "Set CFBundleVersion ${GITHUB_RUN_NUMBER}" "$PL"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "### SleepSonar $VERSION" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Ad-hoc sign with entitlements (AltStore re-signs later)
         run: |
           codesign --force --sign - \
@@ -51,6 +73,20 @@ jobs:
         with:
           name: SleepSonar-ipa
           path: SleepSonar.ipa
+
+      - name: Release + SideStore-Quelle
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$VERSION"
+          NOTES=$(git log -1 --format=%B | grep -v -E '^(Co-Authored-By|Claude-Session):' | sed '/^$/N;/^\n$/D')
+          python3 scripts/make_source.py --ipa SleepSonar.ipa \
+            --entitlements SleepSonar/SleepSonar.entitlements \
+            --repo "$GITHUB_REPOSITORY" --tag "$TAG" --notes "$NOTES" --out source.json
+          gh release create "$TAG" SleepSonar.ipa source.json \
+            --title "SleepSonar $VERSION" --notes "$NOTES" --latest
+          echo "Quelle: https://github.com/$GITHUB_REPOSITORY/releases/latest/download/source.json" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload build log on failure
         if: failure()

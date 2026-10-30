@@ -2,12 +2,24 @@
 
 Eigene Schlaf-App fürs iPhone: Schlafmessung per Ultraschall (Sonar), Schlafphasen (Wach, Kern, Tief, REM) werden in Apple Health geschrieben.
 
-**Stand 0.1.0:** Test-App. Prüft, ob die per AltStore installierte App Schlafphasen in Health schreiben darf. Noch kein Sonar.
+**Stand 0.2:** Sonar-Live-Test (Atmung, Bewegung, Puls experimentell) und Health-Test (Schlafphasen schreiben).
+
+## In SideStore hinzufügen (automatische Updates)
+
+SideStore → **Sources** → **+** → diese Adresse eintragen:
+
+```
+https://github.com/NikGro/sleep-sonar/releases/latest/download/source.json
+```
+
+Danach SleepSonar einmal aus dieser Quelle installieren (Browse → SleepSonar). Ab dann
+zeigt SideStore jede neue Version unter „My Apps“ als Update an.
 
 ## Build
 
-Jeder Push auf `main` baut über GitHub Actions eine `.ipa`
-(Actions → letzter Lauf → Artifacts → `SleepSonar-ipa`, die ZIP entpacken).
+Jeder Push auf `main` testet die Signalverarbeitung (`Packages/SonarDSP`), baut die `.ipa`,
+setzt die Version auf `0.2.<Build-Nummer>` und veröffentlicht sie als GitHub-Release
+samt `source.json` für SideStore.
 
 ## Installation mit AltStore Classic (Windows)
 
