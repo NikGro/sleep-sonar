@@ -24,6 +24,8 @@ final class SonarEngine: ObservableObject {
     @Published private(set) var motionActivity: Double = 0
     @Published private(set) var startDate: Date?
     private var motion: MotionLogger?
+    private var volumeObservation: NSKeyValueObservation?
+    @Published private(set) var systemVolume: Float = 0
 
     static let maxLevel: Float = 0.85
     static let minAutoLevel: Float = 0.05
@@ -78,6 +80,11 @@ final class SonarEngine: ObservableObject {
             try session.setActive(true)
             try session.overrideOutputAudioPort(.speaker)
             observeSession()
+            systemVolume = session.outputVolume
+            volumeObservation = session.observe(\.outputVolume, options: [.new]) { [weak self] _, change in
+                guard let v = change.newValue else { return }
+                Task { @MainActor in self?.systemVolumeChanged(v) }
+            }
             if night {
                 UIDevice.current.isBatteryMonitoringEnabled = true
                 nightRecorder = try NightRecorder(meta: [
@@ -87,6 +94,7 @@ final class SonarEngine: ObservableObject {
                     "carrier_hz": carrierHz,
                     "auto_level": auto,
                     "max_level": Double(Self.maxLevel),
+                    "system_volume_start": Double(session.outputVolume),
                 ])
                 let rec = nightRecorder
                 let m = MotionLogger { [weak self] activity, maxDelta, pitch, roll in
@@ -101,7 +109,8 @@ final class SonarEngine: ObservableObject {
             startDate = Date()
             // Nachts darf der Bildschirm sperren (Audio läuft im Hintergrund weiter)
             UIApplication.shared.isIdleTimerDisabled = !night
-            log(night ? "Nachtmessung gestartet" : "Gestartet")
+            log((night ? "Nachtmessung gestartet" : "Gestartet")
+                + ", Systemlautstärke \(Int((systemVolume * 100).rounded())) %")
             if night { logBattery() }
             // Falls iOS die Engine ohne Benachrichtigung anhält
             watchdog = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
@@ -139,6 +148,18 @@ final class SonarEngine: ObservableObject {
         levelHistory.append(r.levelDB)
         if levelHistory.count > 120 { levelHistory.removeFirst(levelHistory.count - 120) }
         autoAdjust(r)
+    }
+
+    /// Lautstärketasten: ändern den tatsächlich gesendeten Pegel. Das ist kein
+    /// Lautsprecherschutz → Referenz der Schutzerkennung neu aufbauen.
+    private func systemVolumeChanged(_ v: Float) {
+        guard abs(v - systemVolume) > 0.001 else { return }
+        log("Systemlautstärke \(Int((systemVolume * 100).rounded())) % → \(Int((v * 100).rounded())) %")
+        systemVolume = v
+        reference = nil
+        dropCount = 0
+        recentLevels.removeAll()
+        lastLevelChange = Date()
     }
 
     private func logBattery() {
@@ -215,6 +236,8 @@ final class SonarEngine: ObservableObject {
         isRunning = false            // verhindert Neustarts
         watchdog?.invalidate()
         watchdog = nil
+        volumeObservation?.invalidate()
+        volumeObservation = nil
         observers.forEach { NotificationCenter.default.removeObserver($0) }
         observers.removeAll()
         tone?.targetAmplitude = 0

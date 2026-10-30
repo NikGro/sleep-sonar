@@ -25,6 +25,8 @@ struct NightView: View {
                               systemImage: "iphone.gen3")
                         Label("Apple Watch tragen, Schlaf-Fokus wie gewohnt.", systemImage: "applewatch")
                         Label("App nicht wegwischen. Bildschirm sperren ist okay.", systemImage: "lock")
+                        Label("Systemlautstärke wie beim Test einstellen und nachts nicht verändern.",
+                              systemImage: "speaker.wave.3")
                         Label("20 kHz, automatischer Pegel (max. 85 %). In Health wird nichts geschrieben.",
                               systemImage: "waveform")
                     }
@@ -93,6 +95,7 @@ struct NightView: View {
                            + "(max. \(Int((sonar.ceiling * 100).rounded())) %)")
             LabeledContent("iPhone-Bewegung", value: String(format: "%.3f g%@", sonar.motionActivity,
                            sonar.motionActivity > MotionLogger.handledThreshold ? " – angefasst" : ""))
+            LabeledContent("Systemlautstärke", value: "\(Int((sonar.systemVolume * 100).rounded())) %")
             LabeledContent("Neustarts", value: "\(sonar.diagnostics.restarts)")
             Button(role: .destructive) { confirmStop = true } label: {
                 Label("Nachtmessung beenden", systemImage: "stop.circle.fill").font(.headline)
