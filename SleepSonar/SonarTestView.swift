@@ -33,8 +33,9 @@ struct SonarTestView: View {
                     }
                     .disabled(sonar.isRunning)
                     VStack(alignment: .leading) {
-                        Text("Sendepegel \(Int(volume * 100)) %")
-                        Slider(value: $volume, in: 0.01...1)
+                        Text(volume < 0.005 ? "Sendepegel: aus (Kontrolltest ohne Ton)"
+                                            : "Sendepegel \(Int((volume * 100).rounded())) %")
+                        Slider(value: $volume, in: 0...1, step: 0.01)
                             .onChange(of: volume) { _, v in sonar.setVolume(Float(v)) }
                     }
                     Button {
