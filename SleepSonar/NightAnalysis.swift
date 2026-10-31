@@ -12,6 +12,7 @@ struct NightAnalysisResult {
     var watch: [SleepStaging.Stage?]
     var watchSource: String
     var agreement: (fourClass: Double, sleepWake: Double, epochs: Int)
+    var events: [SoundEvent]
 
     func minutes(_ stages: [SleepStaging.Stage?], _ s: SleepStaging.Stage) -> Double {
         Double(stages.filter { $0 == s }.count) * epochSeconds / 60
@@ -61,11 +62,16 @@ enum NightAnalyzer {
         }
 
         let params = SleepStaging.Parameters()
-        let epochs = SleepStaging.estimate(seconds: seconds, motion: motion, parameters: params)
+        // Geräusche (falls schon ausgewertet): Schnarchen = Schlaf, Sprechen/Husten = Unruhe
+        let marks = SoundEventDetector.marks(SoundEventDetector.cached(in: folder) ?? [])
+        let epochs = SleepStaging.estimate(seconds: seconds, motion: motion, sleepSounds: marks.sleep,
+                                           wakeSounds: marks.wake, parameters: params)
         return (first, epochs.map(\.stage), Double(params.epochSeconds))
     }
 
-    static func analyze(folder: URL) async throws -> NightAnalysisResult {
+    static func analyze(folder: URL, progress: @escaping @Sendable (Double) -> Void = { _ in })
+        async throws -> NightAnalysisResult {
+        let events = (try? await SoundEventDetector.analyze(folder: folder, progress: progress)) ?? []
         let (first, ours, epochSeconds) = try await Task.detached(priority: .userInitiated) {
             try estimate(folder: folder)
         }.value
@@ -75,7 +81,7 @@ enum NightAnalyzer {
         let (watch, source) = await watchStages(from: first, to: end, epochs: ours.count, epochSeconds: epochSeconds)
         let agreement = SleepStaging.agreement(ours.map { Optional($0) }, watch)
         return NightAnalysisResult(start: first, epochSeconds: epochSeconds, ours: ours, watch: watch,
-                                   watchSource: source, agreement: agreement)
+                                   watchSource: source, agreement: agreement, events: events)
     }
 
     static func watchStages(from start: Date, to end: Date, epochs: Int, epochSeconds: Double) async
@@ -121,6 +127,8 @@ struct NightAnalysisView: View {
     let folder: URL
     @State private var result: NightAnalysisResult?
     @State private var error: String?
+    @State private var soundProgress: Double?
+    @StateObject private var player = NightClipPlayer()
 
     var body: some View {
         ScrollView {
@@ -130,9 +138,17 @@ struct NightAnalysisView: View {
                 } else if let r = result {
                     content(r)
                 } else {
-                    HStack(spacing: 12) {
-                        ProgressView().tint(Theme.moon)
-                        Text("Nacht wird ausgewertet").foregroundStyle(Theme.mist)
+                    VStack(spacing: 14) {
+                        if let p = soundProgress, p < 1 {
+                            ProgressView(value: p).tint(Theme.moon).frame(maxWidth: 220)
+                            Text("Geräusche der Nacht werden erkannt (\(Int(p * 100)) %)")
+                                .font(.callout).foregroundStyle(Theme.mist)
+                            Text("Das passiert einmal je Nacht und bleibt auf dem iPhone.")
+                                .font(.caption).foregroundStyle(Theme.mist)
+                        } else {
+                            ProgressView().tint(Theme.moon)
+                            Text("Nacht wird ausgewertet").font(.callout).foregroundStyle(Theme.mist)
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.top, 60)
@@ -145,9 +161,13 @@ struct NightAnalysisView: View {
         .navigationTitle(result.map { Self.title($0.start) } ?? "Auswertung")
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            do { result = try await NightAnalyzer.analyze(folder: folder) }
-            catch { self.error = error.localizedDescription }
+            do {
+                result = try await NightAnalyzer.analyze(folder: folder) { p in
+                    Task { @MainActor in soundProgress = p }
+                }
+            } catch { self.error = error.localizedDescription }
         }
+        .onDisappear { player.stop() }
     }
 
     @ViewBuilder private func content(_ r: NightAnalysisResult) -> some View {
@@ -199,6 +219,9 @@ struct NightAnalysisView: View {
                 .labelStyle(SmallDotLabel())
             }
         }
+
+        SoundSection(events: r.events, start: r.start,
+                     total: Double(r.ours.count) * r.epochSeconds, folder: folder, player: player)
 
         if r.agreement.epochs > 0 {
             VStack(alignment: .leading, spacing: 10) {

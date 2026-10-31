@@ -52,6 +52,28 @@ final class SleepStagingTests: XCTestCase {
         XCTAssertFalse(epochs[(20 * 60 + 3600 + 300) / 30].hasData)
     }
 
+    func testSnoringCountsAsSleep() {
+        // Nacht mit lautem, regelmäßigem Schnarchen in der Mitte (1 h): ohne Geräusch-Info
+        // hält die Regel das für Unruhe/wach, mit Schnarch-Markierung für Schlaf.
+        var night = makeNight()
+        let a = 20 * 60 + 4 * 3600, b = a + 3600
+        var snore = Set<Int>()
+        for t in a..<b where t % 4 < 2 {
+            night.seconds[t]?.rms += 20
+            snore.insert(t)
+        }
+        let probe = (a + 1800) / 30
+        let plain = SleepStaging.estimate(seconds: night.seconds, motion: night.motion)
+        XCTAssertEqual(plain[probe].stage, .wake)
+        let aware = SleepStaging.estimate(seconds: night.seconds, motion: night.motion, sleepSounds: snore)
+        XCTAssertNotEqual(aware[probe].stage, .wake)
+        // Sprechen zählt als Unruhe, auch wenn es leise ist
+        let talk = Set((a - 1200)..<(a - 600))
+        let talking = SleepStaging.estimate(seconds: night.seconds, motion: night.motion, sleepSounds: snore,
+                                            wakeSounds: talk)
+        XCTAssertEqual(talking[(a - 900) / 30].stage, .wake)
+    }
+
     func testAgreement() {
         let a: [SleepStaging.Stage?] = [.wake, .core, .deep, .rem, nil]
         let b: [SleepStaging.Stage?] = [.wake, .core, .core, .wake, .core]

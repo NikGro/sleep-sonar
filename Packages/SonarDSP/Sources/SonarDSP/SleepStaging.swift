@@ -76,7 +76,10 @@ public enum SleepStaging {
     /// - Parameters:
     ///   - seconds: ein Eintrag je Sekunde ab Start; `nil` = Lücke (keine Daten)
     ///   - motion: Beschleunigung je Sekunde (gleiche Zeitachse), `nil` = unbekannt
+    ///   - sleepSounds: Sekunden mit Schlafgeräuschen (z. B. Schnarchen) – zählen nicht als Unruhe
+    ///   - wakeSounds: Sekunden mit Wachgeräuschen (Sprechen, Husten …) – zählen immer als Unruhe
     public static func estimate(seconds: [Second?], motion: [Double?] = [],
+                                sleepSounds: Set<Int> = [], wakeSounds: Set<Int> = [],
                                 parameters p: Parameters = Parameters()) -> [Epoch] {
         let n = seconds.count / p.epochSeconds
         guard n > 0 else { return [] }
@@ -100,7 +103,11 @@ public enum SleepStaging {
             for s in a..<b {
                 guard let v = rms[s] else { continue }
                 valid += 1
-                if v - baseline[e] > p.eventDB { events += 1 }
+                if wakeSounds.contains(s) {
+                    events += 1
+                } else if v - baseline[e] > p.eventDB && !sleepSounds.contains(s) {
+                    events += 1
+                }
             }
             var handled = false
             if !motion.isEmpty {
