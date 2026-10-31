@@ -1,100 +1,80 @@
+import SonarDSP
 import SwiftUI
 import UIKit
 
+/// Liste der aufgezeichneten Nächte, jede mit kleinem Hypnogramm.
 struct NightView: View {
     @ObservedObject private var rec = PassiveNightEngine.shared
+    @StateObject private var summaries = NightSummaries()
     @State private var nights: [URL] = []
-    @State private var confirmStop = false
     @State private var exporting: URL?
-    @State private var exportNotes: [String] = []
     @State private var share: ShareItem?
-    @State private var exportError: String?
+    @State private var message: String?
 
     var body: some View {
         NavigationStack {
             List {
-                if rec.isRunning {
-                    runningSection
-                } else {
-                    Section("Vor dem Schlafen") {
-                        Label("iPhone ans Ladekabel und neben das Bett, Mikrofon (Unterseite) zu dir.",
-                              systemImage: "iphone.gen3")
-                        Label("Apple Watch tragen.", systemImage: "applewatch")
-                        Label("App nicht wegwischen. Bildschirm sperren und andere Apps nutzen ist okay.",
-                              systemImage: "lock")
-                        Label("Es wird nur zugehört, kein Ton gesendet. Die Aufnahme bleibt auf dem iPhone, "
-                              + "bis du sie selbst teilst.", systemImage: "mic")
-                        Label("Tipp: In der Kurzbefehle-App gibt es „Schlafaufnahme starten/beenden“, "
-                              + "z. B. als Automation beim Schlaf-Fokus.", systemImage: "wand.and.stars")
+                if nights.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Noch keine Nacht aufgezeichnet").font(Theme.display(22))
+                        Text("Starte heute Abend unter „Heute Nacht“ die Aufnahme. Morgens findest du sie hier.")
+                            .font(.callout).foregroundStyle(Theme.mist)
                     }
-                    Section {
-                        Button {
-                            Task {
-                                await rec.start()
-                                refresh()
+                    .padding(.vertical, 24)
+                    .listRowBackground(Theme.ink)
+                }
+                ForEach(nights, id: \.self) { url in
+                    let recording = rec.isRunning && rec.folder == url
+                    Group {
+                        if recording {
+                            NightRow(url: url, summary: nil, recording: true, busy: false)
+                        } else {
+                            NavigationLink {
+                                NightAnalysisView(folder: url)
+                            } label: {
+                                NightRow(url: url, summary: summaries.items[url], recording: false,
+                                         busy: exporting == url)
                             }
-                        } label: {
-                            Label("Nachtaufnahme starten", systemImage: "moon.stars.fill").font(.headline)
                         }
-                        if let e = rec.errorMessage { Text(e).foregroundStyle(.red) }
+                    }
+                    .listRowBackground(Theme.ink)
+                    .listRowSeparatorTint(Theme.hairline)
+                    .task { if !recording { summaries.load(url) } }
+                    .contextMenu {
+                        if !recording {
+                            Button {
+                                Task { await export(url) }
+                            } label: {
+                                Label("Daten und Watch teilen (ZIP)", systemImage: "square.and.arrow.up")
+                            }
+                            if !NightExport.audioFiles(in: url).isEmpty {
+                                Button {
+                                    share = ShareItem(urls: NightExport.audioFiles(in: url))
+                                } label: {
+                                    Label("Audio teilen", systemImage: "waveform")
+                                }
+                            }
+                        }
                     }
                 }
-
-                Section("Gespeicherte Nächte") {
-                    if nights.isEmpty { Text("Noch keine").foregroundStyle(.secondary) }
-                    ForEach(nights, id: \.self) { url in
-                        NightRow(url: url, isRecording: rec.isRunning && rec.folder == url,
-                                 isExporting: exporting == url,
-                                 onExport: { Task { await export(url) } },
-                                 onShareAudio: {
-                                     let files = NightExport.audioFiles(in: url)
-                                     if !files.isEmpty { share = ShareItem(urls: files) }
-                                 })
+                .onDelete { idx in
+                    for i in idx where !(rec.isRunning && rec.folder == nights[i]) {
+                        try? FileManager.default.removeItem(at: nights[i])
                     }
-                    .onDelete { idx in
-                        for i in idx where !(rec.isRunning && rec.folder == nights[i]) {
-                            try? FileManager.default.removeItem(at: nights[i])
-                        }
-                        refresh()
-                    }
-                    ForEach(exportNotes, id: \.self) { Text($0).font(.caption) }
-                    if let exportError { Text(exportError).foregroundStyle(.red).font(.caption) }
-                }
-            }
-            .navigationTitle("Nacht")
-            .onAppear(perform: refresh)
-            .sheet(item: $share) { item in ShareSheet(items: item.urls) }
-            .confirmationDialog("Nachtaufnahme beenden?", isPresented: $confirmStop, titleVisibility: .visible) {
-                Button("Beenden", role: .destructive) {
-                    rec.stop()
                     refresh()
                 }
-            }
-        }
-    }
-
-    @ViewBuilder private var runningSection: some View {
-        Section("Läuft") {
-            if let start = rec.startDate {
-                TimelineView(.periodic(from: .now, by: 1)) { ctx in
-                    LabeledContent("Dauer", value: Self.duration(ctx.date.timeIntervalSince(start)))
+                if let message {
+                    Text(message).font(.caption).foregroundStyle(Theme.mist).listRowBackground(Theme.ink)
                 }
             }
-            LabeledContent("Pegel", value: String(format: "%.0f dBFS", rec.levelDB))
-            LabeledContent("Tief / Mitte / Hoch",
-                           value: rec.bandDB.map { String(format: "%.0f", $0) }.joined(separator: " / "))
-            LabeledContent("Mikrofon", value: rec.inputName)
-            LabeledContent("iPhone-Bewegung", value: String(format: "%.3f g%@", rec.motionActivity,
-                           rec.motionActivity > MotionLogger.handledThreshold ? " – angefasst" : ""))
-            LabeledContent("Neustarts", value: "\(rec.restarts)")
-            Button(role: .destructive) { confirmStop = true } label: {
-                Label("Nachtaufnahme beenden", systemImage: "stop.circle.fill").font(.headline)
-            }
-        }
-        if !rec.events.isEmpty {
-            Section("Ereignisse") {
-                ForEach(rec.events, id: \.self) { Text($0).font(.caption.monospaced()) }
-            }
+            .listStyle(.plain)
+            .nightBackground()
+            .navigationTitle("Nächte")
+            .toolbarBackground(Theme.ink, for: .navigationBar)
+            .onAppear(perform: refresh)
+            .onChange(of: rec.isRunning) { refresh() }
+            .refreshable { refresh() }
+            .sheet(item: $share) { item in ShareSheet(items: item.urls) }
         }
     }
 
@@ -106,7 +86,7 @@ struct NightView: View {
 
     private func export(_ url: URL) async {
         exporting = url
-        exportError = nil
+        message = nil
         defer { exporting = nil }
         var start = Date().addingTimeInterval(-12 * 3600), end = Date()
         if let data = try? Data(contentsOf: url.appendingPathComponent("meta.json")),
@@ -116,11 +96,12 @@ struct NightView: View {
             if let s = meta["start"] as? String, let d = iso.date(from: s) { start = d }
             if let e = meta["end"] as? String, let d = iso.date(from: e) { end = d }
         }
-        exportNotes = await NightExport.writeHealthData(into: url, from: start, to: end)
+        let notes = await NightExport.writeHealthData(into: url, from: start, to: end)
         do {
             share = ShareItem(urls: [try NightExport.zip(folder: url)])
+            if !notes.isEmpty { message = notes.joined(separator: "\n") }
         } catch {
-            exportError = "ZIP fehlgeschlagen: \(error.localizedDescription)"
+            message = "ZIP konnte nicht erstellt werden: \(error.localizedDescription)"
         }
     }
 
@@ -130,46 +111,83 @@ struct NightView: View {
     }
 }
 
-private struct NightRow: View {
-    let url: URL
-    let isRecording: Bool
-    let isExporting: Bool
-    let onExport: () -> Void
-    let onShareAudio: () -> Void
+/// Kurzfassung einer Nacht für die Liste (eigene Schätzung, ohne Health).
+struct NightSummary {
+    let start: Date
+    let stages: [SleepStaging.Stage]
+    let epochSeconds: Double
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                VStack(alignment: .leading) {
-                    Text(url.lastPathComponent.replacingOccurrences(of: "_", with: "  "))
-                        .font(.body.monospacedDigit())
-                    Text(isRecording ? "zeichnet auf …" : sizeText).font(.caption).foregroundStyle(.secondary)
-                }
-                Spacer()
-                if isExporting { ProgressView() }
-            }
-            if !isRecording && !isExporting {
-                if hasLevels {
-                    NavigationLink {
-                        NightAnalysisView(folder: url)
-                    } label: {
-                        Label("Auswerten", systemImage: "chart.bar.xaxis").font(.callout.bold())
-                    }
-                }
-                HStack {
-                    Button("Daten + Watch (ZIP)", action: onExport).buttonStyle(.bordered)
-                    if hasAudio {
-                        Button("Audio teilen", action: onShareAudio).buttonStyle(.bordered)
-                    }
-                }
-                .font(.callout)
+    var asleepSeconds: Double { Double(stages.filter { $0 != .wake }.count) * epochSeconds }
+    var totalSeconds: Double { Double(stages.count) * epochSeconds }
+}
+
+@MainActor
+final class NightSummaries: ObservableObject {
+    @Published private(set) var items: [URL: NightSummary] = [:]
+    private var failed: Set<URL> = []
+
+    func load(_ url: URL) {
+        guard items[url] == nil, !failed.contains(url) else { return }
+        Task {
+            let r = try? await Task.detached(priority: .utility) { try NightAnalyzer.estimate(folder: url) }.value
+            if let r {
+                items[url] = NightSummary(start: r.start, stages: r.stages, epochSeconds: r.epochSeconds)
+            } else {
+                failed.insert(url)
             }
         }
     }
+}
 
-    private var hasAudio: Bool { !NightExport.audioFiles(in: url).isEmpty }
-    private var hasLevels: Bool {
-        FileManager.default.fileExists(atPath: url.appendingPathComponent("levels.csv").path)
+private struct NightRow: View {
+    let url: URL
+    let summary: NightSummary?
+    let recording: Bool
+    let busy: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title).font(Theme.display(19, weight: .medium))
+                Spacer()
+                if busy { ProgressView().tint(Theme.moon) }
+            }
+            if recording {
+                Text("Aufnahme läuft").font(.callout).foregroundStyle(Theme.mist)
+            } else if let summary {
+                Hypnogram(stages: summary.stages.map { Optional($0) }, start: summary.start,
+                          epochSeconds: summary.epochSeconds, compact: true)
+                    .frame(height: 34)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+                Text("\(NightAnalysisView.hm(summary.asleepSeconds)) geschlafen, "
+                     + "\(times(summary.start, summary.totalSeconds))")
+                    .font(.callout).foregroundStyle(Theme.mist)
+            } else {
+                Text(sizeText).font(.callout).foregroundStyle(Theme.mist)
+            }
+        }
+        .padding(.vertical, 10)
+    }
+
+    private var startDate: Date? {
+        if let s = summary?.start { return s }
+        let name = url.lastPathComponent.replacingOccurrences(of: "_audio", with: "")
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd_HH-mm"
+        return f.date(from: name)
+    }
+
+    private var title: String {
+        guard let d = startDate else { return url.lastPathComponent }
+        // Eine Nacht wird nach dem Morgen benannt, an dem man aufwacht.
+        return "Nacht zum " + d.addingTimeInterval(6 * 3600).formatted(.dateTime.weekday(.wide).day().month(.wide))
+    }
+
+    private func times(_ start: Date, _ seconds: Double) -> String {
+        let end = start.addingTimeInterval(seconds)
+        return "\(start.formatted(date: .omitted, time: .shortened)) bis \(end.formatted(date: .omitted, time: .shortened))"
     }
 
     private var sizeText: String {
@@ -179,12 +197,12 @@ private struct NightRow: View {
     }
 }
 
-private struct ShareItem: Identifiable {
+struct ShareItem: Identifiable {
     let id = UUID()
     let urls: [URL]
 }
 
-private struct ShareSheet: UIViewControllerRepresentable {
+struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
     func makeUIViewController(context: Context) -> UIActivityViewController {
         UIActivityViewController(activityItems: items, applicationActivities: nil)

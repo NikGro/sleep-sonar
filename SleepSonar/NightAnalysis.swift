@@ -26,7 +26,8 @@ enum NightAnalyzer {
         }
     }
 
-    static func analyze(folder: URL) async throws -> NightAnalysisResult {
+    /// Nur die eigene Schätzung (ohne Health) – schnell genug für die Nächte-Liste.
+    static func estimate(folder: URL) throws -> (start: Date, stages: [SleepStaging.Stage], epochSeconds: Double) {
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
@@ -61,8 +62,13 @@ enum NightAnalyzer {
 
         let params = SleepStaging.Parameters()
         let epochs = SleepStaging.estimate(seconds: seconds, motion: motion, parameters: params)
-        let ours = epochs.map(\.stage)
-        let epochSeconds = Double(params.epochSeconds)
+        return (first, epochs.map(\.stage), Double(params.epochSeconds))
+    }
+
+    static func analyze(folder: URL) async throws -> NightAnalysisResult {
+        let (first, ours, epochSeconds) = try await Task.detached(priority: .userInitiated) {
+            try estimate(folder: folder)
+        }.value
         let end = first.addingTimeInterval(Double(ours.count) * epochSeconds)
 
         // Watch-Phasen aus Health (ohne Einträge dieser App)
@@ -117,69 +123,172 @@ struct NightAnalysisView: View {
     @State private var error: String?
 
     var body: some View {
-        List {
-            if let error {
-                Text(error).foregroundStyle(.red)
-            } else if let r = result {
-                Section {
-                    Text("Erste, regelbasierte Schätzung aus Geräuschen und Handy-Bewegung. "
-                         + "Wach/Schlaf ist halbwegs belastbar, Tief und REM sind noch grob.")
-                        .font(.callout).foregroundStyle(.secondary)
-                }
-                Section("SleepSonar (Mikrofon)") {
-                    Hypnogram(stages: r.ours.map { Optional($0) }, start: r.start, epochSeconds: r.epochSeconds)
-                        .frame(height: 140)
-                }
-                Section(r.watchSource.isEmpty ? "Apple Watch (keine Daten gefunden)" : "Apple Watch (\(r.watchSource))") {
-                    if r.watch.contains(where: { $0 != nil }) {
-                        Hypnogram(stages: r.watch, start: r.start, epochSeconds: r.epochSeconds)
-                            .frame(height: 140)
-                    } else {
-                        Text("Keine Watch-Schlafphasen für diesen Zeitraum in Health. "
-                             + "Watch synchronisiert? Health-Zugriff erlaubt?").font(.callout)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 32) {
+                if let error {
+                    Text(error).foregroundStyle(Theme.alert)
+                } else if let r = result {
+                    content(r)
+                } else {
+                    HStack(spacing: 12) {
+                        ProgressView().tint(Theme.moon)
+                        Text("Nacht wird ausgewertet").foregroundStyle(Theme.mist)
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 60)
                 }
-                if r.agreement.epochs > 0 {
-                    Section("Übereinstimmung mit der Watch") {
-                        LabeledContent("Wach / Schlaf", value: String(format: "%.0f %%", r.agreement.sleepWake * 100))
-                        LabeledContent("Alle 4 Phasen", value: String(format: "%.0f %%", r.agreement.fourClass * 100))
-                        LabeledContent("Verglichene Zeit",
-                                       value: NightView.duration(Double(r.agreement.epochs) * r.epochSeconds))
-                    }
-                }
-                Section("Minuten je Phase") {
-                    Grid(alignment: .trailing, horizontalSpacing: 16, verticalSpacing: 6) {
-                        GridRow {
-                            Text("").gridColumnAlignment(.leading)
-                            Text("SleepSonar").bold()
-                            Text("Watch").bold()
-                        }
-                        ForEach(SleepStaging.Stage.allCases, id: \.self) { s in
-                            GridRow {
-                                Text(s.name).gridColumnAlignment(.leading)
-                                Text("\(Int(r.minutes(r.ours.map { Optional($0) }, s)))")
-                                Text(r.watch.contains(where: { $0 != nil }) ? "\(Int(r.minutes(r.watch, s)))" : "–")
-                            }
-                        }
-                    }
-                    .font(.callout.monospacedDigit())
-                }
-            } else {
-                HStack { ProgressView(); Text("Werte aus …") }
             }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40)
         }
-        .navigationTitle("Auswertung")
+        .nightBackground()
+        .navigationTitle(result.map { Self.title($0.start) } ?? "Auswertung")
+        .navigationBarTitleDisplayMode(.inline)
         .task {
             do { result = try await NightAnalyzer.analyze(folder: folder) }
             catch { self.error = error.localizedDescription }
         }
     }
+
+    @ViewBuilder private func content(_ r: NightAnalysisResult) -> some View {
+        let ours = r.ours.map { Optional($0) }
+        let hasWatch = r.watch.contains { $0 != nil }
+        let asleep = ours.filter { $0 != nil && $0 != .wake }.count
+
+        VStack(alignment: .leading, spacing: 4) {
+            Text(Self.hm(Double(asleep) * r.epochSeconds))
+                .font(Theme.display(48, weight: .light))
+            Text("geschlafen, \(r.start.formatted(date: .omitted, time: .shortened)) bis "
+                 + "\(r.start.addingTimeInterval(Double(r.ours.count) * r.epochSeconds).formatted(date: .omitted, time: .shortened)) Uhr")
+                .font(.callout).foregroundStyle(Theme.mist)
+        }
+        .padding(.top, 16)
+
+        VStack(alignment: .leading, spacing: 12) {
+            SectionTitle("Silent Night")
+            Hypnogram(stages: ours, start: r.start, epochSeconds: r.epochSeconds)
+                .frame(height: 150)
+            StageLegend()
+        }
+
+        VStack(alignment: .leading, spacing: 12) {
+            SectionTitle(r.watchSource.isEmpty ? "Apple Watch" : r.watchSource)
+            if hasWatch {
+                Hypnogram(stages: r.watch, start: r.start, epochSeconds: r.epochSeconds)
+                    .frame(height: 150)
+            } else {
+                Text("Für diese Nacht gibt es keine Watch-Schlafphasen in Health. "
+                     + "Ist die Watch synchronisiert und der Health-Zugriff erlaubt?")
+                    .font(.callout).foregroundStyle(Theme.mist)
+            }
+        }
+
+        VStack(alignment: .leading, spacing: 14) {
+            SectionTitle("Zeit je Phase")
+            ForEach([SleepStaging.Stage.wake, .rem, .core, .deep], id: \.self) { s in
+                StageRow(stage: s, ours: r.minutes(ours, s),
+                         watch: hasWatch ? r.minutes(r.watch, s) : nil,
+                         scale: Double(r.ours.count) * r.epochSeconds / 60)
+            }
+            if hasWatch {
+                HStack(spacing: 16) {
+                    Label("Silent Night", systemImage: "circle.fill").foregroundStyle(Theme.moon)
+                    Label("Watch", systemImage: "circle").foregroundStyle(Theme.mist)
+                }
+                .font(.caption)
+                .labelStyle(SmallDotLabel())
+            }
+        }
+
+        if r.agreement.epochs > 0 {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionTitle("Vergleich mit der Watch")
+                HStack(alignment: .firstTextBaseline, spacing: 28) {
+                    Figure(value: String(format: "%.0f %%", r.agreement.sleepWake * 100), label: "Schlaf oder wach gleich")
+                    Figure(value: String(format: "%.0f %%", r.agreement.fourClass * 100), label: "Phase gleich")
+                }
+                Text("Verglichen über \(Self.hm(Double(r.agreement.epochs) * r.epochSeconds)).")
+                    .font(.caption).foregroundStyle(Theme.mist)
+            }
+        }
+
+        Text("Die Schätzung ist noch in Entwicklung. Wach und Schlaf sind halbwegs verlässlich, "
+             + "Tief und REM noch grob. Kein Medizinprodukt.")
+            .font(.caption).foregroundStyle(Theme.mist)
+    }
+
+    static func title(_ d: Date) -> String {
+        "Nacht zum " + d.addingTimeInterval(6 * 3600).formatted(.dateTime.weekday(.wide).day().month(.wide))
+    }
+
+    static func hm(_ t: TimeInterval) -> String {
+        let m = Int(t / 60)
+        return "\(m / 60) h \(String(format: "%02d", m % 60)) min"
+    }
 }
 
+private struct Figure: View {
+    let value: String
+    let label: String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value).font(Theme.display(30)).monospacedDigit()
+            Text(label).font(.caption).foregroundStyle(Theme.mist)
+        }
+    }
+}
+
+private struct SmallDotLabel: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 5) {
+            configuration.icon.font(.system(size: 7))
+            configuration.title
+        }
+    }
+}
+
+/// Minuten einer Phase: eigener Balken (gefüllt) und Watch (Umriss) übereinander.
+private struct StageRow: View {
+    let stage: SleepStaging.Stage
+    let ours: Double
+    let watch: Double?
+    let scale: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(stage.name).font(.callout)
+                Spacer()
+                Text("\(Int(ours)) min").font(.callout.monospacedDigit())
+                if let watch {
+                    Text("Watch \(Int(watch))").font(.caption.monospacedDigit()).foregroundStyle(Theme.mist)
+                        .frame(minWidth: 70, alignment: .trailing)
+                }
+            }
+            GeometryReader { geo in
+                let w = geo.size.width
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Theme.raised)
+                    Capsule().fill(Theme.color(stage))
+                        .frame(width: max(4, w * CGFloat(ours / max(scale, 1))))
+                    if let watch {
+                        Capsule().strokeBorder(Theme.moon.opacity(0.7), lineWidth: 1)
+                            .frame(width: max(4, w * CGFloat(watch / max(scale, 1))))
+                    }
+                }
+            }
+            .frame(height: 8)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Hypnogramm: Phasen als Stufen (Wach oben, Tief unten), wie man es von Schlafberichten kennt.
 struct Hypnogram: View {
     let stages: [SleepStaging.Stage?]
     let start: Date
     let epochSeconds: Double
+    var compact = false
 
     private struct Segment: Identifiable {
         let id: Int
@@ -205,24 +314,24 @@ struct Hypnogram: View {
     var body: some View {
         Chart(segments) { seg in
             RectangleMark(xStart: .value("von", seg.from), xEnd: .value("bis", seg.to),
-                          y: .value("Phase", seg.stage.name))
-                .foregroundStyle(color(seg.stage))
+                          y: .value("Phase", seg.stage.name), height: .ratio(compact ? 1 : 0.8))
+                .foregroundStyle(Theme.color(seg.stage))
+                .cornerRadius(compact ? 0 : 2)
         }
         .chartYScale(domain: ["Wach", "REM", "Kern", "Tief"])
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .hour)) { _ in
-                AxisGridLine()
-                AxisValueLabel(format: .dateTime.hour())
+        .chartYAxis {
+            AxisMarks { _ in
+                AxisValueLabel().foregroundStyle(Theme.mist)
             }
         }
-    }
-
-    private func color(_ s: SleepStaging.Stage) -> Color {
-        switch s {
-        case .wake: .orange
-        case .rem: .cyan
-        case .core: .blue
-        case .deep: .indigo
+        .chartYAxis(compact ? .hidden : .automatic)
+        .chartXAxis {
+            AxisMarks(values: .stride(by: .hour)) { _ in
+                AxisGridLine().foregroundStyle(Theme.hairline)
+                AxisValueLabel(format: .dateTime.hour()).foregroundStyle(Theme.mist)
+            }
         }
+        .chartXAxis(compact ? .hidden : .automatic)
+        .chartLegend(.hidden)
     }
 }

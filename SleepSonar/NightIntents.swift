@@ -3,7 +3,7 @@ import AppIntents
 /// Kurzbefehle: Nachtaufnahme starten / beenden (Kurzbefehle-App, Siri, Automationen).
 struct StartNightRecordingIntent: AppIntent {
     static var title: LocalizedStringResource = "Schlafaufnahme starten"
-    static var description = IntentDescription("Startet die Nachtaufnahme von SleepSonar (nur Mikrofon).")
+    static var description = IntentDescription("Startet die Nachtaufnahme von Silent Night (nur Mikrofon).")
     /// iOS erlaubt den Start einer Mikrofonaufnahme nur aus dem Vordergrund.
     static var openAppWhenRun: Bool = true
 
@@ -23,7 +23,7 @@ struct StartNightRecordingIntent: AppIntent {
 
 struct StopNightRecordingIntent: AppIntent {
     static var title: LocalizedStringResource = "Schlafaufnahme beenden"
-    static var description = IntentDescription("Beendet die laufende Nachtaufnahme von SleepSonar.")
+    static var description = IntentDescription("Beendet die laufende Nachtaufnahme von Silent Night.")
     static var openAppWhenRun: Bool = false
 
     @MainActor

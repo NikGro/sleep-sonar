@@ -58,23 +58,23 @@ def main():
 
     privacy = {k: v for k, v in info.items() if k.startswith("NS") and k.endswith("UsageDescription")}
     source = {
-        "name": "SleepSonar",
+        "name": "Silent Night",
         "identifier": "de.nikgro.sleepsonar.source",
         "sourceURL": source_url,
-        "subtitle": "Schlaf-Tracking per Sonar",
-        "description": "Eigene Builds von SleepSonar, automatisch aus GitHub.",
+        "subtitle": "Schlafphasen per Mikrofon",
+        "description": "Eigene Builds von Silent Night, automatisch aus GitHub.",
         "iconURL": f"{raw}/assets/icon.png",
         "website": base,
-        "tintColor": "#6EC8FF",
+        "tintColor": "#EEE6CF",
         "apps": [{
-            "name": "SleepSonar",
+            "name": "Silent Night",
             "bundleIdentifier": info["CFBundleIdentifier"],
             "developerName": "Niklas Groß",
-            "subtitle": "Schlafphasen per Ultraschall",
-            "localizedDescription": "Misst Atmung und Bewegung per Ultraschall-Sonar über Lautsprecher "
-                                    "und Mikrofon und schreibt Schlafphasen in Apple Health.",
+            "subtitle": "Schlafphasen ohne Uhr",
+            "localizedDescription": "Hört nachts Atmung und Bewegung über das Mikrofon, schätzt daraus "
+                                    "deine Schlafphasen und vergleicht sie mit der Apple Watch.",
             "iconURL": f"{raw}/assets/icon.png",
-            "tintColor": "#6EC8FF",
+            "tintColor": "#EEE6CF",
             "category": "utilities",
             "versions": [version] + older[:9],
             "appPermissions": {

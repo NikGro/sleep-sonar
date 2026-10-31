@@ -14,6 +14,8 @@ final class PassiveNightEngine: ObservableObject {
     @Published private(set) var startDate: Date?
     @Published private(set) var levelDB: Double = -120
     @Published private(set) var bandDB: [Double] = [-120, -120, -120]
+    /// Hochton-Pegel (Atemrauschen) der letzten 2 Minuten, je Sekunde – für die Atemlinie
+    @Published private(set) var recentBreath: [Double] = []
     @Published private(set) var motionActivity: Double = 0
     @Published private(set) var restarts = 0
     @Published private(set) var events: [String] = []
@@ -32,8 +34,9 @@ final class PassiveNightEngine: ObservableObject {
         errorMessage = nil
         events = []
         restarts = 0
+        recentBreath = []
         guard await AVAudioApplication.requestRecordPermission() else {
-            errorMessage = "Kein Mikrofonzugriff. Einstellungen → SleepSonar → Mikrofon erlauben."
+            errorMessage = "Kein Mikrofonzugriff. Einstellungen → Silent Night → Mikrofon erlauben."
             return
         }
         do {
@@ -53,8 +56,11 @@ final class PassiveNightEngine: ObservableObject {
                 "ios": UIDevice.current.systemVersion,
             ]) { [weak self] db, bands in
                 Task { @MainActor in
-                    self?.levelDB = db
-                    self?.bandDB = bands
+                    guard let self else { return }
+                    self.levelDB = db
+                    self.bandDB = bands
+                    self.recentBreath.append(bands[2])
+                    if self.recentBreath.count > 120 { self.recentBreath.removeFirst(self.recentBreath.count - 120) }
                 }
             }
             recorder = rec

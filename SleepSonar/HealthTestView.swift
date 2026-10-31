@@ -5,7 +5,7 @@ struct HealthTestView: View {
     @State private var busy = false
 
     var body: some View {
-        NavigationStack {
+        Group {
             List {
                 Section("Schritt für Schritt") {
                     action("1. Health-Zugriff anfragen", systemImage: "heart.text.square") {
@@ -32,7 +32,7 @@ struct HealthTestView: View {
                     }
                 }
             }
-            .navigationTitle("SleepSonar Test")
+            .navigationTitle("Health-Schreibtest")
             .disabled(busy)
         }
     }
