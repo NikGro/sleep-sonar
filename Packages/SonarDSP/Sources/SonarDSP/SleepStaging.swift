@@ -5,7 +5,7 @@ import Foundation
 /// Eingabe: je Sekunde Gesamtpegel und Bandpegel (dBFS) sowie optional die
 /// Beschleunigung des iPhones. Ausgabe: 30-s-Epochen mit Wach/Kern/Tief/REM.
 ///
-/// Idee (regelbasiert, Parameter an Nacht 1 mit Apple Watch abgestimmt, Kappa 0,46):
+/// Idee (regelbasiert, Parameter an Nacht 1 mit Apple Watch abgestimmt, Kappa 0,49):
 /// - Geräuschereignisse = Sekunden deutlich über dem ruhigen Grundpegel (Rascheln, Bewegung, Husten …)
 /// - Wach = viele Ereignisse in der Umgebung (wie Aktigraphie) oder iPhone angefasst
 /// - Einschlafen/Aufwachen = erstes/letztes Fenster mit 10 min überwiegend Schlaf
@@ -66,8 +66,10 @@ public enum SleepStaging {
         public var remMaxEvents = 2.0
         /// REM frühestens so viele Epochen nach dem Einschlafen
         public var remDelayEpochs = 120
-        /// Tief/REM-Blöcke kürzer als so viele Epochen → Kern
-        public var minBlockEpochs = 6
+        /// Mehrheitsglättung: ± so viele Epochen (Watch-ähnliche Blöcke)
+        public var majorityEpochs = 10
+        /// Tief/REM-Blöcke kürzer als so viele Epochen (5 min) → Kern
+        public var minBlockEpochs = 10
         public init() {}
     }
 
@@ -163,7 +165,7 @@ public enum SleepStaging {
                 }
             }
         }
-        stages = smooth(stages, asleep: asleep, minBlock: p.minBlockEpochs)
+        stages = smooth(stages, asleep: asleep, majority: p.majorityEpochs, minBlock: p.minBlockEpochs)
         for e in 0..<n { epochs[e].stage = stages[e] }
         return epochs
     }
@@ -195,12 +197,12 @@ public enum SleepStaging {
         }
     }
 
-    /// Glättung: Mehrheit im 7er-Fenster, zu kurze Tief/REM-Blöcke → Kern.
-    static func smooth(_ s: [Stage], asleep: [Bool], minBlock: Int) -> [Stage] {
+    /// Glättung: Mehrheit im Fenster ±`majority`, zu kurze Tief/REM-Blöcke → Kern.
+    static func smooth(_ s: [Stage], asleep: [Bool], majority: Int, minBlock: Int) -> [Stage] {
         var out = s
         for i in 0..<s.count where asleep[i] {
             var counts = [Stage: Int]()
-            for k in -3...3 where i + k >= 0 && i + k < s.count && asleep[i + k] { counts[s[i + k], default: 0] += 1 }
+            for k in -majority...majority where i + k >= 0 && i + k < s.count && asleep[i + k] { counts[s[i + k], default: 0] += 1 }
             if let best = counts.max(by: { $0.value < $1.value })?.key { out[i] = best }
         }
         var i = 0
