@@ -144,7 +144,10 @@ def main():
     dirs = sorted(d for d in glob.glob(os.path.join(ROOT, "V*", "APNEA_EDF", "*")) if os.path.isdir(d))
     only = sys.argv[1:]
     log = open(os.path.join(OUT, "extract_log.jsonl"), "a")
-    for d in dirs:
+    shard, nshard = (int(x) for x in os.environ.get("SHARD", "0/1").split("/"))
+    for i, d in enumerate(dirs):
+        if i % nshard != shard:
+            continue
         sid = os.path.basename(d)
         if only and sid not in only:
             continue
