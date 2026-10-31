@@ -33,20 +33,20 @@ enum NightAnalyzer {
         // levels.csv: time,rms_db,peak_db,low,mid,high
         guard let levelText = try? String(contentsOf: folder.appendingPathComponent("levels.csv"), encoding: .utf8)
         else { throw Failure.noLevels }
-        var rows: [(Date, SleepStaging.Second)] = []
+        // Jede Zeile = eine Audiosekunde (lückenlos). Nach Reihenfolge einsortieren, nicht nach
+        // Uhrzeit – sonst entstehen durch minimale Taktabweichungen Scheinlücken.
+        var seconds: [SleepStaging.Second?] = []
+        var first: Date?
         for line in levelText.split(separator: "\n").dropFirst() {
             let c = line.split(separator: ",", omittingEmptySubsequences: false)
-            guard c.count >= 6, let t = iso.date(from: String(c[0])),
-                  let rms = Double(c[1]), let mid = Double(c[4]), let high = Double(c[5]) else { continue }
-            rows.append((t, .init(rms: rms, mid: mid, high: high)))
+            guard c.count >= 6, let rms = Double(c[1]), let mid = Double(c[4]), let high = Double(c[5]) else {
+                seconds.append(nil); continue
+            }
+            if first == nil { first = iso.date(from: String(c[0])) }
+            seconds.append(.init(rms: rms, mid: mid, high: high))
         }
-        guard let first = rows.first?.0, let last = rows.last?.0 else { throw Failure.noLevels }
-        let total = Int(last.timeIntervalSince(first)) + 1
-        var seconds = [SleepStaging.Second?](repeating: nil, count: total)
-        for (t, s) in rows {
-            let i = Int(t.timeIntervalSince(first).rounded())
-            if i >= 0 && i < total { seconds[i] = s }
-        }
+        guard let first, !seconds.isEmpty else { throw Failure.noLevels }
+        let total = seconds.count
 
         // motion.csv: time,activity_g,…
         var motion = [Double?](repeating: nil, count: total)

@@ -5,12 +5,14 @@ import Foundation
 /// Eingabe: je Sekunde Gesamtpegel und Bandpegel (dBFS) sowie optional die
 /// Beschleunigung des iPhones. Ausgabe: 30-s-Epochen mit Wach/Kern/Tief/REM.
 ///
-/// Idee (bewusst einfach, wird mit echten Watch-Nächten nachjustiert):
+/// Idee (regelbasiert, Parameter an Nacht 1 mit Apple Watch abgestimmt, Kappa 0,46):
 /// - Geräuschereignisse = Sekunden deutlich über dem ruhigen Grundpegel (Rascheln, Bewegung, Husten …)
 /// - Wach = viele Ereignisse in der Umgebung (wie Aktigraphie) oder iPhone angefasst
 /// - Einschlafen/Aufwachen = erstes/letztes Fenster mit 10 min überwiegend Schlaf
-/// - Tief = lange ganz ruhig + regelmäßiger Atemrhythmus (im Hochton-Band), eher früh in der Nacht
-/// - REM = ruhig, aber unregelmäßig, frühestens 60 min nach dem Einschlafen
+/// - Ruhe und Atemregelmäßigkeit werden über ±4 min gemittelt; Schwellen relativ zur Nacht
+///   (Quantile), damit es nicht vom Mikrofonpegel abhängt
+/// - Tief = sehr ruhig + Atmung regelmäßiger als 60 % der Schlafzeit, in den ersten 60 % der Nacht
+/// - REM = Atmung unregelmäßiger als 60 % der Schlafzeit, frühestens 60 min nach dem Einschlafen
 /// - sonst Kern
 public enum SleepStaging {
     public enum Stage: Int, CaseIterable, Sendable {
@@ -47,13 +49,25 @@ public enum SleepStaging {
     public struct Parameters: Sendable {
         public var epochSeconds = 30
         /// Ereignis: so viele dB über dem ruhigen Grundpegel
-        public var eventDB = 6.0
+        public var eventDB = 12.0
         /// Handy gilt als angefasst ab dieser mittleren Beschleunigung (g)
         public var handledG = 0.02
         /// Aktivitätsschwelle für „wach“ (gewichtete Ereignissekunden)
         public var wakeScore = 6.0
-        public var deepRegularity = 0.45
-        public var remMaxRegularity = 0.3
+        /// Mittelung von Ruhe und Atemregelmäßigkeit: ± so viele Epochen
+        public var smoothEpochs = 8
+        /// Tief: höchstens so viele Ereignisse je Epoche (gemittelt)
+        public var deepMaxEvents = 0.3
+        /// Tief: Regelmäßigkeit mindestens dieses Quantil der Schlafzeit
+        public var deepRegularityQuantile = 0.6
+        public var deepMaxProgress = 0.6
+        /// REM: Regelmäßigkeit höchstens dieses Quantil der Schlafzeit
+        public var remRegularityQuantile = 0.4
+        public var remMaxEvents = 2.0
+        /// REM frühestens so viele Epochen nach dem Einschlafen
+        public var remDelayEpochs = 120
+        /// Tief/REM-Blöcke kürzer als so viele Epochen → Kern
+        public var minBlockEpochs = 6
         public init() {}
     }
 
@@ -127,22 +141,29 @@ public enum SleepStaging {
         for e in 0..<n where e < onset || e > offset { asleep[e] = false }
 
         // 5) Phasen innerhalb des Schlafs
-        let span = max(1, offset - onset)
+        let k = p.smoothEpochs
+        let q = movingMean(epochs.map { Double($0.events) }, k)
+        let r = movingMean(epochs.map(\.regularity), k)
+        let sleepIdx = (0..<n).filter { asleep[$0] }
         var stages = [Stage](repeating: .wake, count: n)
-        for e in 0..<n where asleep[e] {
-            var quiet = true
-            for k in -6...6 where e + k >= 0 && e + k < n && epochs[e + k].events > 0 { quiet = false; break }
-            let progress = Double(e - onset) / Double(span)
-            let r = epochs[e].regularity
-            if quiet && r >= p.deepRegularity && progress < 0.6 {
-                stages[e] = .deep
-            } else if quiet && r < p.remMaxRegularity && e - onset >= 120 {
-                stages[e] = .rem
-            } else {
-                stages[e] = .core
+        if !sleepIdx.isEmpty {
+            let rs = sleepIdx.map { r[$0] }.sorted()
+            func quantile(_ x: Double) -> Double { rs[min(rs.count - 1, Int(x * Double(rs.count - 1)))] }
+            let rDeep = quantile(p.deepRegularityQuantile)
+            let rRem = quantile(p.remRegularityQuantile)
+            let span = max(1, offset - onset)
+            for e in sleepIdx {
+                let progress = Double(e - onset) / Double(span)
+                if q[e] <= p.deepMaxEvents && r[e] >= rDeep && progress < p.deepMaxProgress {
+                    stages[e] = .deep
+                } else if r[e] <= rRem && q[e] <= p.remMaxEvents && e - onset >= p.remDelayEpochs {
+                    stages[e] = .rem
+                } else {
+                    stages[e] = .core
+                }
             }
         }
-        stages = smooth(stages, asleep: asleep)
+        stages = smooth(stages, asleep: asleep, minBlock: p.minBlockEpochs)
         for e in 0..<n { epochs[e].stage = stages[e] }
         return epochs
     }
@@ -167,8 +188,15 @@ public enum SleepStaging {
         return best
     }
 
-    /// Glättung: Mehrheit im 7er-Fenster, Tief/REM-Blöcke unter 3 min → Kern.
-    static func smooth(_ s: [Stage], asleep: [Bool]) -> [Stage] {
+    static func movingMean(_ x: [Double], _ k: Int) -> [Double] {
+        (0..<x.count).map { i in
+            let lo = max(0, i - k), hi = min(x.count - 1, i + k)
+            return x[lo...hi].reduce(0, +) / Double(hi - lo + 1)
+        }
+    }
+
+    /// Glättung: Mehrheit im 7er-Fenster, zu kurze Tief/REM-Blöcke → Kern.
+    static func smooth(_ s: [Stage], asleep: [Bool], minBlock: Int) -> [Stage] {
         var out = s
         for i in 0..<s.count where asleep[i] {
             var counts = [Stage: Int]()
@@ -180,7 +208,7 @@ public enum SleepStaging {
             let st = out[i]
             var j = i
             while j < out.count && out[j] == st { j += 1 }
-            if (st == .deep || st == .rem) && j - i < 6 { for k in i..<j { out[k] = .core } }
+            if (st == .deep || st == .rem) && j - i < minBlock { for k in i..<j { out[k] = .core } }
             i = j
         }
         return out
