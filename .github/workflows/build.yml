@@ -8,6 +8,7 @@ on:
       - "sidestore/**"
       - ".github/workflows/sidestore.yml"
       - "Packages/SonarDSP/prototype/**"
+      - "training/**"
   workflow_dispatch:
 
 permissions:
