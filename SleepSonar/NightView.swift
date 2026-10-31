@@ -47,6 +47,11 @@ struct NightView: View {
                             } label: {
                                 Label("Daten und Watch teilen (ZIP)", systemImage: "square.and.arrow.up")
                             }
+                            Button {
+                                Task { await export(url, includeAudio: true) }
+                            } label: {
+                                Label("Alles fürs Training teilen (mit Audio)", systemImage: "shippingbox")
+                            }
                             if !NightExport.audioFiles(in: url).isEmpty {
                                 Button {
                                     share = ShareItem(urls: NightExport.audioFiles(in: url))
@@ -84,7 +89,7 @@ struct NightView: View {
         nights = dirs.filter { $0.hasDirectoryPath }.sorted { $0.lastPathComponent > $1.lastPathComponent }
     }
 
-    private func export(_ url: URL) async {
+    private func export(_ url: URL, includeAudio: Bool = false) async {
         exporting = url
         message = nil
         defer { exporting = nil }
@@ -98,7 +103,7 @@ struct NightView: View {
         }
         let notes = await NightExport.writeHealthData(into: url, from: start, to: end)
         do {
-            share = ShareItem(urls: [try NightExport.zip(folder: url)])
+            share = ShareItem(urls: [try NightExport.zip(folder: url, includeAudio: includeAudio)])
             if !notes.isEmpty { message = notes.joined(separator: "\n") }
         } catch {
             message = "ZIP konnte nicht erstellt werden: \(error.localizedDescription)"

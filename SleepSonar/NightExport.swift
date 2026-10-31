@@ -79,17 +79,18 @@ enum NightExport {
     }
 
     /// Packt den Ordner als ZIP (über NSFileCoordinator, ohne Zusatzbibliothek).
-    /// Audiodateien werden weggelassen (zu groß für den Chat, separat teilen).
-    static func zip(folder: URL) throws -> URL {
+    /// Ohne `includeAudio` werden die Audiodateien weggelassen (klein genug für den Chat).
+    static func zip(folder: URL, includeAudio: Bool = false) throws -> URL {
         let fm = FileManager.default
         let staging = fm.temporaryDirectory.appendingPathComponent("export_" + folder.lastPathComponent, isDirectory: true)
         try? fm.removeItem(at: staging)
         try fm.createDirectory(at: staging, withIntermediateDirectories: true)
-        for f in try fm.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil) where f.pathExtension != "m4a" {
+        for f in try fm.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
+        where includeAudio || f.pathExtension != "m4a" {
             try fm.copyItem(at: f, to: staging.appendingPathComponent(f.lastPathComponent))
         }
         let target = fm.temporaryDirectory
-            .appendingPathComponent("Somnivo_\(folder.lastPathComponent).zip")
+            .appendingPathComponent("Somnivo_\(folder.lastPathComponent)\(includeAudio ? "_mit_Audio" : "").zip")
         try? fm.removeItem(at: target)
         var coordError: NSError?
         var copyError: Error?
