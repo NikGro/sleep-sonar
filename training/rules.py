@@ -141,3 +141,15 @@ def kappa(M):
     po = np.trace(M) / n
     pe = (M.sum(0) * M.sum(1)).sum() / n / n
     return (po - pe) / (1 - pe) if pe < 1 else 0.0
+
+
+def error_runs(pred, lab):
+    """Nutzer-Kriterien: (Minuten fälschlich „wach“ obwohl Schlaf, längster zusammenhängender Fehlabschnitt in Minuten)."""
+    ok = lab >= 0
+    false_wake = int(((pred == 0) & (lab > 0) & ok).sum()) / 2
+    wrong = (pred != lab) & ok
+    longest = run = 0
+    for w in wrong:
+        run = run + 1 if w else 0
+        longest = max(longest, run)
+    return false_wake, longest / 2

@@ -61,15 +61,32 @@ def load():
     return subj
 
 
+ERR = []  # je Parametersatz: (Personen, 2) = falsch-wach-Minuten, längster Fehlabschnitt
+# Ziel: Kappa, aber lange Fehlabschnitte und falsches „wach“ werden bestraft (Nutzerwunsch).
+# Je 60 min längster Fehlabschnitt -0,1 Kappa; je 30 min falsches Wach -0,1 Kappa.
+PEN_RUN, PEN_WAKE = 0.1 / 60, 0.1 / 30
+
+
 def evaluate(p, subj):
-    return np.stack([rules.confusion(rules.estimate(s["pre"], p, s["ev"][p["eventDB"]]), s["lab"]) for s in subj])
+    Ms, E = [], []
+    for s in subj:
+        pr = rules.estimate(s["pre"], p, s["ev"][p["eventDB"]])
+        Ms.append(rules.confusion(pr, s["lab"]))
+        E.append(rules.error_runs(pr, s["lab"]))
+    ERR.append(np.array(E))
+    return np.stack(Ms)
 
 
 def kappas(Ms):
     return np.array([rules.kappa(M) for M in Ms])
 
 
-def summary(Ms):
+def scores(K):
+    E = np.stack(ERR)
+    return K - PEN_RUN * E[:, :, 1] - PEN_WAKE * E[:, :, 0]
+
+
+def summary(Ms, E=None):
     tot = Ms.sum(0)
     k = kappas(Ms)
     sw = [np.array([[M[0, 0], M[0, 1:].sum()], [M[1:, 0].sum(), M[1:, 1:].sum()]]) for M in Ms]
@@ -78,7 +95,10 @@ def summary(Ms):
                 kappa_pooled=float(rules.kappa(tot)), acc_pooled=float(np.trace(tot) / tot.sum()),
                 sleepwake_kappa_mean=float(np.nanmean(ksw)),
                 recall={n: float(tot[i, i] / max(1, tot[i].sum())) for i, n in enumerate(["Wach", "REM", "Kern", "Tief"])},
-                confusion=tot.tolist())
+                confusion=tot.tolist(),
+                **({} if E is None else dict(false_wake_min_mean=float(E[:, 0].mean()),
+                                              longest_wrong_min_mean=float(E[:, 1].mean()),
+                                              longest_wrong_min_max=float(E[:, 1].max()))))
 
 
 def main():
@@ -99,7 +119,7 @@ def main():
     K = np.stack([kappas(M) for M in res])  # (Parametersätze, Personen)
 
     # Nachschärfen: Umgebung der 20 besten leicht variieren
-    top = np.argsort(-np.nanmean(K, 1))[:20]
+    top = np.argsort(-np.nanmean(scores(K), 1))[:20]
     for j in top:
         for _ in range(15):
             p = dict(params[j])
@@ -109,23 +129,27 @@ def main():
             params.append(p)
             res.append(evaluate(p, subj))
     K = np.stack([kappas(M) for M in res])
+    S = scores(K)
+    E = np.stack(ERR)
 
     folds = np.arange(len(subj)) % 5
     rng.shuffle(folds)
-    cv_M = []
+    cv_M, cv_E = [], []
     chosen = []
     for f in range(5):
         tr, te = folds != f, folds == f
-        b = int(np.nanargmax(np.nanmean(K[:, tr], 1)))
+        b = int(np.nanargmax(np.nanmean(S[:, tr], 1)))
         chosen.append(b)
         cv_M.append(res[b][te])
+        cv_E.append(E[b][te])
     cv_M = np.concatenate(cv_M)
-    best = int(np.nanargmax(np.nanmean(K, 1)))
+    cv_E = np.concatenate(cv_E)
+    best = int(np.nanargmax(np.nanmean(S, 1)))
     out = dict(
         persons=len(subj), lab_distribution=dist, configs=len(params),
-        defaults_v3=summary(res[0]),
-        crossvalidated=summary(cv_M),
-        best_all=summary(res[best]), best_params=params[best],
+        defaults_v3=summary(res[0], E[0]),
+        crossvalidated=summary(cv_M, cv_E),
+        best_all=summary(res[best], E[best]), best_params=params[best],
         fold_choices=[params[b] for b in chosen],
         per_person=[dict(id=s["id"], kappa_default=float(K[0, i]), kappa_best=float(K[best, i])) for i, s in enumerate(subj)],
     )
