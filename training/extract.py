@@ -80,6 +80,8 @@ def extract(sid, edf_dir):
     if not rml:
         return "keine RML"
     total, segs, lab = parse_rml(rml)
+    if "VFTP" in edf_dir and not os.path.exists(os.path.join(edf_dir, ".done")):
+        return "unvollstaendig (FTP laeuft noch)"
     files, idxs = part_files(edf_dir)
     if not files:
         return "keine EDF"
