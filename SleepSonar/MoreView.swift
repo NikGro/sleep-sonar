@@ -12,7 +12,7 @@ struct MoreView: View {
                         Task {
                             do {
                                 try await NightExport.requestAuthorization()
-                                healthNote = "Erledigt. Ändern kannst du das in der Health-App unter Profil, Apps, Silent Night."
+                                healthNote = "Erledigt. Ändern kannst du das in der Health-App unter Profil, Apps, Somnivo."
                             } catch {
                                 healthNote = "Health hat nicht geantwortet: \(error.localizedDescription)"
                             }
@@ -26,7 +26,7 @@ struct MoreView: View {
                 } header: {
                     header("Apple Health")
                 } footer: {
-                    Text("Silent Night liest die Schlafphasen deiner Apple Watch, um sie mit der eigenen Schätzung zu vergleichen.")
+                    Text("Somnivo liest die Schlafphasen deiner Apple Watch, um sie mit der eigenen Schätzung zu vergleichen.")
                         .foregroundStyle(Theme.mist)
                 }
                 .listRowBackground(Theme.raised)
@@ -36,7 +36,7 @@ struct MoreView: View {
                         + "zum Beispiel als Automation beim Schlaf-Fokus.")
                     tip("bolt", "Über Nacht ans Ladekabel. Die Aufnahme braucht etwa so viel Strom wie Musik hören.")
                     tip("iphone.gen3", "Unterseite mit dem Mikrofon zu dir, etwa eine Armlänge entfernt.")
-                    tip("hand.raised", "Silent Night sendet keinen Ton aus und stört andere Apps nicht.")
+                    tip("hand.raised", "Somnivo sendet keinen Ton aus und stört andere Apps nicht.")
                 } header: {
                     header("Tipps")
                 }

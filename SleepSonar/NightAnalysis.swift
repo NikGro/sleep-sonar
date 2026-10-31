@@ -165,7 +165,7 @@ struct NightAnalysisView: View {
         .padding(.top, 16)
 
         VStack(alignment: .leading, spacing: 12) {
-            SectionTitle("Silent Night")
+            SectionTitle("Somnivo")
             Hypnogram(stages: ours, start: r.start, epochSeconds: r.epochSeconds)
                 .frame(height: 150)
             StageLegend()
@@ -192,7 +192,7 @@ struct NightAnalysisView: View {
             }
             if hasWatch {
                 HStack(spacing: 16) {
-                    Label("Silent Night", systemImage: "circle.fill").foregroundStyle(Theme.moon)
+                    Label("Somnivo", systemImage: "circle.fill").foregroundStyle(Theme.moon)
                     Label("Watch", systemImage: "circle").foregroundStyle(Theme.mist)
                 }
                 .font(.caption)

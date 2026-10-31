@@ -17,15 +17,15 @@ targets:
     info:
       path: SleepSonar/Info.plist
       properties:
-        CFBundleDisplayName: Silent Night
+        CFBundleDisplayName: Somnivo
         CFBundleShortVersionString: "0.3.0"
         CFBundleVersion: "2"
         UILaunchScreen: {}
         UIBackgroundModes: [audio]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
-        NSMicrophoneUsageDescription: "Silent Night nimmt nachts Atem- und Bewegungsgeräusche auf, um deinen Schlaf auszuwerten. Die Aufnahmen bleiben auf deinem iPhone, bis du sie selbst teilst."
-        NSHealthShareUsageDescription: "Silent Night liest die Schlafphasen deiner Apple Watch, um sie mit der eigenen Schätzung zu vergleichen."
-        NSHealthUpdateUsageDescription: "Silent Night schreibt deine Schlafphasen (Wach, Kern, Tief, REM) in Apple Health."
+        NSMicrophoneUsageDescription: "Somnivo nimmt nachts Atem- und Bewegungsgeräusche auf, um deinen Schlaf auszuwerten. Die Aufnahmen bleiben auf deinem iPhone, bis du sie selbst teilst."
+        NSHealthShareUsageDescription: "Somnivo liest die Schlafphasen deiner Apple Watch, um sie mit der eigenen Schätzung zu vergleichen."
+        NSHealthUpdateUsageDescription: "Somnivo schreibt deine Schlafphasen (Wach, Kern, Tief, REM) in Apple Health."
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.nikgro.sleepsonar

@@ -1,7 +1,7 @@
 import SonarDSP
 import SwiftUI
 
-/// Gestaltung von Silent Night.
+/// Gestaltung von Somnivo.
 ///
 /// Idee: Die App wird nachts im Dunkeln geöffnet. Hintergrund ist tiefe blaue Tinte (kein Schwarz),
 /// Text und der einzige Akzent sind warmes Mondlicht. Das eine auffällige Element ist die Atemlinie

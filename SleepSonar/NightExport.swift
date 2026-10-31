@@ -89,7 +89,7 @@ enum NightExport {
             try fm.copyItem(at: f, to: staging.appendingPathComponent(f.lastPathComponent))
         }
         let target = fm.temporaryDirectory
-            .appendingPathComponent("SilentNight_\(folder.lastPathComponent).zip")
+            .appendingPathComponent("Somnivo_\(folder.lastPathComponent).zip")
         try? fm.removeItem(at: target)
         var coordError: NSError?
         var copyError: Error?

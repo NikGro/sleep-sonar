@@ -58,16 +58,16 @@ def main():
 
     privacy = {k: v for k, v in info.items() if k.startswith("NS") and k.endswith("UsageDescription")}
     source = {
-        "name": "Silent Night",
+        "name": "Somnivo",
         "identifier": "de.nikgro.sleepsonar.source",
         "sourceURL": source_url,
         "subtitle": "Schlafphasen per Mikrofon",
-        "description": "Eigene Builds von Silent Night, automatisch aus GitHub.",
+        "description": "Eigene Builds von Somnivo, automatisch aus GitHub.",
         "iconURL": f"{raw}/assets/icon.png",
         "website": base,
         "tintColor": "#EEE6CF",
         "apps": [{
-            "name": "Silent Night",
+            "name": "Somnivo",
             "bundleIdentifier": info["CFBundleIdentifier"],
             "developerName": "Niklas Groß",
             "subtitle": "Schlafphasen ohne Uhr",

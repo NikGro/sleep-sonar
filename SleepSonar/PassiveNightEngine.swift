@@ -36,7 +36,7 @@ final class PassiveNightEngine: ObservableObject {
         restarts = 0
         recentBreath = []
         guard await AVAudioApplication.requestRecordPermission() else {
-            errorMessage = "Kein Mikrofonzugriff. Einstellungen → Silent Night → Mikrofon erlauben."
+            errorMessage = "Kein Mikrofonzugriff. Einstellungen → Somnivo → Mikrofon erlauben."
             return
         }
         do {

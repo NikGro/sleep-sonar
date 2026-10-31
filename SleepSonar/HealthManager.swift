@@ -28,7 +28,7 @@ final class HealthManager: ObservableObject {
             case .sharingAuthorized:
                 say("✅ Schreibzugriff auf Schlaf erlaubt.")
             case .sharingDenied:
-                say("⚠️ Schreibzugriff verweigert. Health → Profil → Apps → Silent Night → Schlaf aktivieren.")
+                say("⚠️ Schreibzugriff verweigert. Health → Profil → Apps → Somnivo → Schlaf aktivieren.")
             default:
                 say("⚠️ Berechtigung noch nicht festgelegt.")
             }
@@ -119,7 +119,7 @@ final class HealthManager: ObservableObject {
                     if let error { cont.resume(throwing: error) } else { cont.resume(returning: count) }
                 }
             }
-            say("🗑️ \(count) Einträge von Silent Night gelöscht.")
+            say("🗑️ \(count) Einträge von Somnivo gelöscht.")
         } catch {
             say("❌ Löschen fehlgeschlagen: \(error.localizedDescription)")
         }
