@@ -121,19 +121,22 @@ private struct SoundRow: View {
     var body: some View {
         let on = (player.volumes[sound] ?? 0) > 0.01
         HStack(spacing: 12) {
-            Button {
-                Haptics.select()
-                player.volumes[sound] = on ? 0 : 0.6
-            } label: {
-                Image(systemName: sound.symbol)
-                    .font(.system(size: 15, weight: .medium))
-                    .frame(width: 34, height: 34)
-                    .background(Circle().fill(on ? Theme.accent : Theme.hairline))
-                    .foregroundStyle(on ? Theme.ink : Theme.moon)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(sound.name)
-            .accessibilityAddTraits(on ? .isSelected : [])
+            // kein Button in der Zeile: sonst fängt die Liste die erste Berührung ab und der Regler
+            // reagiert erst beim zweiten Mal
+            Image(systemName: sound.symbol)
+                .font(.system(size: 15, weight: .medium))
+                .frame(width: 34, height: 34)
+                .background(Circle().fill(on ? Theme.accent : Theme.hairline))
+                .foregroundStyle(on ? Theme.ink : Theme.moon)
+                .contentShape(Circle())
+                .onTapGesture {
+                    Haptics.select()
+                    player.volumes[sound] = on ? 0 : 0.6
+                }
+                .accessibilityElement()
+                .accessibilityLabel(sound.name)
+                .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+                .accessibilityAction { player.volumes[sound] = on ? 0 : 0.6 }
             VStack(alignment: .leading, spacing: 2) {
                 Text(sound.name).font(.callout).foregroundStyle(on ? Theme.moon : Theme.mist)
                 Slider(value: value, in: 0...1).tint(Theme.accent)
