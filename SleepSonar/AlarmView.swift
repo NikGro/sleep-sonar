@@ -283,16 +283,23 @@ private struct SoundList: View {
     var body: some View {
         List {
             Section {
-                ForEach(AlarmSound.builtIn + [.system]) { s in row(s.name, selected: item.sound == s.rawValue) {
+                ForEach(AlarmSound.builtIn + [.system]) { s in row(s.name, selected: item.sound == s.rawValue,
+                                                                   playable: s != .system) {
                     item.sound = s.rawValue
                 } }
                 if let name = item.customSoundName {
-                    row(name, selected: item.sound == AlarmSound.custom.rawValue) { item.sound = AlarmSound.custom.rawValue }
+                    row(name, selected: item.sound == AlarmSound.custom.rawValue, playable: true) {
+                        item.sound = AlarmSound.custom.rawValue
+                    }
                 }
                 Button(tr("Eigenen Ton auswählen …")) { importing = true }
                     .foregroundStyle(Theme.moon)
             } footer: {
-                if let importError { Text(importError).foregroundStyle(Theme.alert) }
+                if let importError {
+                    Text(importError).foregroundStyle(Theme.alert)
+                } else {
+                    Text(tr("Antippen wählt den Ton, nochmal antippen spielt ihn ab oder hält ihn an."))
+                }
             }
             .listRowBackground(Theme.raised)
 
@@ -309,7 +316,6 @@ private struct SoundList: View {
                             Text(r == 0 ? tr("Sofort") : r < 60 ? tr("in %d s", r) : tr("in %d min", r / 60)).tag(r)
                         }
                     }
-                    Button(preview.playing ? tr("Anhören beenden") : tr("Anhören")) { preview.toggle(item) }
                 } header: {
                     ListHeader(tr("Lautstärke"))
                 } footer: {
@@ -343,18 +349,31 @@ private struct SoundList: View {
         .onDisappear { preview.stop() }
     }
 
-    private func row(_ title: String, selected: Bool, _ pick: @escaping () -> Void) -> some View {
-        Button {
+    /// Erstes Tippen wählt den Ton, jedes weitere Tippen auf den gewählten spielt ihn ab bzw. hält ihn an.
+    private func row(_ title: String, selected: Bool, playable: Bool, _ pick: @escaping () -> Void) -> some View {
+        let playing = selected && preview.playing
+        return Button {
             Haptics.select()
-            preview.stop()
-            pick()
+            if selected && playable {
+                preview.toggle(item)
+            } else {
+                preview.stop()
+                pick()
+            }
         } label: {
             HStack {
                 Text(title).foregroundStyle(Theme.moon)
                 Spacer()
-                if selected { Image(systemName: "checkmark").foregroundStyle(Theme.accent) }
+                if playing {
+                    Image(systemName: "speaker.wave.2.fill").foregroundStyle(Theme.accent)
+                        .symbolEffect(.variableColor.iterative, isActive: true)
+                } else if selected {
+                    Image(systemName: "checkmark").foregroundStyle(Theme.accent)
+                }
             }
+            .contentShape(Rectangle())
         }
+        .accessibilityHint(selected && playable ? (playing ? tr("Anhalten") : tr("Probehören")) : "")
     }
 }
 

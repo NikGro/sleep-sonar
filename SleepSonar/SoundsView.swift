@@ -43,19 +43,26 @@ struct SoundsView: View {
         VStack(spacing: 14) {
             Button {
                 Haptics.tap()
-                player.togglePreview()
+                var t = Transaction(); t.disablesAnimations = true
+                withTransaction(t) { player.togglePreview() }
             } label: {
                 ZStack {
-                    Circle().fill(Theme.raised)
+                    // Leuchten als Verlauf (billig beim Scrollen, anders als ein weicher Schatten)
+                    if player.isPlaying {
+                        Circle().fill(RadialGradient(colors: [Theme.accent.opacity(0.35), .clear],
+                                                     center: .center, startRadius: 50, endRadius: 86))
+                            .frame(width: 172, height: 172)
+                    }
+                    Circle().fill(Theme.raised).frame(width: 112, height: 112)
                     Circle().strokeBorder(player.isPlaying ? Theme.accent : Theme.hairline, lineWidth: 2)
+                        .frame(width: 112, height: 112)
                     Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
                         .font(.system(size: 34, weight: .medium))
                         .foregroundStyle(player.isPlaying ? Theme.accent : Theme.moon)
                         .offset(x: player.isPlaying ? 0 : 3)
                 }
                 .frame(width: 112, height: 112)
-                .shadow(color: Theme.accent.opacity(player.isPlaying ? 0.45 : 0), radius: 28)
-                .animation(.easeInOut(duration: 0.4), value: player.isPlaying)
+                .contentShape(Circle())
             }
             .buttonStyle(.plain)
             .disabled(player.active.isEmpty)
@@ -110,62 +117,55 @@ struct SoundsView: View {
 }
 
 /// Kachel: antippen = Klang an/aus; seitlich ziehen = Lautstärke. Die Füllung von links zeigt die Lautstärke.
+/// Das Ziehen beginnt nur bei waagerechter Bewegung, senkrecht scrollt die Seite ganz normal.
 private struct SoundTile: View {
     let sound: SleepSound
     @ObservedObject var player: SleepSoundPlayer
     @State private var dragStart: Double?
-    @State private var horizontal: Bool?
 
     var body: some View {
         let v = player.volumes[sound] ?? 0
         let on = v > 0.01
-        GeometryReader { g in
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 18).fill(Theme.raised)
-                // Lautstärke als Füllung
-                Rectangle().fill(Theme.accent.opacity(0.22))
-                    .frame(width: g.size.width * v)
-                VStack(spacing: 8) {
-                    Image(systemName: sound.symbol)
-                        .font(.system(size: 22))
-                        .frame(height: 26)
-                        .foregroundStyle(on ? Theme.accent : Theme.moon)
-                    Text(sound.name)
-                        .font(.caption)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.center)
-                        .minimumScaleFactor(0.85)
-                        .foregroundStyle(on ? Theme.moon : Theme.mist)
-                        .frame(height: 30, alignment: .top)
-                    Text(on ? "\(Int((v * 100).rounded())) %" : " ")
-                        .font(.caption2.monospacedDigit())
-                        .foregroundStyle(Theme.accent)
-                }
-                .frame(maxWidth: .infinity)
+        VStack(spacing: 6) {
+            Image(systemName: sound.symbol)
+                .font(.system(size: 22))
+                .frame(height: 26)
+                .foregroundStyle(on ? Theme.accent : Theme.moon)
+            Text(sound.name)
+                .font(.caption)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.85)
+                .foregroundStyle(on ? Theme.moon : Theme.mist)
+            if on {
+                Text("\(Int((v * 100).rounded())) %")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(Theme.accent)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 18))
-            .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(on ? Theme.accent.opacity(0.7) : .clear))
-            .contentShape(RoundedRectangle(cornerRadius: 18))
-            .onTapGesture {
-                Haptics.select()
-                player.volumes[sound] = on ? 0 : 0.6
-            }
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 6)
-                    .onChanged { d in
-                        // nur waagerechtes Ziehen ändert die Lautstärke, senkrecht scrollt weiter
-                        if horizontal == nil { horizontal = abs(d.translation.width) > abs(d.translation.height) }
-                        guard horizontal == true else { return }
-                        if dragStart == nil { dragStart = v; Haptics.select() }
-                        let nv = min(1, max(0, (dragStart ?? v) + d.translation.width / g.size.width))
-                        player.volumes[sound] = nv < 0.02 ? 0 : nv
-                    }
-                    .onEnded { _ in
-                        if horizontal == true { Haptics.select() }
-                        dragStart = nil; horizontal = nil
-                    })
         }
-        .frame(height: 108)
+        .padding(.horizontal, 8)
+        .frame(maxWidth: .infinity, minHeight: 108)
+        .background(alignment: .leading) {
+            ZStack(alignment: .leading) {
+                Theme.raised
+                GeometryReader { g in Theme.accent.opacity(0.22).frame(width: g.size.width * v) }
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(on ? Theme.accent.opacity(0.7) : .clear))
+        .contentShape(RoundedRectangle(cornerRadius: 18))
+        .onTapGesture {
+            Haptics.select()
+            player.volumes[sound] = on ? 0 : 0.6
+        }
+        .gesture(HorizontalPan { dx, width in
+            if dragStart == nil { dragStart = max(v, 0.05); Haptics.select() }
+            // beim Ziehen nie ganz aus: ausschalten nur per Tippen
+            player.volumes[sound] = min(1, max(0.05, (dragStart ?? v) + dx / max(width, 1)))
+        } onEnd: {
+            if dragStart != nil { Haptics.select() }
+            dragStart = nil
+        })
         .accessibilityElement()
         .accessibilityLabel(sound.name)
         .accessibilityValue(on ? "\(Int((v * 100).rounded())) %" : tr("aus"))
@@ -174,6 +174,36 @@ private struct SoundTile: View {
         .accessibilityAdjustableAction { dir in
             let step = dir == .increment ? 0.1 : -0.1
             player.volumes[sound] = min(1, max(0, v + step))
+        }
+    }
+}
+
+/// Waagerechtes Ziehen (UIKit), das senkrechtes Scrollen nicht blockiert.
+struct HorizontalPan: UIGestureRecognizerRepresentable {
+    var onChange: (_ dx: CGFloat, _ width: CGFloat) -> Void
+    var onEnd: () -> Void
+
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator() }
+
+    func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
+        let g = UIPanGestureRecognizer()
+        g.delegate = context.coordinator
+        return g
+    }
+
+    func handleUIGestureRecognizerAction(_ g: UIPanGestureRecognizer, context: Context) {
+        switch g.state {
+        case .began, .changed: onChange(g.translation(in: g.view).x, g.view?.bounds.width ?? 1)
+        case .ended, .cancelled, .failed: onEnd()
+        default: break
+        }
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
+            guard let p = g as? UIPanGestureRecognizer else { return true }
+            let v = p.velocity(in: p.view)
+            return abs(v.x) > abs(v.y) * 1.2
         }
     }
 }
@@ -204,10 +234,15 @@ struct SoundsCard: View {
                     Text(tr("Klänge")).font(.callout.weight(.medium))
                     Text(player.isPlaying ? SoundStatus.text(player) : player.activeNames)
                         .font(.caption).foregroundStyle(Theme.mist)
-                        .lineLimit(2, reservesSpace: true)   // feste Höhe: nichts springt beim Umschalten
+                        .lineLimit(2)
                 }
                 Spacer()
-                Button { Haptics.tap(); player.toggle() } label: {
+                Button {
+                    Haptics.tap()
+                    // ohne Animation: sonst gleitet der Knopf der neuen Kartenhöhe hinterher
+                    var t = Transaction(); t.disablesAnimations = true
+                    withTransaction(t) { player.toggle() }
+                } label: {
                     Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
                         .frame(width: 36, height: 36)
                         .background(FadeRing(start: player.fadeStart, end: player.fadeEnd))
@@ -217,7 +252,7 @@ struct SoundsCard: View {
             }
             .padding(14)
             .background(RoundedRectangle(cornerRadius: 16).fill(Theme.raised))
-            .transaction { $0.animation = nil }
+            .transaction { $0.disablesAnimations = true; $0.animation = nil }
         }
     }
 }

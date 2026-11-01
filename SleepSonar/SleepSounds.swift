@@ -170,7 +170,7 @@ final class SleepSoundPlayer: ObservableObject {
     /// Sofort, aber ohne Knacken: in 0,3 s ausblenden
     func stopSoft() {
         guard isPlaying else { return }
-        fade(to: 0, seconds: 0.3) { [weak self] in self?.stopNow() }
+        fade(to: 0, seconds: 0.15) { [weak self] in self?.stopNow() }
     }
 
     // MARK: Puffer (einmal dekodieren, dann sofort startbereit)
@@ -251,7 +251,7 @@ final class SleepSoundPlayer: ObservableObject {
             isPlaying = true
             fading = false
             applyVolumes()
-            fade(to: 1, seconds: 1.5)
+            fade(to: 1, seconds: preview ? 0.25 : 1.5)
             scheduleTimer()
             PassiveNightEngine.shared.note(tr("Klänge an: %@", activeNames))
             PassiveNightEngine.shared.updateActivity()

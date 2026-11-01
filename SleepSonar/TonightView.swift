@@ -99,25 +99,26 @@ struct TonightView: View {
 
             SoundsCard()
 
+            // Hervorgehoben in Mondweiß; erstes Tippen färbt ihn rot mit „Wirklich beenden?“,
+            // zweites Tippen beendet. Ohne zweites Tippen kehrt er nach 4 s zurück.
             Button {
-                Haptics.tap()
-                confirmStop = true
-            } label: {
-                Text(tr("Aufnahme beenden"))
-            }
-            .buttonStyle(MoonButtonStyle(prominent: false))
-            // iOS 26 zeigt die Rückfrage als Sprechblase: verankert an einem unsichtbaren Punkt
-            // knapp über dem Knopf, damit sie ihn nicht berührt
-            .background(alignment: .top) {
-                Color.clear
-                    .frame(height: 1)
-                    .offset(y: -10)
-                    .confirmationDialog(tr("Aufnahme beenden?"), isPresented: $confirmStop, titleVisibility: .visible) {
-                        Button(tr("Aufnahme beenden"), role: .destructive) { rec.stop(); Haptics.warning() }
-                    } message: {
-                        Text(tr("Die Nacht wird gespeichert und lässt sich danach auswerten."))
+                if confirmStop {
+                    rec.stop()
+                    Haptics.warning()
+                    confirmStop = false
+                } else {
+                    Haptics.tap()
+                    confirmStop = true
+                    Task {
+                        try? await Task.sleep(for: .seconds(4))
+                        confirmStop = false
                     }
+                }
+            } label: {
+                Text(confirmStop ? tr("Wirklich beenden?") : tr("Aufnahme beenden"))
             }
+            .buttonStyle(StopButtonStyle(confirming: confirmStop))
+            .animation(.snappy(duration: 0.2), value: confirmStop)
 
             DisclosureGroup(isExpanded: $showDetails) {
                 VStack(spacing: 10) {
@@ -256,5 +257,19 @@ struct BreathLine: View {
         }
         let dot = CGPoint(x: min(size.width, point(pts[pts.count - 1]).x), y: point(Sample(t: now, v: v)).y)
         ctx.fill(Path(ellipseIn: CGRect(x: dot.x - 4, y: dot.y - 4, width: 8, height: 8)), with: .color(Theme.moon))
+    }
+}
+
+/// Beenden-Knopf: ausgefüllt in Mondweiß, beim Nachfragen in Korallrot.
+private struct StopButtonStyle: ButtonStyle {
+    let confirming: Bool
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.semibold))
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity)
+            .foregroundStyle(Theme.ink)
+            .background(Capsule().fill(confirming ? Theme.alert : Theme.moon))
+            .opacity(configuration.isPressed ? 0.7 : 1)
     }
 }

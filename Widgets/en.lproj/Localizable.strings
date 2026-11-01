@@ -27,6 +27,7 @@
 "Anhören" = "Play";
 "Anhören beenden" = "Stop playing";
 "Ans Ladekabel, Mikrofon (Unterseite) zeigt zu dir." = "Plug it in, with the microphone (bottom edge) facing you.";
+"Antippen wählt den Ton, nochmal antippen spielt ihn ab oder hält ihn an." = "Tap to choose a sound, tap again to play or pause it.";
 "Antippen zum Mischen, zur Seite ziehen für die Lautstärke." = "Tap to mix, drag sideways for volume.";
 "Atemlinie der letzten 30 Sekunden" = "Breathing line of the last 30 seconds";
 "Audio teilen" = "Share audio";
@@ -255,6 +256,7 @@
 "Wichtig" = "Important";
 "Wiederholen" = "Repeat";
 "Wind" = "Wind";
+"Wirklich beenden?" = "Really stop?";
 "Wähle unten einen Klang" = "Pick a sound below";
 "Während der Nachtaufnahme rechnet Suya die Klänge aus dem Mikrofon heraus, damit sie die Messung kaum stören. Ganz verschwinden sie nicht, deshalb ist Ausblenden beim Einschlafen voreingestellt." = "During the night recording, Suya subtracts the sounds from the microphone so they barely affect the measurement. They don't disappear completely, which is why fading out when you fall asleep is on by default.";
 "Während des Schlafs wurden keine auffälligen Geräusche erkannt. Für Nächte ohne Audio lässt sich das nicht auswerten." = "No notable sounds were detected during sleep. Nights without audio can't be analyzed for this.";

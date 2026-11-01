@@ -260,6 +260,8 @@ EN = {
 "in %d min": "in %d min",
 "Wecker klingelt: %@": "Alarm ringing: %@",
 "Lautstärke und Lauterwerden gelten, solange die Nachtaufnahme läuft: Dann spielt Suya den Ton selbst, mit der Medienlautstärke des iPhones. Zur Sicherheit klingelt 2 Minuten später der normale Wecker, falls Suya nicht mehr läuft. Ohne Aufnahme klingelt der Ton in voller Lautstärke.": "Volume and getting louder apply while the night recording is running: Suya then plays the sound itself, using the iPhone's media volume. As a safety net, the regular alarm rings 2 minutes later in case Suya is no longer running. Without a recording, the sound rings at full volume.",
+"Wirklich beenden?": "Really stop?",
+"Antippen wählt den Ton, nochmal antippen spielt ihn ab oder hält ihn an.": "Tap to choose a sound, tap again to play or pause it.",
 # Datenspende
 "Datenspende": "Data donation",
 "Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur ein grobes Klangbild, aus dem sich keine Sprache verstehen lässt.": "Helps make the estimate more accurate for everyone. No sound, only a coarse sound picture from which speech can't be understood.",
