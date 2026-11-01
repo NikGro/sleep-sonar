@@ -16,7 +16,9 @@ final class PassiveNightEngine: ObservableObject {
     @Published private(set) var levelDB: Double = -120
     @Published private(set) var bandDB: [Double] = [-120, -120, -120]
     /// Hochton-Pegel (Atemrauschen) der letzten 30 s, alle 0,1 s – für die Atemlinie
-    @Published private(set) var recentBreath: [Double] = []
+    @Published private(set) var recentBreath: [BreathLine.Sample] = []
+    /// Audiozeit → Uhrzeit: Startpunkt, wird neu gesetzt, wenn er mehr als 0,5 s abweicht
+    private var breathAnchor: TimeInterval?
     @Published private(set) var motionActivity: Double = 0
     @Published private(set) var restarts = 0
     @Published private(set) var events: [String] = []
@@ -37,6 +39,7 @@ final class PassiveNightEngine: ObservableObject {
         events = []
         restarts = 0
         recentBreath = []
+        breathAnchor = nil
         guard await AVAudioApplication.requestRecordPermission() else {
             errorMessage = "Kein Mikrofonzugriff. Einstellungen → Somnivo → Mikrofon erlauben."
             return
@@ -63,12 +66,16 @@ final class PassiveNightEngine: ObservableObject {
                     self.bandDB = bands
                 }
             }
-            rec.onTick = { [weak self] high in
+            rec.onTick = { [weak self] high, index in
+                let arrived = Date().timeIntervalSinceReferenceDate
                 Task { @MainActor in
                     guard let self else { return }
-                    self.recentBreath.append(high)
-                    let keep = BreathLine.capacity
-                    if self.recentBreath.count > keep { self.recentBreath.removeFirst(self.recentBreath.count - keep) }
+                    // Zeitstempel aus der Audiozeit, nicht aus der (stoßweisen) Ankunft
+                    let audio = Double(index) * 0.1
+                    if let a = self.breathAnchor, abs(a + audio - arrived) < 0.5 {} else { self.breathAnchor = arrived - audio }
+                    self.recentBreath.append(.init(t: self.breathAnchor! + audio, v: high))
+                    let cut = arrived - BreathLine.window - 2
+                    if let i = self.recentBreath.firstIndex(where: { $0.t >= cut }), i > 0 { self.recentBreath.removeFirst(i) }
                 }
             }
             recorder = rec

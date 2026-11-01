@@ -180,52 +180,68 @@ struct MoonDisc: View {
     }
 }
 
-/// Atemlinie: Hochton-Pegel (Atemrauschen) der letzten 30 Sekunden als weiche Linie (10 Werte/s).
+/// Atemlinie: Hochton-Pegel (Atemrauschen) der letzten 30 Sekunden als weiche Linie.
+/// Werte kommen 10× pro Sekunde; gezeichnet wird mit Bildschirmfrequenz und fließend verschoben.
 struct BreathLine: View {
-    static let capacity = 300
-    let values: [Double]
+    struct Sample: Equatable { var t: TimeInterval; var v: Double }
+    static let window: TimeInterval = 30
+    /// Anzeige leicht verzögert, damit neue Werte sicher da sind (Audio kommt in Paketen)
+    static let delay: TimeInterval = 0.3
+    let values: [Sample]
 
     var body: some View {
-        Canvas { ctx, size in
-            // Grundlinie
-            var base = Path()
-            base.move(to: CGPoint(x: 0, y: size.height - 0.5))
-            base.addLine(to: CGPoint(x: size.width, y: size.height - 0.5))
-            ctx.stroke(base, with: .color(Theme.hairline), lineWidth: 1)
-
-            guard values.count > 1 else { return }
-            // leicht geglättet (±0,2 s), damit die Linie fließt statt zittert
-            let raw = self.values
-            let values = raw.indices.map { i in
-                let a = max(0, i - 2), b = min(raw.count - 1, i + 2)
-                return raw[a...b].reduce(0, +) / Double(b - a + 1)
+        TimelineView(.animation) { tl in
+            Canvas { ctx, size in
+                draw(ctx, size, now: tl.date.timeIntervalSinceReferenceDate - Self.delay)
             }
-            let lo = values.min() ?? 0, hi = values.max() ?? 1
-            let span = max(hi - lo, 6)  // mind. 6 dB, damit Stille nicht wie Sturm aussieht
-            let step = size.width / CGFloat(Self.capacity - 1)
-            let x0 = size.width - CGFloat(values.count - 1) * step
-            func point(_ i: Int) -> CGPoint {
-                let v = (values[i] - lo) / span
-                return CGPoint(x: x0 + CGFloat(i) * step, y: size.height * (0.9 - 0.8 * CGFloat(v)))
-            }
-            var line = Path()
-            line.move(to: point(0))
-            for i in 1..<values.count {
-                let p0 = point(i - 1), p1 = point(i)
-                let mid = CGPoint(x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2)
-                line.addQuadCurve(to: mid, control: p0)
-                if i == values.count - 1 { line.addLine(to: p1) }
-            }
-            var fill = line
-            fill.addLine(to: CGPoint(x: size.width, y: size.height))
-            fill.addLine(to: CGPoint(x: x0, y: size.height))
-            fill.closeSubpath()
-            ctx.fill(fill, with: .linearGradient(Gradient(colors: [Theme.moon.opacity(0.18), .clear]),
-                                                 startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)))
-            ctx.stroke(line, with: .color(Theme.moon), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-            let last = point(values.count - 1)
-            ctx.fill(Path(ellipseIn: CGRect(x: last.x - 4, y: last.y - 4, width: 8, height: 8)),
-                     with: .color(Theme.moon))
         }
+    }
+
+    private func draw(_ ctx: GraphicsContext, _ size: CGSize, now: TimeInterval) {
+        var base = Path()
+        base.move(to: CGPoint(x: 0, y: size.height - 0.5))
+        base.addLine(to: CGPoint(x: size.width, y: size.height - 0.5))
+        ctx.stroke(base, with: .color(Theme.hairline), lineWidth: 1)
+
+        // sichtbarer Ausschnitt (+ je ein Punkt Rand), leicht geglättet (±0,2 s)
+        let raw = values.filter { $0.t >= now - Self.window - 0.5 && $0.t <= now + 0.5 }
+        guard raw.count > 1 else { return }
+        let pts: [Sample] = raw.indices.map { i in
+            let a = max(0, i - 2), b = min(raw.count - 1, i + 2)
+            return Sample(t: raw[i].t, v: raw[a...b].reduce(0) { $0 + $1.v } / Double(b - a + 1))
+        }
+        let lo = pts.map(\.v).min() ?? 0, hi = pts.map(\.v).max() ?? 1
+        let span = max(hi - lo, 6)  // mind. 6 dB, damit Stille nicht wie Sturm aussieht
+        func point(_ s: Sample) -> CGPoint {
+            CGPoint(x: size.width * CGFloat(1 - (now - s.t) / Self.window),
+                    y: size.height * (0.9 - 0.8 * CGFloat((s.v - lo) / span)))
+        }
+        var line = Path()
+        line.move(to: point(pts[0]))
+        for i in 1..<pts.count {
+            let p0 = point(pts[i - 1]), p1 = point(pts[i])
+            line.addQuadCurve(to: CGPoint(x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2), control: p0)
+            if i == pts.count - 1 { line.addLine(to: p1) }
+        }
+        var clipped = ctx
+        clipped.clip(to: Path(CGRect(origin: .zero, size: size)))
+        var fill = line
+        fill.addLine(to: CGPoint(x: point(pts[pts.count - 1]).x, y: size.height))
+        fill.addLine(to: CGPoint(x: point(pts[0]).x, y: size.height))
+        fill.closeSubpath()
+        clipped.fill(fill, with: .linearGradient(Gradient(colors: [Theme.moon.opacity(0.18), .clear]),
+                                                 startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)))
+        clipped.stroke(line, with: .color(Theme.moon), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+
+        // Punkt am rechten Rand: Wert zur Anzeigezeit, zwischen zwei Messwerten interpoliert
+        let v: Double
+        if let j = pts.firstIndex(where: { $0.t >= now }), j > 0 {
+            let a = pts[j - 1], b = pts[j]
+            v = a.v + (b.v - a.v) * (now - a.t) / max(b.t - a.t, 1e-6)
+        } else {
+            v = pts[pts.count - 1].v
+        }
+        let dot = CGPoint(x: min(size.width, point(pts[pts.count - 1]).x), y: point(Sample(t: now, v: v)).y)
+        ctx.fill(Path(ellipseIn: CGRect(x: dot.x - 4, y: dot.y - 4, width: 8, height: 8)), with: .color(Theme.moon))
     }
 }
