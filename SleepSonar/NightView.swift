@@ -16,8 +16,8 @@ struct NightView: View {
             List {
                 if nights.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Noch keine Nacht aufgezeichnet").font(Theme.display(22))
-                        Text("Starte heute Abend unter „Heute Nacht“ die Aufnahme. Morgens findest du sie hier.")
+                        Text(tr("Noch keine Nacht aufgezeichnet")).font(Theme.display(22))
+                        Text(tr("Starte heute Abend unter „Heute Nacht“ die Aufnahme. Morgens findest du sie hier."))
                             .font(.callout).foregroundStyle(Theme.mist)
                     }
                     .padding(.vertical, 24)
@@ -45,18 +45,18 @@ struct NightView: View {
                             Button {
                                 Task { await export(url) }
                             } label: {
-                                Label("Daten und Watch teilen (ZIP)", systemImage: "square.and.arrow.up")
+                                Label(tr("Daten und Watch teilen (ZIP)"), systemImage: "square.and.arrow.up")
                             }
                             Button {
                                 Task { await export(url, includeAudio: true) }
                             } label: {
-                                Label("Alles fürs Training teilen (mit Audio)", systemImage: "shippingbox")
+                                Label(tr("Alles fürs Training teilen (mit Audio)"), systemImage: "shippingbox")
                             }
                             if !NightExport.audioFiles(in: url).isEmpty {
                                 Button {
                                     share = ShareItem(urls: NightExport.audioFiles(in: url))
                                 } label: {
-                                    Label("Audio teilen", systemImage: "waveform")
+                                    Label(tr("Audio teilen"), systemImage: "waveform")
                                 }
                             }
                         }
@@ -74,7 +74,7 @@ struct NightView: View {
             }
             .listStyle(.plain)
             .nightBackground()
-            .navigationTitle("Nächte")
+            .navigationTitle(tr("Nächte"))
             .toolbarBackground(Theme.ink, for: .navigationBar)
             .onAppear(perform: refresh)
             .onChange(of: rec.isRunning) { refresh() }
@@ -87,6 +87,7 @@ struct NightView: View {
         let dirs = (try? FileManager.default.contentsOfDirectory(at: NightRecorder.nightsFolder,
                                                                  includingPropertiesForKeys: nil)) ?? []
         nights = dirs.filter { $0.hasDirectoryPath }.sorted { $0.lastPathComponent > $1.lastPathComponent }
+        summaries.preload(nights)
     }
 
     private func export(_ url: URL, includeAudio: Bool = false) async {
@@ -106,7 +107,7 @@ struct NightView: View {
             share = ShareItem(urls: [try NightExport.zip(folder: url, includeAudio: includeAudio)])
             if !notes.isEmpty { message = notes.joined(separator: "\n") }
         } catch {
-            message = "ZIP konnte nicht erstellt werden: \(error.localizedDescription)"
+            message = tr("ZIP konnte nicht erstellt werden: %@", error.localizedDescription)
         }
     }
 
@@ -117,29 +118,79 @@ struct NightView: View {
 }
 
 /// Kurzfassung einer Nacht für die Liste (eigene Schätzung, ohne Health).
-struct NightSummary {
+/// Wird je Nacht in summary.json gespeichert, damit die Liste sofort Grafiken zeigt.
+struct NightSummary: Codable {
+    /// erhöhen, wenn sich die Regeln ändern → alte Zusammenfassungen werden neu berechnet
+    static let rulesVersion = 5
+    var version = rulesVersion
+    /// Änderungsdatum von events.json (Geräusche fließen in die Schätzung ein)
+    var eventsDate: Date?
     let start: Date
-    let stages: [SleepStaging.Stage]
+    let stagesCode: String
     let epochSeconds: Double
 
-    var asleepSeconds: Double { Double(stages.filter { $0 != .wake }.count) * epochSeconds }
-    var totalSeconds: Double { Double(stages.count) * epochSeconds }
+    init(start: Date, stages: [SleepStaging.Stage], epochSeconds: Double, eventsDate: Date?) {
+        self.start = start
+        self.stagesCode = String(stages.map { Character(String($0.rawValue)) })
+        self.epochSeconds = epochSeconds
+        self.eventsDate = eventsDate
+    }
+
+    var stages: [SleepStaging.Stage] { stagesCode.compactMap { $0.wholeNumberValue.flatMap(SleepStaging.Stage.init) } }
+    var asleepSeconds: Double { Double(stagesCode.filter { $0 != "0" }.count) * epochSeconds }
+    var totalSeconds: Double { Double(stagesCode.count) * epochSeconds }
+    var score: SleepScore? { SleepScore.compute(stages, epochSeconds: epochSeconds) }
+
+    static func file(_ folder: URL) -> URL { folder.appendingPathComponent("summary.json") }
+    static func eventsDate(_ folder: URL) -> Date? {
+        try? folder.appendingPathComponent("events.json").resourceValues(forKeys: [.contentModificationDateKey])
+            .contentModificationDate
+    }
+
+    /// Gespeicherte Fassung, egal ob aktuell (für die sofortige Anzeige)
+    static func cached(_ folder: URL) -> NightSummary? {
+        guard let data = try? Data(contentsOf: file(folder)) else { return nil }
+        return try? JSONDecoder().decode(NightSummary.self, from: data)
+    }
+
+    var isCurrent: Bool { version == Self.rulesVersion }
+    func isCurrent(for folder: URL) -> Bool { isCurrent && eventsDate == Self.eventsDate(folder) }
+
+    func save(_ folder: URL) {
+        if let data = try? JSONEncoder().encode(self) { try? data.write(to: Self.file(folder), options: .atomic) }
+    }
 }
 
 @MainActor
 final class NightSummaries: ObservableObject {
     @Published private(set) var items: [URL: NightSummary] = [:]
     private var failed: Set<URL> = []
+    private var checked: Set<URL> = []
 
+    /// Gespeicherte Zusammenfassungen sofort übernehmen (klein, schnell)
+    func preload(_ urls: [URL]) {
+        for url in urls where items[url] == nil {
+            if let c = NightSummary.cached(url) { items[url] = c }
+        }
+    }
+
+    /// Im Hintergrund prüfen und bei Bedarf neu berechnen
     func load(_ url: URL) {
-        guard items[url] == nil, !failed.contains(url) else { return }
+        guard !checked.contains(url), !failed.contains(url) else { return }
+        checked.insert(url)
+        if let c = items[url] ?? NightSummary.cached(url), c.isCurrent(for: url) {
+            items[url] = c
+            return
+        }
         Task {
-            let r = try? await Task.detached(priority: .utility) { try NightAnalyzer.estimate(folder: url) }.value
-            if let r {
-                items[url] = NightSummary(start: r.start, stages: r.stages, epochSeconds: r.epochSeconds)
-            } else {
-                failed.insert(url)
-            }
+            let r = try? await Task.detached(priority: .utility) { () -> NightSummary in
+                let events = NightSummary.eventsDate(url)
+                let e = try NightAnalyzer.estimate(folder: url)
+                let s = NightSummary(start: e.start, stages: e.stages, epochSeconds: e.epochSeconds, eventsDate: events)
+                s.save(url)
+                return s
+            }.value
+            if let r { items[url] = r } else { failed.insert(url) }
         }
     }
 }
@@ -152,21 +203,25 @@ private struct NightRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
+            HStack(alignment: .center) {
                 Text(title).font(Theme.display(19, weight: .medium))
                 Spacer()
-                if busy { ProgressView().tint(Theme.moon) }
+                if busy {
+                    ProgressView().tint(Theme.moon)
+                } else if let score = summary?.score {
+                    ScoreRing(score: score.total, size: 38, line: 3)
+                }
             }
             if recording {
-                Text("Aufnahme läuft").font(.callout).foregroundStyle(Theme.mist)
+                Text(tr("Aufnahme läuft")).font(.callout).foregroundStyle(Theme.mist)
             } else if let summary {
                 Hypnogram(stages: summary.stages.map { Optional($0) }, start: summary.start,
                           epochSeconds: summary.epochSeconds, compact: true)
                     .frame(height: 34)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
-                Text("\(NightAnalysisView.hm(summary.asleepSeconds)) geschlafen, "
-                     + "\(times(summary.start, summary.totalSeconds))")
+                Text(tr("%@ geschlafen, %@", NightAnalysisView.hm(summary.asleepSeconds),
+                        times(summary.start, summary.totalSeconds)))
                     .font(.callout).foregroundStyle(Theme.mist)
             } else {
                 Text(sizeText).font(.callout).foregroundStyle(Theme.mist)
@@ -187,12 +242,12 @@ private struct NightRow: View {
     private var title: String {
         guard let d = startDate else { return url.lastPathComponent }
         // Eine Nacht wird nach dem Morgen benannt, an dem man aufwacht.
-        return "Nacht zum " + d.addingTimeInterval(6 * 3600).formatted(.dateTime.weekday(.wide).day().month(.wide))
+        return NightAnalysisView.title(d)
     }
 
     private func times(_ start: Date, _ seconds: Double) -> String {
         let end = start.addingTimeInterval(seconds)
-        return "\(start.formatted(date: .omitted, time: .shortened)) bis \(end.formatted(date: .omitted, time: .shortened))"
+        return tr("%@ bis %@", start.formatted(date: .omitted, time: .shortened), end.formatted(date: .omitted, time: .shortened))
     }
 
     private var sizeText: String {

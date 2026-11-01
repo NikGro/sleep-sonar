@@ -41,7 +41,7 @@ final class PassiveNightEngine: ObservableObject {
         recentBreath = []
         breathAnchor = nil
         guard await AVAudioApplication.requestRecordPermission() else {
-            errorMessage = "Kein Mikrofonzugriff. Einstellungen → Somnivo → Mikrofon erlauben."
+            errorMessage = tr("Kein Mikrofonzugriff. Einstellungen → Somnivo → Mikrofon erlauben.")
             return
         }
         do {
@@ -93,13 +93,13 @@ final class PassiveNightEngine: ObservableObject {
             try buildAndStart()
             isRunning = true
             Orientation.recordingChanged(true)
-            log("Nachtaufnahme gestartet (nur Mikrofon)")
+            log(tr("Nachtaufnahme gestartet (nur Mikrofon)"))
             logBattery()
             watchdog = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
                 Task { @MainActor in self?.checkAlive() }
             }
         } catch {
-            errorMessage = "Audio-Fehler: \(error.localizedDescription)"
+            errorMessage = tr("Audio-Fehler: %@", error.localizedDescription)
             stop()
         }
     }
@@ -118,7 +118,7 @@ final class PassiveNightEngine: ObservableObject {
         motion = nil
         if let recorder {
             logBattery()
-            log("Gestoppt")
+            log(tr("Gestoppt"))
             recorder.finish()
         }
         recorder = nil
@@ -133,7 +133,7 @@ final class PassiveNightEngine: ObservableObject {
     private func startActivity() {
         guard let startDate else { return }
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            log("Live-Aktivitäten sind aus (Einstellungen → Somnivo → Live-Aktivitäten)")
+            log(tr("Live-Aktivitäten sind aus (Einstellungen → Somnivo → Live-Aktivitäten)"))
             return
         }
         // Reste einer abgebrochenen Nacht aufräumen
@@ -144,9 +144,9 @@ final class PassiveNightEngine: ObservableObject {
             activity = try Activity.request(
                 attributes: NightActivityAttributes(start: startDate),
                 content: .init(state: .init(handled: false), staleDate: nil))
-            log("Live-Aktivität gestartet")
+            log(tr("Live-Aktivität gestartet"))
         } catch {
-            log("Live-Aktivität nicht möglich: \(error.localizedDescription)")
+            log(tr("Live-Aktivität nicht möglich: %@", error.localizedDescription))
         }
     }
 
@@ -168,12 +168,12 @@ final class PassiveNightEngine: ObservableObject {
         let format = input.outputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else {
             throw NSError(domain: "Passive", code: 1,
-                          userInfo: [NSLocalizedDescriptionKey: "Kein Mikrofon verfügbar"])
+                          userInfo: [NSLocalizedDescriptionKey: tr("Kein Mikrofon verfügbar")])
         }
         if let rec = recorder { Self.installTap(on: input, format: format, recorder: rec) }
         observers.append(NotificationCenter.default.addObserver(
             forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.restart(reason: "Audio-Konfiguration geändert") }
+            Task { @MainActor in self?.restart(reason: tr("Audio-Konfiguration geändert")) }
         })
         engine.prepare()
         try engine.start()
@@ -194,17 +194,17 @@ final class PassiveNightEngine: ObservableObject {
     private func restart(reason: String) {
         guard isRunning else { return }
         restarts += 1
-        log("Neustart: \(reason)")
+        log(tr("Neustart: %@", reason))
         do {
             try buildAndStart()
         } catch {
-            log("Neustart fehlgeschlagen: \(error.localizedDescription)")
+            log(tr("Neustart fehlgeschlagen: %@", error.localizedDescription))
         }
     }
 
     private func checkAlive() {
         guard isRunning, let engine, !engine.isRunning else { return }
-        restart(reason: "Aufnahme stand still")
+        restart(reason: tr("Aufnahme stand still"))
     }
 
     private func observeSession() {
@@ -216,10 +216,10 @@ final class PassiveNightEngine: ObservableObject {
             Task { @MainActor in
                 guard let self else { return }
                 if type == .began {
-                    self.log("Unterbrechung (Anruf/Wecker/Siri?)")
+                    self.log(tr("Unterbrechung (Anruf/Wecker/Siri?)"))
                 } else {
                     try? AVAudioSession.sharedInstance().setActive(true)
-                    self.restart(reason: "Unterbrechung beendet")
+                    self.restart(reason: tr("Unterbrechung beendet"))
                 }
             }
         })
@@ -229,7 +229,7 @@ final class PassiveNightEngine: ObservableObject {
             Task { @MainActor in
                 let inputs = AVAudioSession.sharedInstance().currentRoute.inputs.map(\.portName)
                 self?.inputName = inputs.joined(separator: ", ")
-                self?.log("Routenwechsel (Grund \(raw)), Eingang: \(inputs.joined(separator: ", "))")
+                self?.log(tr("Routenwechsel (Grund %@), Eingang: %@", "\(raw)", inputs.joined(separator: ", ")))
             }
         })
     }
@@ -246,12 +246,12 @@ final class PassiveNightEngine: ObservableObject {
         let d = UIDevice.current
         let state: String
         switch d.batteryState {
-        case .charging: state = "lädt"
-        case .full: state = "voll"
-        case .unplugged: state = "NICHT am Strom"
-        default: state = "unbekannt"
+        case .charging: state = tr("lädt")
+        case .full: state = tr("voll")
+        case .unplugged: state = tr("NICHT am Strom")
+        default: state = tr("unbekannt")
         }
-        log(String(format: "Akku %.0f %%, %@", d.batteryLevel * 100, state))
+        log(tr("Akku %.0f %%, %@", Double(d.batteryLevel * 100), state))
     }
 
     private static func deviceModel() -> String {

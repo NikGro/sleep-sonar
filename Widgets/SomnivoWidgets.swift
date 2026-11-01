@@ -22,10 +22,10 @@ struct NightLiveActivity: Widget {
                     .font(.title2)
                     .foregroundStyle(moon)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Somnivo hört zu")
+                    Text(tr("Somnivo hört zu"))
                         .font(.system(.headline, design: .serif))
                         .foregroundStyle(moon)
-                    Text("seit \(ctx.attributes.start.formatted(date: .omitted, time: .shortened)) Uhr")
+                    Text(tr("seit %@ Uhr", ctx.attributes.start.formatted(date: .omitted, time: .shortened)))
                         .font(.caption)
                         .foregroundStyle(mist)
                 }
@@ -52,7 +52,7 @@ struct NightLiveActivity: Widget {
                         .frame(maxWidth: 90, alignment: .trailing)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text("Nachtaufnahme läuft")
+                    Text(tr("Nachtaufnahme läuft"))
                         .font(.caption)
                         .foregroundStyle(mist)
                 }

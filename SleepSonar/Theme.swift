@@ -82,9 +82,14 @@ struct StageLegend: View {
             ForEach([SleepStaging.Stage.wake, .rem, .core, .deep], id: \.self) { s in
                 HStack(spacing: 5) {
                     Circle().fill(Theme.color(s)).frame(width: 8, height: 8)
-                    Text(s.name).font(.caption).foregroundStyle(Theme.mist)
+                    Text(s.displayName).font(.caption).foregroundStyle(Theme.mist)
                 }
             }
         }
     }
+}
+
+extension SleepStaging.Stage {
+    /// Name in der Sprache des Systems
+    var displayName: String { tr(name) }
 }

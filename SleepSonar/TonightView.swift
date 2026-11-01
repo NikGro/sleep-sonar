@@ -19,7 +19,7 @@ struct TonightView: View {
             // vor dem Start passt alles auf den Bildschirm: nicht federn (Titel bleibt groß)
             .scrollDisabled(!rec.isRunning)
             .nightBackground()
-            .navigationTitle("Heute Nacht")
+            .navigationTitle(tr("Heute Nacht"))
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(Theme.ink, for: .navigationBar)
         }
@@ -35,11 +35,10 @@ struct TonightView: View {
                 .accessibilityHidden(true)
 
             VStack(spacing: 8) {
-                Text("Leg dein iPhone neben das Bett")
+                Text(tr("Leg dein iPhone neben das Bett"))
                     .font(Theme.display(26))
                     .multilineTextAlignment(.center)
-                Text("Somnivo hört deine Atmung und Bewegungen und schätzt daraus deine Schlafphasen. "
-                     + "Die Aufnahme bleibt auf deinem iPhone.")
+                Text(tr("Somnivo hört deine Atmung und Bewegungen und schätzt daraus deine Schlafphasen. Die Aufnahme bleibt auf deinem iPhone."))
                     .font(.callout)
                     .foregroundStyle(Theme.mist)
                     .multilineTextAlignment(.center)
@@ -48,7 +47,7 @@ struct TonightView: View {
             Button {
                 Task { await rec.start() }
             } label: {
-                Text("Aufnahme starten")
+                Text(tr("Aufnahme starten"))
             }
             .buttonStyle(MoonButtonStyle())
 
@@ -57,9 +56,9 @@ struct TonightView: View {
             }
 
             VStack(alignment: .leading, spacing: 14) {
-                Checklist(symbol: "bolt", text: "Ans Ladekabel, Mikrofon (Unterseite) zeigt zu dir.")
-                Checklist(symbol: "applewatch", text: "Mit Apple Watch kannst du die Schätzung morgens vergleichen.")
-                Checklist(symbol: "lock", text: "Bildschirm sperren ist okay. Die App nur nicht wegwischen.")
+                Checklist(symbol: "bolt", text: tr("Ans Ladekabel, Mikrofon (Unterseite) zeigt zu dir."))
+                Checklist(symbol: "applewatch", text: tr("Mit Apple Watch kannst du die Schätzung morgens vergleichen."))
+                Checklist(symbol: "lock", text: tr("Bildschirm sperren ist okay. Die App nur nicht wegwischen."))
             }
             .padding(.top, 8)
         }
@@ -74,7 +73,7 @@ struct TonightView: View {
                     VStack(spacing: 4) {
                         Text(Self.clock(ctx.date.timeIntervalSince(start)))
                             .font(Theme.display(56, weight: .light).monospacedDigit())
-                        Text("seit \(start.formatted(date: .omitted, time: .shortened)) Uhr")
+                        Text(tr("seit %@ Uhr", start.formatted(date: .omitted, time: .shortened)))
                             .font(.callout)
                             .foregroundStyle(Theme.mist)
                     }
@@ -87,9 +86,9 @@ struct TonightView: View {
             VStack(alignment: .leading, spacing: 10) {
                 BreathLine(values: rec.recentBreath)
                     .frame(height: 120)
-                    .accessibilityLabel("Atemlinie der letzten 30 Sekunden")
+                    .accessibilityLabel(tr("Atemlinie der letzten 30 Sekunden"))
                 HStack {
-                    Text("Letzte 30 Sekunden")
+                    Text(tr("Letzte 30 Sekunden"))
                     Spacer()
                     Text(Self.statusText(rec))
                 }
@@ -100,7 +99,7 @@ struct TonightView: View {
             Button {
                 confirmStop = true
             } label: {
-                Text("Aufnahme beenden")
+                Text(tr("Aufnahme beenden"))
             }
             .buttonStyle(MoonButtonStyle(prominent: false))
             // iOS 26 zeigt die Rückfrage als Sprechblase: verankert an einem unsichtbaren Punkt
@@ -109,20 +108,20 @@ struct TonightView: View {
                 Color.clear
                     .frame(height: 1)
                     .offset(y: -10)
-                    .confirmationDialog("Aufnahme beenden?", isPresented: $confirmStop, titleVisibility: .visible) {
-                        Button("Aufnahme beenden", role: .destructive) { rec.stop() }
+                    .confirmationDialog(tr("Aufnahme beenden?"), isPresented: $confirmStop, titleVisibility: .visible) {
+                        Button(tr("Aufnahme beenden"), role: .destructive) { rec.stop() }
                     } message: {
-                        Text("Die Nacht wird gespeichert und lässt sich danach auswerten.")
+                        Text(tr("Die Nacht wird gespeichert und lässt sich danach auswerten."))
                     }
             }
 
             DisclosureGroup(isExpanded: $showDetails) {
                 VStack(spacing: 10) {
-                    detail("Pegel", String(format: "%.0f dBFS", rec.levelDB))
-                    detail("Tief / Mitte / Hoch", rec.bandDB.map { String(format: "%.0f", $0) }.joined(separator: " / "))
-                    detail("Mikrofon", rec.inputName)
-                    detail("iPhone bewegt", String(format: "%.3f g", rec.motionActivity))
-                    detail("Neustarts", "\(rec.restarts)")
+                    detail(tr("Pegel"), String(format: "%.0f dBFS", rec.levelDB))
+                    detail(tr("Tief / Mitte / Hoch"), rec.bandDB.map { String(format: "%.0f", $0) }.joined(separator: " / "))
+                    detail(tr("Mikrofon"), rec.inputName)
+                    detail(tr("iPhone bewegt"), String(format: "%.3f g", rec.motionActivity))
+                    detail(tr("Neustarts"), "\(rec.restarts)")
                     ForEach(rec.events, id: \.self) {
                         Text($0).font(.caption.monospaced()).foregroundStyle(Theme.mist)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -130,7 +129,7 @@ struct TonightView: View {
                 }
                 .padding(.top, 10)
             } label: {
-                Text("Technische Details").font(.callout).foregroundStyle(Theme.mist)
+                Text(tr("Technische Details")).font(.callout).foregroundStyle(Theme.mist)
             }
         }
     }
@@ -145,9 +144,9 @@ struct TonightView: View {
     }
 
     private static func statusText(_ rec: PassiveNightEngine) -> String {
-        if rec.motionActivity > MotionLogger.handledThreshold { return "iPhone wird bewegt" }
-        if rec.restarts > 0 { return "hört zu, \(rec.restarts)× neu gestartet" }
-        return "hört zu"
+        if rec.motionActivity > MotionLogger.handledThreshold { return tr("iPhone wird bewegt") }
+        if rec.restarts > 0 { return tr("hört zu, %d× neu gestartet", rec.restarts) }
+        return tr("hört zu")
     }
 
     static func clock(_ t: TimeInterval) -> String {

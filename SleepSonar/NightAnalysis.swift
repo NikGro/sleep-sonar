@@ -23,7 +23,7 @@ enum NightAnalyzer {
     enum Failure: LocalizedError {
         case noLevels
         var errorDescription: String? {
-            "Diese Nacht hat keine Pegeldaten (nur Nächte aus der Mikrofon-Aufnahme lassen sich auswerten)."
+            tr("Diese Nacht hat keine Pegeldaten (nur Nächte aus der Mikrofon-Aufnahme lassen sich auswerten).")
         }
     }
 
@@ -132,7 +132,7 @@ struct NightAnalysisView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 32) {
+            VStack(alignment: .leading, spacing: 48) {
                 if let error {
                     Text(error).foregroundStyle(Theme.alert)
                 } else if let r = result {
@@ -141,14 +141,13 @@ struct NightAnalysisView: View {
                     VStack(spacing: 14) {
                         if let p = soundProgress, p < 1 {
                             ProgressView(value: p).tint(Theme.moon).frame(maxWidth: 220)
-                            Text("Geräusche der Nacht werden erkannt (\(Int(p * 100)) %)")
+                            Text(tr("Geräusche der Nacht werden erkannt (%d %%)", Int(p * 100)))
                                 .font(.callout).foregroundStyle(Theme.mist)
-                            Text("Das passiert einmal je Nacht und bleibt auf dem iPhone. Du kannst die App "
-                                 + "verlassen: Was fehlt, erledigt das iPhone später am Ladekabel.")
+                            Text(tr("Das passiert einmal je Nacht und bleibt auf dem iPhone. Du kannst die App verlassen: Was fehlt, erledigt das iPhone später am Ladekabel."))
                                 .font(.caption).foregroundStyle(Theme.mist)
                         } else {
                             ProgressView().tint(Theme.moon)
-                            Text("Nacht wird ausgewertet").font(.callout).foregroundStyle(Theme.mist)
+                            Text(tr("Nacht wird ausgewertet")).font(.callout).foregroundStyle(Theme.mist)
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -159,15 +158,19 @@ struct NightAnalysisView: View {
             .padding(.bottom, 40)
         }
         .nightBackground()
-        .navigationTitle(result.map { Self.title($0.start) } ?? "Auswertung")
+        .navigationTitle(result.map { Self.title($0.start) } ?? tr("Auswertung"))
         .navigationBarTitleDisplayMode(.inline)
         .task {
             BackgroundAnalysis.analysisStarted()
             defer { BackgroundAnalysis.analysisEnded() }
             do {
-                result = try await NightAnalyzer.analyze(folder: folder) { p in
+                let r = try await NightAnalyzer.analyze(folder: folder) { p in
                     Task { @MainActor in soundProgress = p }
                 }
+                result = r
+                // Liste aktuell halten
+                NightSummary(start: r.start, stages: r.ours, epochSeconds: r.epochSeconds,
+                             eventsDate: NightSummary.eventsDate(folder)).save(folder)
             } catch { self.error = error.localizedDescription }
         }
         .onDisappear { player.stop() }
@@ -178,14 +181,34 @@ struct NightAnalysisView: View {
         let hasWatch = r.watch.contains { $0 != nil }
         let asleep = ours.filter { $0 != nil && $0 != .wake }.count
 
-        VStack(alignment: .leading, spacing: 4) {
-            Text(Self.hm(Double(asleep) * r.epochSeconds))
-                .font(Theme.display(48, weight: .light))
-            Text("geschlafen, \(r.start.formatted(date: .omitted, time: .shortened)) bis "
-                 + "\(r.start.addingTimeInterval(Double(r.ours.count) * r.epochSeconds).formatted(date: .omitted, time: .shortened)) Uhr")
-                .font(.callout).foregroundStyle(Theme.mist)
+        HStack(alignment: .center, spacing: 20) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(Self.hm(Double(asleep) * r.epochSeconds))
+                    .font(Theme.display(44, weight: .light))
+                Text(tr("geschlafen, %@ bis %@ Uhr", r.start.formatted(date: .omitted, time: .shortened),
+                        r.start.addingTimeInterval(Double(r.ours.count) * r.epochSeconds)
+                            .formatted(date: .omitted, time: .shortened)))
+                    .font(.callout).foregroundStyle(Theme.mist)
+            }
+            Spacer(minLength: 0)
+            if let score = SleepScore.compute(r.ours, epochSeconds: r.epochSeconds) {
+                VStack(spacing: 6) {
+                    ScoreRing(score: score.total, size: 78, line: 6)
+                    Text(tr("Schlafwert")).font(.caption).foregroundStyle(Theme.mist)
+                }
+            }
         }
         .padding(.top, 16)
+
+        if let score = SleepScore.compute(r.ours, epochSeconds: r.epochSeconds) {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionTitle(tr("Schlafwert"))
+                ScorePart(label: tr("Dauer"), value: score.duration, max: 50)
+                ScorePart(label: tr("Ruhe"), value: score.efficiency, max: 20)
+                ScorePart(label: tr("Tief und REM"), value: score.depth, max: 20)
+                ScorePart(label: tr("Wenig Aufwachen"), value: score.interruptions, max: 10)
+            }
+        }
 
         VStack(alignment: .leading, spacing: 12) {
             SectionTitle("Somnivo")
@@ -200,14 +223,13 @@ struct NightAnalysisView: View {
                 Hypnogram(stages: r.watch, start: r.start, epochSeconds: r.epochSeconds)
                     .frame(height: 150)
             } else {
-                Text("Für diese Nacht gibt es keine Watch-Schlafphasen in Health. "
-                     + "Ist die Watch synchronisiert und der Health-Zugriff erlaubt?")
+                Text(tr("Für diese Nacht gibt es keine Watch-Schlafphasen in Health. Ist die Watch synchronisiert und der Health-Zugriff erlaubt?"))
                     .font(.callout).foregroundStyle(Theme.mist)
             }
         }
 
         VStack(alignment: .leading, spacing: 14) {
-            SectionTitle("Zeit je Phase")
+            SectionTitle(tr("Zeit je Phase"))
             ForEach([SleepStaging.Stage.wake, .rem, .core, .deep], id: \.self) { s in
                 StageRow(stage: s, ours: r.minutes(ours, s),
                          watch: hasWatch ? r.minutes(r.watch, s) : nil,
@@ -216,7 +238,7 @@ struct NightAnalysisView: View {
             if hasWatch {
                 HStack(spacing: 16) {
                     Label("Somnivo", systemImage: "circle.fill").foregroundStyle(Theme.moon)
-                    Label("Watch", systemImage: "circle").foregroundStyle(Theme.mist)
+                    Label(tr("Watch"), systemImage: "circle").foregroundStyle(Theme.mist)
                 }
                 .font(.caption)
                 .labelStyle(SmallDotLabel())
@@ -233,28 +255,52 @@ struct NightAnalysisView: View {
 
         if r.agreement.epochs > 0 {
             VStack(alignment: .leading, spacing: 10) {
-                SectionTitle("Vergleich mit der Watch")
+                SectionTitle(tr("Vergleich mit der Watch"))
                 HStack(alignment: .firstTextBaseline, spacing: 28) {
-                    Figure(value: String(format: "%.0f %%", r.agreement.sleepWake * 100), label: "Schlaf oder wach gleich")
-                    Figure(value: String(format: "%.0f %%", r.agreement.fourClass * 100), label: "Phase gleich")
+                    Figure(value: String(format: "%.0f %%", r.agreement.sleepWake * 100), label: tr("Schlaf oder wach gleich"))
+                    Figure(value: String(format: "%.0f %%", r.agreement.fourClass * 100), label: tr("Phase gleich"))
                 }
-                Text("Verglichen über \(Self.hm(Double(r.agreement.epochs) * r.epochSeconds)).")
+                Text(tr("Verglichen über %@.", Self.hm(Double(r.agreement.epochs) * r.epochSeconds)))
                     .font(.caption).foregroundStyle(Theme.mist)
             }
         }
 
-        Text("Die Schätzung ist noch in Entwicklung. Wach und Schlaf sind halbwegs verlässlich, "
-             + "Tief und REM noch grob. Kein Medizinprodukt.")
+        Text(tr("Die Schätzung ist noch in Entwicklung. Wach und Schlaf sind halbwegs verlässlich, Tief und REM noch grob. Kein Medizinprodukt."))
             .font(.caption).foregroundStyle(Theme.mist)
     }
 
     static func title(_ d: Date) -> String {
-        "Nacht zum " + d.addingTimeInterval(6 * 3600).formatted(.dateTime.weekday(.wide).day().month(.wide))
+        tr("Nacht zum %@", d.addingTimeInterval(6 * 3600).formatted(.dateTime.weekday(.wide).day().month(.wide)))
     }
 
     static func hm(_ t: TimeInterval) -> String {
         let m = Int(t / 60)
-        return "\(m / 60) h \(String(format: "%02d", m % 60)) min"
+        return tr("%d h %02d min", m / 60, m % 60)
+    }
+}
+
+/// Ein Teil des Schlafwerts als schmaler Balken.
+private struct ScorePart: View {
+    let label: String
+    let value: Int
+    let max: Int
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(label).font(.callout)
+                Spacer()
+                Text("\(value) / \(max)").font(.callout.monospacedDigit()).foregroundStyle(Theme.mist)
+            }
+            GeometryReader { g in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Theme.raised)
+                    Capsule().fill(Theme.moon.opacity(0.8))
+                        .frame(width: Swift.max(4, g.size.width * CGFloat(value) / CGFloat(max)))
+                }
+            }
+            .frame(height: 6)
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -288,11 +334,11 @@ private struct StageRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
-                Text(stage.name).font(.callout)
+                Text(stage.displayName).font(.callout)
                 Spacer()
-                Text("\(Int(ours)) min").font(.callout.monospacedDigit())
+                Text(tr("%d min", Int(ours))).font(.callout.monospacedDigit())
                 if let watch {
-                    Text("Watch \(Int(watch))").font(.caption.monospacedDigit()).foregroundStyle(Theme.mist)
+                    Text(tr("Watch %d", Int(watch))).font(.caption.monospacedDigit()).foregroundStyle(Theme.mist)
                         .frame(minWidth: 70, alignment: .trailing)
                 }
             }
@@ -345,11 +391,11 @@ struct Hypnogram: View {
     var body: some View {
         Chart(segments) { seg in
             RectangleMark(xStart: .value("von", seg.from), xEnd: .value("bis", seg.to),
-                          y: .value("Phase", seg.stage.name), height: .ratio(compact ? 1 : 0.8))
+                          y: .value("Phase", seg.stage.displayName), height: .ratio(compact ? 1 : 0.8))
                 .foregroundStyle(Theme.color(seg.stage))
                 .cornerRadius(compact ? 0 : 2)
         }
-        .chartYScale(domain: ["Wach", "REM", "Kern", "Tief"])
+        .chartYScale(domain: [SleepStaging.Stage.wake, .rem, .core, .deep].map(\.displayName))
         .chartYAxis {
             AxisMarks { _ in
                 AxisValueLabel().foregroundStyle(Theme.mist)

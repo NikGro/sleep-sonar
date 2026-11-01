@@ -1,7 +1,6 @@
-import Charts
 import SwiftUI
 
-/// Geräusche der Nacht: Zeitleiste, Zusammenfassung je Art und abspielbare Momente.
+/// Geräusche der Nacht: Zusammenfassung je Art und abspielbare Momente.
 struct SoundSection: View {
     let events: [SoundEvent]
     let start: Date
@@ -16,43 +15,16 @@ struct SoundSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            SectionTitle("Geräusche im Schlaf")
+            SectionTitle(tr("Geräusche im Schlaf"))
             if events.isEmpty {
-                Text("Während des Schlafs wurden keine auffälligen Geräusche erkannt. Für Nächte ohne Audio "
-                     + "lässt sich das nicht auswerten.")
+                Text(tr("Während des Schlafs wurden keine auffälligen Geräusche erkannt. Für Nächte ohne Audio lässt sich das nicht auswerten."))
                     .font(.callout).foregroundStyle(Theme.mist)
             } else {
-                timeline
                 ForEach(kinds, id: \.self) { kind in kindBlock(kind) }
-                Text("Erkannt mit Apples Geräuscherkennung direkt auf dem iPhone. Gezeigt wird nur, was "
-                     + "während des Schlafs war. Zum Anhören wird jeder Moment automatisch lauter gemacht.")
+                Text(tr("Erkannt mit Apples Geräuscherkennung direkt auf dem iPhone. Gezeigt wird nur, was während des Schlafs war. Zum Anhören wird jeder Moment automatisch lauter gemacht."))
                     .font(.caption).foregroundStyle(Theme.mist)
             }
         }
-    }
-
-    // Eine Zeile je Geräuschart über die ganze Nacht
-    private var timeline: some View {
-        Chart(events) { e in
-            RectangleMark(xStart: .value("von", start.addingTimeInterval(e.start)),
-                          xEnd: .value("bis", start.addingTimeInterval(max(e.end, e.start + 45))),
-                          y: .value("Art", e.kind.name), height: .ratio(0.6))
-                .foregroundStyle(Theme.moon.opacity(0.35 + 0.65 * e.confidence))
-                .cornerRadius(2)
-        }
-        .chartXScale(domain: start...start.addingTimeInterval(max(total, 60)))
-        .chartYScale(domain: kinds.map(\.name))
-        .chartYAxis {
-            AxisMarks { _ in AxisValueLabel().foregroundStyle(Theme.mist) }
-        }
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .hour)) { _ in
-                AxisGridLine().foregroundStyle(Theme.hairline)
-                AxisValueLabel(format: .dateTime.hour()).foregroundStyle(Theme.mist)
-            }
-        }
-        .frame(height: CGFloat(28 * kinds.count + 30))
-        .accessibilityLabel("Zeitleiste der Geräusche")
     }
 
     @ViewBuilder private func kindBlock(_ kind: SoundEvent.Kind) -> some View {
@@ -64,14 +36,14 @@ struct SoundSection: View {
 
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                Label(kind.name, systemImage: kind.symbol).font(.callout.weight(.medium))
+                Label(kind.displayName, systemImage: kind.symbol).font(.callout.weight(.medium))
                 Spacer()
                 Text(summary(count: list.count, minutes: minutes))
                     .font(.callout.monospacedDigit()).foregroundStyle(Theme.mist)
             }
             ForEach(shown) { e in clipRow(e) }
             if best.count > 3 {
-                Button(expanded.contains(kind) ? "Weniger anzeigen" : "Alle \(best.count) anzeigen") {
+                Button(expanded.contains(kind) ? tr("Weniger anzeigen") : tr("Alle %d anzeigen", best.count)) {
                     if expanded.contains(kind) { expanded.remove(kind) } else { expanded.insert(kind) }
                 }
                 .font(.caption)
@@ -101,16 +73,17 @@ struct SoundSection: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(e.kind.name) um \(start.addingTimeInterval(e.start).formatted(date: .omitted, time: .shortened)), \(playing ? "stoppen" : "abspielen")")
+        .accessibilityLabel(tr(playing ? "%@ um %@, stoppen" : "%@ um %@, abspielen", e.kind.displayName,
+                               start.addingTimeInterval(e.start).formatted(date: .omitted, time: .shortened)))
     }
 
     private func summary(count: Int, minutes: Int) -> String {
-        let times = count == 1 ? "1-mal" : "\(count)-mal"
-        return minutes >= 1 ? "\(times), \(minutes) min" : times
+        let times = tr("%d-mal", count)
+        return minutes >= 1 ? tr("%@, %d min", times, minutes) : times
     }
 
     private func duration(_ s: Double) -> String {
-        s < 60 ? "\(Int(s.rounded())) s" : "\(Int(s / 60)) min \(Int(s.truncatingRemainder(dividingBy: 60))) s"
+        s < 60 ? tr("%d s", Int(s.rounded())) : tr("%d min %d s", Int(s / 60), Int(s.truncatingRemainder(dividingBy: 60)))
     }
 }
 
@@ -125,6 +98,6 @@ private struct ConfidenceDots: View {
                     .frame(width: 5, height: 5)
             }
         }
-        .accessibilityLabel("Sicherheit \(Int(value * 100)) Prozent")
+        .accessibilityLabel(tr("Sicherheit %d Prozent", Int(value * 100)))
     }
 }

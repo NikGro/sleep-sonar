@@ -41,11 +41,11 @@ struct SleepSonarApp: App {
             // Sonar ist vorerst ausgesetzt (Code bleibt erhalten: SonarTestView / SonarEngine)
             TabView {
                 TonightView()
-                    .tabItem { Label("Heute Nacht", systemImage: "moon.stars") }
+                    .tabItem { Label(tr("Heute Nacht"), systemImage: "moon.stars") }
                 NightView()
-                    .tabItem { Label("Nächte", systemImage: "chart.bar.xaxis") }
+                    .tabItem { Label(tr("Nächte"), systemImage: "chart.bar.xaxis") }
                 MoreView()
-                    .tabItem { Label("Mehr", systemImage: "ellipsis.circle") }
+                    .tabItem { Label(tr("Mehr"), systemImage: "ellipsis.circle") }
             }
             .tint(Theme.moon)
             .preferredColorScheme(.dark)

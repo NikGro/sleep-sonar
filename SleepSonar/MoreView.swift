@@ -12,13 +12,13 @@ struct MoreView: View {
                         Task {
                             do {
                                 try await NightExport.requestAuthorization()
-                                healthNote = "Erledigt. Ändern kannst du das in der Health-App unter Profil, Apps, Somnivo."
+                                healthNote = tr("Erledigt. Ändern kannst du das in der Health-App unter Profil, Apps, Somnivo.")
                             } catch {
-                                healthNote = "Health hat nicht geantwortet: \(error.localizedDescription)"
+                                healthNote = tr("Health hat nicht geantwortet: %@", error.localizedDescription)
                             }
                         }
                     } label: {
-                        Label("Health-Zugriff erlauben", systemImage: "heart.text.square")
+                        Label(tr("Health-Zugriff erlauben"), systemImage: "heart.text.square")
                     }
                     if let healthNote {
                         Text(healthNote).font(.caption).foregroundStyle(Theme.mist)
@@ -26,41 +26,39 @@ struct MoreView: View {
                 } header: {
                     header("Apple Health")
                 } footer: {
-                    Text("Somnivo liest die Schlafphasen deiner Apple Watch, um sie mit der eigenen Schätzung zu vergleichen.")
+                    Text(tr("Somnivo liest die Schlafphasen deiner Apple Watch, um sie mit der eigenen Schätzung zu vergleichen."))
                         .foregroundStyle(Theme.mist)
                 }
                 .listRowBackground(Theme.raised)
 
                 Section {
-                    tip("moon.zzz", "„Schlafaufnahme starten“ und „Schlafaufnahme beenden“ gibt es in der Kurzbefehle-App, "
-                        + "zum Beispiel als Automation beim Schlaf-Fokus.")
-                    tip("bolt", "Über Nacht ans Ladekabel. Die Aufnahme braucht etwa so viel Strom wie Musik hören.")
-                    tip("iphone.gen3", "Unterseite mit dem Mikrofon zu dir, etwa eine Armlänge entfernt.")
-                    tip("hand.raised", "Somnivo sendet keinen Ton aus und stört andere Apps nicht.")
+                    tip("moon.zzz", tr("„Schlafaufnahme starten“ und „Schlafaufnahme beenden“ gibt es in der Kurzbefehle-App, zum Beispiel als Automation beim Schlaf-Fokus."))
+                    tip("bolt", tr("Über Nacht ans Ladekabel. Die Aufnahme braucht etwa so viel Strom wie Musik hören."))
+                    tip("iphone.gen3", tr("Unterseite mit dem Mikrofon zu dir, etwa eine Armlänge entfernt."))
+                    tip("hand.raised", tr("Somnivo sendet keinen Ton aus und stört andere Apps nicht."))
                 } header: {
-                    header("Tipps")
+                    header(tr("Tipps"))
                 }
                 .listRowBackground(Theme.raised)
 
                 Section {
-                    Text("Die Schlafphasen sind eine Schätzung aus Geräuschen und keine medizinische Messung. "
-                         + "Bei Verdacht auf Schlafstörungen hilft ein Arzt oder ein Schlaflabor.")
+                    Text(tr("Die Schlafphasen sind eine Schätzung aus Geräuschen und keine medizinische Messung. Bei Verdacht auf Schlafstörungen hilft ein Arzt oder ein Schlaflabor."))
                         .font(.callout).foregroundStyle(Theme.mist)
                 } header: {
-                    header("Wichtig")
+                    header(tr("Wichtig"))
                 }
                 .listRowBackground(Theme.raised)
 
                 Section {
-                    NavigationLink("Health-Schreibtest") { HealthTestView() }
-                    LabeledContent("Version", value: Self.version)
+                    NavigationLink(tr("Health-Schreibtest")) { HealthTestView() }
+                    LabeledContent(tr("Version"), value: Self.version)
                 } header: {
-                    header("Für Entwickler")
+                    header(tr("Für Entwickler"))
                 }
                 .listRowBackground(Theme.raised)
             }
             .nightBackground()
-            .navigationTitle("Mehr")
+            .navigationTitle(tr("Mehr"))
             .toolbarBackground(Theme.ink, for: .navigationBar)
         }
     }

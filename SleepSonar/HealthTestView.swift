@@ -7,32 +7,32 @@ struct HealthTestView: View {
     var body: some View {
         Group {
             List {
-                Section("Schritt für Schritt") {
-                    action("1. Health-Zugriff anfragen", systemImage: "heart.text.square") {
+                Section(tr("Schritt für Schritt")) {
+                    action(tr("1. Health-Zugriff anfragen"), systemImage: "heart.text.square") {
                         await health.requestAuthorization()
                     }
-                    action("2. Testnacht schreiben", systemImage: "bed.double") {
+                    action(tr("2. Testnacht schreiben"), systemImage: "bed.double") {
                         await health.writeTestNight()
                     }
-                    action("3. Zurücklesen", systemImage: "chart.bar") {
+                    action(tr("3. Zurücklesen"), systemImage: "chart.bar") {
                         await health.readBack()
                     }
                 }
                 Section {
-                    action("Eigene Einträge löschen", systemImage: "trash", role: .destructive) {
+                    action(tr("Eigene Einträge löschen"), systemImage: "trash", role: .destructive) {
                         await health.deleteOwnSamples()
                     }
                 }
-                Section("Protokoll") {
+                Section(tr("Protokoll")) {
                     if health.log.isEmpty {
-                        Text("Noch nichts passiert.").foregroundStyle(.secondary)
+                        Text(tr("Noch nichts passiert.")).foregroundStyle(.secondary)
                     }
                     ForEach(Array(health.log.enumerated()), id: \.offset) { _, line in
                         Text(line).font(.callout)
                     }
                 }
             }
-            .navigationTitle("Health-Schreibtest")
+            .navigationTitle(tr("Health-Schreibtest"))
             .disabled(busy)
         }
     }

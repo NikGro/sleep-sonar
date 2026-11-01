@@ -19,22 +19,22 @@ final class HealthManager: ObservableObject {
 
     func requestAuthorization() async {
         guard isAvailable else {
-            say("❌ Health ist auf diesem Gerät nicht verfügbar.")
+            say(tr("❌ Health ist auf diesem Gerät nicht verfügbar."))
             return
         }
         do {
             try await store.requestAuthorization(toShare: [sleepType], read: [sleepType])
             switch store.authorizationStatus(for: sleepType) {
             case .sharingAuthorized:
-                say("✅ Schreibzugriff auf Schlaf erlaubt.")
+                say(tr("✅ Schreibzugriff auf Schlaf erlaubt."))
             case .sharingDenied:
-                say("⚠️ Schreibzugriff verweigert. Health → Profil → Apps → Somnivo → Schlaf aktivieren.")
+                say(tr("⚠️ Schreibzugriff verweigert. Health → Profil → Apps → Somnivo → Schlaf aktivieren."))
             default:
-                say("⚠️ Berechtigung noch nicht festgelegt.")
+                say(tr("⚠️ Berechtigung noch nicht festgelegt."))
             }
         } catch {
             // Fehlt das HealthKit-Entitlement in der Signatur, landet man hier.
-            say("❌ Berechtigungsfehler: \(error.localizedDescription)")
+            say(tr("❌ Berechtigungsfehler: %@", error.localizedDescription))
         }
     }
 
@@ -69,9 +69,9 @@ final class HealthManager: ObservableObject {
 
         do {
             try await store.save(samples)
-            say("✅ Testnacht geschrieben (\(samples.count) Einträge). Jetzt in Health → Schlaf nachsehen.")
+            say(tr("✅ Testnacht geschrieben (%d Einträge). Jetzt in Health → Schlaf nachsehen.", samples.count))
         } catch {
-            say("❌ Schreiben fehlgeschlagen: \(error.localizedDescription)")
+            say(tr("❌ Schreiben fehlgeschlagen: %@", error.localizedDescription))
         }
     }
 
@@ -91,7 +91,7 @@ final class HealthManager: ObservableObject {
         do {
             let results = try await descriptor.result(for: store)
             if results.isEmpty {
-                say("ℹ️ Keine eigenen Schlaf-Einträge der letzten 48 h gefunden.")
+                say(tr("ℹ️ Keine eigenen Schlaf-Einträge der letzten 48 h gefunden."))
                 return
             }
             var minutes: [Int: Double] = [:]
@@ -99,11 +99,11 @@ final class HealthManager: ObservableObject {
                 minutes[s.value, default: 0] += s.endDate.timeIntervalSince(s.startDate) / 60
             }
             let lines = minutes.sorted { $0.key < $1.key }.map { key, value in
-                "\(Self.name(for: key)): \(Int(value)) min"
+                "\(tr(Self.name(for: key))): \(tr("%d min", Int(value)))"
             }
-            say("📊 Gelesen: " + lines.joined(separator: " · "))
+            say(tr("📊 Gelesen: %@", lines.joined(separator: " · ")))
         } catch {
-            say("❌ Lesen fehlgeschlagen: \(error.localizedDescription)")
+            say(tr("❌ Lesen fehlgeschlagen: %@", error.localizedDescription))
         }
     }
 
@@ -119,9 +119,9 @@ final class HealthManager: ObservableObject {
                     if let error { cont.resume(throwing: error) } else { cont.resume(returning: count) }
                 }
             }
-            say("🗑️ \(count) Einträge von Somnivo gelöscht.")
+            say(tr("🗑️ %d Einträge von Somnivo gelöscht.", count))
         } catch {
-            say("❌ Löschen fehlgeschlagen: \(error.localizedDescription)")
+            say(tr("❌ Löschen fehlgeschlagen: %@", error.localizedDescription))
         }
     }
 

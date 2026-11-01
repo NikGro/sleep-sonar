@@ -27,7 +27,7 @@ enum NightExport {
         do {
             try await requestAuthorization()
         } catch {
-            notes.append("Health-Berechtigung: \(error.localizedDescription)")
+            notes.append(tr("Health-Berechtigung: %@", error.localizedDescription))
         }
 
         // Schlafphasen (alle Quellen, z. B. Apple Watch)
@@ -43,9 +43,9 @@ enum NightExport {
                     + "\(clean(s.device?.model ?? ""))\n"
             }
             try csv.write(to: folder.appendingPathComponent("watch_sleep.csv"), atomically: true, encoding: .utf8)
-            notes.append("Schlafphasen: \(samples.count) Einträge")
+            notes.append(tr("Schlafphasen: %d Einträge", samples.count))
         } catch {
-            notes.append("Schlafphasen: Fehler \(error.localizedDescription)")
+            notes.append(tr("Schlafphasen: Fehler %@", error.localizedDescription))
         }
 
         for (id, unit, file) in quantityTypes {
@@ -60,9 +60,9 @@ enum NightExport {
                         + "\(s.quantity.doubleValue(for: unit)),\(clean(s.sourceRevision.source.name))\n"
                 }
                 try csv.write(to: folder.appendingPathComponent("watch_" + file), atomically: true, encoding: .utf8)
-                notes.append("\(file): \(samples.count) Werte")
+                notes.append(tr("%@: %d Werte", file, samples.count))
             } catch {
-                notes.append("\(file): Fehler \(error.localizedDescription)")
+                notes.append(tr("%@: Fehler %@", file, error.localizedDescription))
             }
         }
         return notes

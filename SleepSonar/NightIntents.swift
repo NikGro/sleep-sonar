@@ -12,13 +12,13 @@ struct StartNightRecordingIntent: AudioRecordingIntent {
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let rec = PassiveNightEngine.shared
         if rec.isRunning {
-            return .result(dialog: "Die Nachtaufnahme läuft bereits.")
+            return .result(dialog: IntentDialog(stringLiteral: tr("Die Nachtaufnahme läuft bereits.")))
         }
         await rec.start()
         if let error = rec.errorMessage {
-            return .result(dialog: IntentDialog(stringLiteral: "Start fehlgeschlagen: \(error)"))
+            return .result(dialog: IntentDialog(stringLiteral: tr("Start fehlgeschlagen: %@", error)))
         }
-        return .result(dialog: "Nachtaufnahme gestartet. Gute Nacht!")
+        return .result(dialog: IntentDialog(stringLiteral: tr("Nachtaufnahme gestartet. Gute Nacht!")))
     }
 }
 
@@ -31,11 +31,11 @@ struct StopNightRecordingIntent: AppIntent {
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let rec = PassiveNightEngine.shared
         guard rec.isRunning else {
-            return .result(dialog: "Es läuft gerade keine Nachtaufnahme.")
+            return .result(dialog: IntentDialog(stringLiteral: tr("Es läuft gerade keine Nachtaufnahme.")))
         }
         let duration = rec.startDate.map { NightView.duration(Date().timeIntervalSince($0)) } ?? ""
         rec.stop()
-        return .result(dialog: IntentDialog(stringLiteral: "Nachtaufnahme beendet (\(duration))."))
+        return .result(dialog: IntentDialog(stringLiteral: tr("Nachtaufnahme beendet (%@).", duration)))
     }
 }
 

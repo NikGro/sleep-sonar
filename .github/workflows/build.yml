@@ -36,6 +36,9 @@ jobs:
       - name: Test SonarDSP
         run: swift test --package-path Packages/SonarDSP -c release
 
+      - name: Übersetzungen erzeugen und prüfen
+        run: python3 scripts/gen_strings.py
+
       - name: Generate Xcode project
         run: xcodegen generate
 

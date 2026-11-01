@@ -11,6 +11,7 @@ struct SoundEvent: Codable, Hashable, Identifiable {
     enum Kind: String, Codable, CaseIterable {
         case snoring, talking, fussing, coughing, gasping, animal, noise
 
+        var displayName: String { tr(name) }
         var name: String {
             switch self {
             case .snoring: "Schnarchen"
