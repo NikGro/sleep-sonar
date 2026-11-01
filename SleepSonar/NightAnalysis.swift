@@ -181,7 +181,8 @@ struct NightAnalysisView: View {
         let hasWatch = r.watch.contains { $0 != nil }
         let asleep = ours.filter { $0 != nil && $0 != .wake }.count
 
-        // Dauer und Schlafwert nebeneinander: Mond so groß wie die Zahl, Beschriftungen in einer Zeile
+        // Dauer und Schlafwert nebeneinander: Mond so groß wie die Zahl, Beschriftungen in einer Zeile,
+        // rechte Spalte bündig mit dem rechten Rand der Balken darunter
         let score = SleepScore.compute(r.ours, epochSeconds: r.epochSeconds)
         Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 4) {
             GridRow(alignment: .center) {
@@ -192,7 +193,7 @@ struct NightAnalysisView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 if let score {
                     ScoreMoon(score: score.total, size: 52, showNumber: true)
-                        .gridColumnAlignment(.center)
+                        .gridColumnAlignment(.trailing)
                 }
             }
             GridRow(alignment: .firstTextBaseline) {
