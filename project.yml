@@ -1,6 +1,7 @@
 name: SleepSonar
 options:
   bundleIdPrefix: de.nikgro
+  developmentLanguage: de
   deploymentTarget:
     iOS: "18.0"
 packages:
@@ -21,6 +22,8 @@ targets:
         CFBundleDisplayName: Somnivo
         CFBundleShortVersionString: "0.3.0"
         CFBundleVersion: "2"
+        CFBundleDevelopmentRegion: de
+        CFBundleLocalizations: [de]
         UILaunchScreen: {}
         NSSupportsLiveActivities: true
         UIBackgroundModes: [audio, processing]
