@@ -64,7 +64,7 @@ struct DonationConsentView: View {
                     Text(tr("Nächte spenden?"))
                         .font(Theme.display(32))
                         .foregroundStyle(heading)
-                    Text(tr("Somnivo lernt Schlafphasen aus Geräuschen. Mit gespendeten Nächten wird ein Modell trainiert, das die Schätzung für alle genauer machen soll."))
+                    Text(tr("Suya lernt Schlafphasen aus Geräuschen. Mit gespendeten Nächten wird ein Modell trainiert, das die Schätzung für alle genauer machen soll."))
                         .font(.body)
                 }
                 .padding(.top, 28)
@@ -78,7 +78,7 @@ struct DonationConsentView: View {
                     ("moon.zzz", tr("Nur Nächte mit mindestens 5 Stunden Aufnahme und Schlafphasen der Watch.")),
                 ])
                 section(tr("Deine Entscheidung"), color: Theme.color(.wake), points: [
-                    ("hand.raised", tr("Freiwillig. Somnivo funktioniert ohne Spende genauso.")),
+                    ("hand.raised", tr("Freiwillig. Suya funktioniert ohne Spende genauso.")),
                     ("arrow.uturn.backward", tr("Du kannst jederzeit unter „Mehr“ widerrufen und mit deiner Spender-Nummer die Löschung verlangen.")),
                     ("clock", tr("Noch wird nichts gesendet. Die Übertragung kommt mit einem späteren Update.")),
                 ])

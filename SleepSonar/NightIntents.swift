@@ -5,7 +5,7 @@ import AppIntents
 /// solange gleichzeitig eine Live-Aktivität läuft – die startet die Aufnahme selbst.
 struct StartNightRecordingIntent: AudioRecordingIntent {
     static var title: LocalizedStringResource = "Schlafaufnahme starten"
-    static var description = IntentDescription("Startet die Nachtaufnahme von Somnivo (nur Mikrofon).")
+    static var description = IntentDescription("Startet die Nachtaufnahme von Suya (nur Mikrofon).")
     static var openAppWhenRun: Bool = false
 
     @MainActor
@@ -24,7 +24,7 @@ struct StartNightRecordingIntent: AudioRecordingIntent {
 
 struct StopNightRecordingIntent: AppIntent {
     static var title: LocalizedStringResource = "Schlafaufnahme beenden"
-    static var description = IntentDescription("Beendet die laufende Nachtaufnahme von Somnivo.")
+    static var description = IntentDescription("Beendet die laufende Nachtaufnahme von Suya.")
     static var openAppWhenRun: Bool = false
 
     @MainActor

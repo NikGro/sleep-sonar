@@ -248,7 +248,7 @@ final class SmartAlarm: ObservableObject {
             return
         }
         guard await AlarmBackend.authorize() else {
-            problem = tr("Somnivo darf keine Wecker stellen. Erlaube es unter Einstellungen → Apps → Somnivo → Wecker.")
+            problem = tr("Suya darf keine Wecker stellen. Erlaube es unter Einstellungen → Apps → Suya → Wecker.")
             return
         }
         problem = nil

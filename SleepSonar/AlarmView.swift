@@ -305,7 +305,7 @@ private struct SoundList: View {
                 } header: {
                     ListHeader(tr("Lautstärke"))
                 } footer: {
-                    Text(tr("Somnivo verwendet höchstens die ersten 30 Sekunden eines Tons. Deshalb wird er höchstens 30 Sekunden lang lauter."))
+                    Text(tr("Suya verwendet höchstens die ersten 30 Sekunden eines Tons. Deshalb wird er höchstens 30 Sekunden lang lauter."))
                 }
                 .listRowBackground(Theme.raised)
             } else {

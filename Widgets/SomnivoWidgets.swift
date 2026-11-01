@@ -26,7 +26,7 @@ struct NightLiveActivity: Widget {
                     .font(.title2)
                     .foregroundStyle(moon)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(tr("Somnivo hört zu"))
+                    Text(tr("Suya hört zu"))
                         .font(.system(.headline, design: .serif))
                         .foregroundStyle(moon)
                     Text(tr("seit %@ Uhr", ctx.attributes.start.formatted(date: .omitted, time: .shortened)))
@@ -83,7 +83,7 @@ struct SnoozeLiveActivity: Widget {
             HStack(spacing: 14) {
                 Image(systemName: "zzz").font(.title2).foregroundStyle(moon)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(ctx.attributes.metadata?.label ?? "Somnivo")
+                    Text(ctx.attributes.metadata?.label ?? "Suya")
                         .font(.system(.headline, design: .serif))
                         .foregroundStyle(moon)
                     Text(tr("Schlummern")).font(.caption).foregroundStyle(mist)
@@ -105,7 +105,7 @@ struct SnoozeLiveActivity: Widget {
                     countdown(ctx.state).monospacedDigit().foregroundStyle(moon)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text(ctx.attributes.metadata?.label ?? "Somnivo").font(.caption).foregroundStyle(mist)
+                    Text(ctx.attributes.metadata?.label ?? "Suya").font(.caption).foregroundStyle(mist)
                 }
             } compactLeading: {
                 Image(systemName: "zzz").foregroundStyle(moon)

@@ -12,7 +12,7 @@ struct MoreView: View {
                         Task {
                             do {
                                 try await NightExport.requestAuthorization()
-                                healthNote = tr("Erledigt. Ändern kannst du das in der Health-App unter Profil, Apps, Somnivo.")
+                                healthNote = tr("Erledigt. Ändern kannst du das in der Health-App unter Profil, Apps, Suya.")
                             } catch {
                                 healthNote = tr("Health hat nicht geantwortet: %@", error.localizedDescription)
                             }
@@ -26,7 +26,7 @@ struct MoreView: View {
                 } header: {
                     ListHeader("Apple Health")
                 } footer: {
-                    Text(tr("Somnivo liest die Schlafphasen deiner Apple Watch, um sie mit der eigenen Schätzung zu vergleichen."))
+                    Text(tr("Suya liest die Schlafphasen deiner Apple Watch, um sie mit der eigenen Schätzung zu vergleichen."))
                         .foregroundStyle(Theme.mist)
                 }
                 .listRowBackground(Theme.raised)
@@ -45,7 +45,7 @@ struct MoreView: View {
                     tip("moon.zzz", tr("„Schlafaufnahme starten“ und „Schlafaufnahme beenden“ gibt es in der Kurzbefehle-App, zum Beispiel als Automation beim Schlaf-Fokus."))
                     tip("bolt", tr("Über Nacht ans Ladekabel. Die Aufnahme braucht etwa so viel Strom wie Musik hören."))
                     tip("iphone.gen3", tr("Unterseite mit dem Mikrofon zu dir, etwa eine Armlänge entfernt."))
-                    tip("hand.raised", tr("Somnivo sendet keinen Ton aus und stört andere Apps nicht."))
+                    tip("hand.raised", tr("Suya sendet keinen Ton aus und stört andere Apps nicht."))
                 } header: {
                     ListHeader(tr("Tipps"))
                 }

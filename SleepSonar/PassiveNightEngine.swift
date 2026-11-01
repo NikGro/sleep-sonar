@@ -47,7 +47,7 @@ final class PassiveNightEngine: ObservableObject {
         recentBreath = []
         breathAnchor = nil
         guard await AVAudioApplication.requestRecordPermission() else {
-            errorMessage = tr("Kein Mikrofonzugriff. Einstellungen → Somnivo → Mikrofon erlauben.")
+            errorMessage = tr("Kein Mikrofonzugriff. Einstellungen → Suya → Mikrofon erlauben.")
             return
         }
         do {
@@ -157,7 +157,7 @@ final class PassiveNightEngine: ObservableObject {
     private func startActivity() {
         guard let startDate else { return }
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            log(tr("Live-Aktivitäten sind aus (Einstellungen → Somnivo → Live-Aktivitäten)"))
+            log(tr("Live-Aktivitäten sind aus (Einstellungen → Suya → Live-Aktivitäten)"))
             return
         }
         // Reste einer abgebrochenen Nacht aufräumen

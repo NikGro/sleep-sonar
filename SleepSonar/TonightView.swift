@@ -38,7 +38,7 @@ struct TonightView: View {
                 Text(tr("Leg dein iPhone neben das Bett"))
                     .font(Theme.display(26))
                     .multilineTextAlignment(.center)
-                Text(tr("Somnivo hört deine Atmung und Bewegungen und schätzt daraus deine Schlafphasen. Die Aufnahme bleibt auf deinem iPhone."))
+                Text(tr("Suya hört deine Atmung und Bewegungen und schätzt daraus deine Schlafphasen. Die Aufnahme bleibt auf deinem iPhone."))
                     .font(.callout)
                     .foregroundStyle(Theme.mist)
                     .multilineTextAlignment(.center)

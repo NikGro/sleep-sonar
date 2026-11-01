@@ -28,7 +28,7 @@ final class HealthManager: ObservableObject {
             case .sharingAuthorized:
                 say(tr("✅ Schreibzugriff auf Schlaf erlaubt."))
             case .sharingDenied:
-                say(tr("⚠️ Schreibzugriff verweigert. Health → Profil → Apps → Somnivo → Schlaf aktivieren."))
+                say(tr("⚠️ Schreibzugriff verweigert. Health → Profil → Apps → Suya → Schlaf aktivieren."))
             default:
                 say(tr("⚠️ Berechtigung noch nicht festgelegt."))
             }
@@ -119,7 +119,7 @@ final class HealthManager: ObservableObject {
                     if let error { cont.resume(throwing: error) } else { cont.resume(returning: count) }
                 }
             }
-            say(tr("🗑️ %d Einträge von Somnivo gelöscht.", count))
+            say(tr("🗑️ %d Einträge von Suya gelöscht.", count))
         } catch {
             say(tr("❌ Löschen fehlgeschlagen: %@", error.localizedDescription))
         }

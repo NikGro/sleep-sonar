@@ -1,7 +1,7 @@
 import SonarDSP
 import SwiftUI
 
-/// Gestaltung von Somnivo – ein Konzept für alle Bildschirme.
+/// Gestaltung von Suya – ein Konzept für alle Bildschirme.
 ///
 /// Die App wird nachts im Dunkeln geöffnet: Hintergrund ist tiefe blaue Tinte (kein Schwarz).
 /// Jede Farbe hat genau eine Aufgabe:

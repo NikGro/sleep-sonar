@@ -101,7 +101,7 @@ jobs:
             --entitlements SleepSonar/SleepSonar.entitlements \
             --repo "$GITHUB_REPOSITORY" --tag "$TAG" --notes "$NOTES" --out source.json
           gh release create "$TAG" SleepSonar.ipa source.json \
-            --title "SleepSonar $VERSION" --notes "$NOTES" --latest
+            --title "Suya $VERSION" --notes "$NOTES" --latest
           echo "Quelle: https://github.com/$GITHUB_REPOSITORY/releases/latest/download/source.json" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload build log on failure

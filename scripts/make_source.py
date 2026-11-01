@@ -58,19 +58,19 @@ def main():
 
     privacy = {k: v for k, v in info.items() if k.startswith("NS") and k.endswith("UsageDescription")}
     source = {
-        "name": "Somnivo",
+        "name": "Suya",
         "identifier": "de.nikgro.sleepsonar.source",
         "sourceURL": source_url,
-        "subtitle": "Schlafphasen per Mikrofon",
-        "description": "Eigene Builds von Somnivo, automatisch aus GitHub.",
+        "subtitle": "Sleep made visible",
+        "description": "Eigene Builds von Suya, automatisch aus GitHub.",
         "iconURL": f"{raw}/assets/icon.png",
         "website": base,
         "tintColor": "#EEE6CF",
         "apps": [{
-            "name": "Somnivo",
+            "name": "Suya",
             "bundleIdentifier": info["CFBundleIdentifier"],
             "developerName": "Niklas Groß",
-            "subtitle": "Schlafphasen ohne Uhr",
+            "subtitle": "Sleep made visible",
             "localizedDescription": "Hört nachts Atmung und Bewegung über das Mikrofon, schätzt daraus "
                                     "deine Schlafphasen und vergleicht sie mit der Apple Watch.",
             "iconURL": f"{raw}/assets/icon.png",

@@ -90,7 +90,7 @@ enum NightExport {
             try fm.copyItem(at: f, to: staging.appendingPathComponent(f.lastPathComponent))
         }
         let target = fm.temporaryDirectory
-            .appendingPathComponent("Somnivo_\(folder.lastPathComponent)\(includeAudio ? "_mit_Audio" : "").zip")
+            .appendingPathComponent("Suya_\(folder.lastPathComponent)\(includeAudio ? "_mit_Audio" : "").zip")
         try? fm.removeItem(at: target)
         var coordError: NSError?
         var copyError: Error?
