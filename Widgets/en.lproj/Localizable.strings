@@ -157,6 +157,7 @@
 "Neustart fehlgeschlagen: %@" = "Restart failed: %@";
 "Neustart: %@" = "Restart: %@";
 "Neustarts" = "Restarts";
+"Nicht mehr anzeigen" = "Don't show again";
 "Nie" = "Never";
 "Noch kein Wecker" = "No alarms yet";
 "Noch keine Nacht aufgezeichnet" = "No nights recorded yet";
@@ -235,6 +236,7 @@
 "Vergleich mit der Watch" = "Comparison with the Watch";
 "Verglichen über %@." = "Compared over %@.";
 "Version" = "Version";
+"Verstanden" = "Got it";
 "Vögel" = "Birds";
 "Wach" = "Awake";
 "Was zuerst eintritt, blendet die Klänge über 30 Sekunden aus." = "Whichever comes first fades the sounds out over 30 seconds.";
@@ -249,6 +251,7 @@
 "Wecker klingelt: %@" = "Alarm ringing: %@";
 "Wecker konnte nicht gestellt werden: %@" = "Couldn't set the alarm: %@";
 "Wecker löschen" = "Delete alarm";
+"Wecker nach Schlafdauer" = "Alarm by sleep duration";
 "Weckt in den letzten %d min vor der spätesten Zeit, sobald du leicht schläfst. Dafür muss die Nachtaufnahme laufen." = "Wakes you in the last %d min before the latest time, as soon as you're sleeping lightly. The night recording has to be running for this.";
 "Weckt nach etwa %@ Schlaf, gerechnet ab dem Einschlafen. In den letzten %d min davor, sobald du leicht schläfst." = "Wakes you after about %@ of sleep, counted from falling asleep. In the last %d min before that, as soon as you're sleeping lightly.";
 "Weckt nach etwa %@ Schlaf: zwischen %@ und %@, sobald du leicht schläfst." = "Wakes you after about %@ of sleep: between %@ and %@, as soon as you're sleeping lightly.";

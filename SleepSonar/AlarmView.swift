@@ -110,6 +110,8 @@ struct AlarmEditView: View {
     @State var item: AlarmItem
     let isNew: Bool
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("alarm.durationHintHidden") private var hideDurationHint = false
+    @State private var showDurationHint = false
     private let windows = [10, 20, 30, 45, 60]
     private let snoozes = [1, 3, 5, 9, 10, 15, 20, 30]
 
@@ -124,10 +126,6 @@ struct AlarmEditView: View {
                     .pickerStyle(.segmented)
                     .listRowBackground(Color.clear)
                     if item.mode == .time { timePicker } else { durationPicker }
-                } footer: {
-                    if item.mode == .duration {
-                        Text(tr("Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht."))
-                    }
                 }
                 .listRowBackground(Color.clear)
 
@@ -200,7 +198,11 @@ struct AlarmEditView: View {
                 }
             }
             .onDisappear { SoundPreview.shared.stop() }
-            .onChange(of: item.mode) { Haptics.select() }
+            .onChange(of: item.mode) {
+                Haptics.select()
+                if item.mode == .duration && !hideDurationHint { showDurationHint = true }
+            }
+            .sheet(isPresented: $showDurationHint) { DurationHint(hide: $hideDurationHint) }
             .onChange(of: item.snooze) { Haptics.select() }
             .onChange(of: item.smart) { Haptics.select() }
         }
@@ -485,5 +487,39 @@ struct CountdownWheel: UIViewRepresentable {
             select(p, minutes: h * 60 + m, animated: false)
             Task { @MainActor in self.parent.minutes = h * 60 + m }
         }
+    }
+}
+
+/// Hinweis beim Wechsel auf „Schlafdauer“, mit Haken zum Ausblenden.
+private struct DurationHint: View {
+    @Binding var hide: Bool
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Label(tr("Wecker nach Schlafdauer"), systemImage: "exclamationmark.circle")
+                .font(Theme.display(22))
+                .foregroundStyle(Theme.accent)
+            Text(tr("Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht."))
+                .font(.callout)
+                .fixedSize(horizontal: false, vertical: true)
+            Button {
+                Haptics.select()
+                hide.toggle()
+            } label: {
+                Label(tr("Nicht mehr anzeigen"), systemImage: hide ? "checkmark.square.fill" : "square")
+                    .font(.callout)
+                    .foregroundStyle(hide ? Theme.accent : Theme.mist)
+            }
+            .buttonStyle(.plain)
+            Button(tr("Verstanden")) { dismiss() }
+                .buttonStyle(MoonButtonStyle())
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .foregroundStyle(Theme.moon)
+        .presentationDetents([.height(330)])
+        .presentationBackground(Theme.raised)
+        .presentationCornerRadius(28)
     }
 }

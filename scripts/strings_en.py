@@ -269,6 +269,9 @@ EN = {
 "Antippen wählt den Ton, nochmal antippen spielt ihn ab oder hält ihn an.": "Tap to choose a sound, tap again to play or pause it.",
 "Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht.": "The time counts from the start of the night recording. This alarm only rings while a recording is running – without a recording it doesn't ring.",
 "ab Aufnahmebeginn, nur mit Aufnahme": "from recording start, only with recording",
+"Wecker nach Schlafdauer": "Alarm by sleep duration",
+"Nicht mehr anzeigen": "Don't show again",
+"Verstanden": "Got it",
 # Datenspende
 "Datenspende": "Data donation",
 "Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur ein grobes Klangbild, aus dem sich keine Sprache verstehen lässt.": "Helps make the estimate more accurate for everyone. No sound, only a coarse sound picture from which speech can't be understood.",
