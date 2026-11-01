@@ -15,7 +15,7 @@ struct AlarmItem: Codable, Identifiable, Equatable {
     var mode: Mode = .time
     /// Minuten seit Mitternacht (Modus Uhrzeit)
     var wakeMinutes = 7 * 60
-    /// Schlafdauer in Minuten, 1 … 23 h 59 (Modus Schlafdauer)
+    /// Dauer ab Beginn der Nachtaufnahme in Minuten, 1 … 23 h 59 (Modus Schlafdauer)
     var durationMinutes = 7 * 60 + 30
     /// Leichten Schlaf suchen (nur mit laufender Nachtaufnahme)
     var smart = true
@@ -230,10 +230,9 @@ final class SmartAlarm: ObservableObject {
             }
             return nil
         case .duration:
+            // ab Beginn der Nachtaufnahme; ohne Aufnahme kein Wecker
             guard let start = recordingStart else { return nil }
-            // bis zum erkannten Einschlafen: Aufnahmebeginn + 15 min als Annahme
-            let base = onset ?? start.addingTimeInterval(15 * 60)
-            return base.addingTimeInterval(Double(a.durationMinutes) * 60)
+            return start.addingTimeInterval(Double(a.durationMinutes) * 60)
         }
     }
 
@@ -367,7 +366,7 @@ final class SmartAlarm: ObservableObject {
         }
         guard !evaluating, seconds.count >= 20 * 60 else { return }
         let active = items.filter { $0.enabled && rang[$0.id] == nil }
-        let needOnset = onset == nil && active.contains { $0.mode == .duration }
+        let needOnset = false   // Schlafdauer zählt ab Aufnahmebeginn, kein Einschlafpunkt nötig
         let due = active.filter { a in
             guard a.smart, let latest = latest(a, after: start) else { return false }
             return now >= latest.addingTimeInterval(-Double(a.windowMinutes) * 60) && now < latest

@@ -66,6 +66,7 @@
 "Die Schlafphasen sind eine Schätzung aus Geräuschen und keine medizinische Messung. Bei Verdacht auf Schlafstörungen hilft ein Arzt oder ein Schlaflabor." = "The sleep stages are an estimate based on sounds, not a medical measurement. If you suspect a sleep disorder, see a doctor or a sleep lab.";
 "Die Schätzung ist noch in Entwicklung. Wach und Schlaf sind halbwegs verlässlich, Tief und REM noch grob. Kein Medizinprodukt." = "The estimate is still in development. Awake and asleep are fairly reliable, deep and REM are still rough. Not a medical device.";
 "Die Wecker klingeln wie der iPhone-Wecker, auch bei Stummschaltung und im Schlaf-Fokus." = "The alarms ring like the iPhone alarm, even in silent mode and with the Sleep Focus on.";
+"Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht." = "The time counts from the start of the night recording. This alarm only rings while a recording is running – without a recording it doesn't ring.";
 "Diese Datei lässt sich nicht als Ton verwenden." = "This file can't be used as a sound.";
 "Diese Nacht hat keine Pegeldaten (nur Nächte aus der Mikrofon-Aufnahme lassen sich auswerten)." = "This night has no level data (only nights from the microphone recording can be analyzed).";
 "Du kannst jederzeit unter „Mehr“ widerrufen und mit deiner Spender-Nummer die Löschung verlangen." = "You can withdraw at any time under “More” and request deletion with your donor number.";
@@ -270,6 +271,7 @@
 "Zeitraum" = "Window";
 "Zugfahrt" = "Train ride";
 "Zum Ausprobieren. In der Nacht laufen die Klänge mit der Aufnahme und enden mit ihr." = "For trying out. At night, the sounds play with the recording and end with it.";
+"ab Aufnahmebeginn, nur mit Aufnahme" = "from recording start, only with recording";
 "aus" = "off";
 "aus um %@" = "off at %@";
 "geschlafen, %@ bis %@ Uhr" = "asleep, %@ to %@";

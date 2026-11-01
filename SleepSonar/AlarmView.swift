@@ -124,6 +124,10 @@ struct AlarmEditView: View {
                     .pickerStyle(.segmented)
                     .listRowBackground(Color.clear)
                     if item.mode == .time { timePicker } else { durationPicker }
+                } footer: {
+                    if item.mode == .duration {
+                        Text(tr("Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht."))
+                    }
                 }
                 .listRowBackground(Color.clear)
 
@@ -239,7 +243,7 @@ struct AlarmEditView: View {
         if !a.label.isEmpty { parts.append(a.label) }
         switch a.mode {
         case .time: parts.append(WeekdayPicker.describe(a.repeatDays))
-        case .duration: parts.append(tr("Schlafdauer"))
+        case .duration: parts.append(tr("ab Aufnahmebeginn, nur mit Aufnahme"))
         }
         if a.smart { parts.append(tr("leicht ab %d min vorher", a.windowMinutes)) }
         return parts.joined(separator: ", ")
