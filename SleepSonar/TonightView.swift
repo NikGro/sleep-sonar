@@ -16,14 +16,10 @@ struct TonightView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 40)
             }
+            .scrollBounceBehavior(.basedOnSize)
             .nightBackground()
             .navigationTitle("Heute Nacht")
             .toolbarBackground(Theme.ink, for: .navigationBar)
-            .confirmationDialog("Aufnahme beenden?", isPresented: $confirmStop, titleVisibility: .visible) {
-                Button("Aufnahme beenden", role: .destructive) { rec.stop() }
-            } message: {
-                Text("Die Nacht wird gespeichert und lässt sich danach auswerten.")
-            }
         }
     }
 
@@ -105,6 +101,12 @@ struct TonightView: View {
                 Text("Aufnahme beenden")
             }
             .buttonStyle(MoonButtonStyle(prominent: false))
+            // am Knopf verankert, damit die Rückfrage dort erscheint (iOS 26 zeigt sie als Sprechblase)
+            .confirmationDialog("Aufnahme beenden?", isPresented: $confirmStop, titleVisibility: .visible) {
+                Button("Aufnahme beenden", role: .destructive) { rec.stop() }
+            } message: {
+                Text("Die Nacht wird gespeichert und lässt sich danach auswerten.")
+            }
 
             DisclosureGroup(isExpanded: $showDetails) {
                 VStack(spacing: 10) {

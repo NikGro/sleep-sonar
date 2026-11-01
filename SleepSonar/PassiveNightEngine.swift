@@ -118,7 +118,11 @@ final class PassiveNightEngine: ObservableObject {
     // MARK: - Live-Aktivität (Dynamic Island, Sperrbildschirm, StandBy)
 
     private func startActivity() {
-        guard ActivityAuthorizationInfo().areActivitiesEnabled, let startDate else { return }
+        guard let startDate else { return }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            log("Live-Aktivitäten sind aus (Einstellungen → Somnivo → Live-Aktivitäten)")
+            return
+        }
         // Reste einer abgebrochenen Nacht aufräumen
         for old in Activity<NightActivityAttributes>.activities {
             Task { await old.end(nil, dismissalPolicy: .immediate) }
@@ -127,6 +131,7 @@ final class PassiveNightEngine: ObservableObject {
             activity = try Activity.request(
                 attributes: NightActivityAttributes(start: startDate),
                 content: .init(state: .init(handled: false), staleDate: nil))
+            log("Live-Aktivität gestartet")
         } catch {
             log("Live-Aktivität nicht möglich: \(error.localizedDescription)")
         }
