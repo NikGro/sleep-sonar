@@ -248,6 +248,10 @@ EN = {
 "Was zuerst eintritt, blendet die Klänge über 15 Sekunden aus. Spätestens mit dem Ende der Aufnahme sind sie aus.": "Whichever comes first fades the sounds out over 15 seconds. They stop at the latest when the recording ends.",
 "Ausblenden": "Fade out",
 "Klänge ausblenden": "Fade out sounds",
+"Wähle unten einen Klang": "Pick a sound below",
+"Löschen": "Delete",
+"Gedrückt halten zum Löschen.": "Press and hold to delete.",
+"Harfe": "Harp",
 # Datenspende
 "Datenspende": "Data donation",
 "Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur ein grobes Klangbild, aus dem sich keine Sprache verstehen lässt.": "Helps make the estimate more accurate for everyone. No sound, only a coarse sound picture from which speech can't be understood.",

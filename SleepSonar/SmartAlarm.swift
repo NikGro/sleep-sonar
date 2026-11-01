@@ -43,14 +43,17 @@ struct AlarmItem: Codable, Identifiable, Equatable {
 /// Eingebaute Wecktöne (Sounds/<name>.caf, volle Lautstärke). Lautstärke und Anstieg werden
 /// je Wecker in eine eigene Datei gerechnet (AlarmKit kennt keine Lautstärke-Einstellung).
 enum AlarmSound: String, CaseIterable, Identifiable {
-    case morgenlicht, glocke, wellen, klassisch, system, custom
+    case morgenlicht, harfe, glocke, voegel, bach, wellen, klassisch, system, custom
     var id: String { rawValue }
-    static var builtIn: [AlarmSound] { [.morgenlicht, .glocke, .wellen, .klassisch] }
+    static var builtIn: [AlarmSound] { [.morgenlicht, .harfe, .glocke, .voegel, .bach, .wellen, .klassisch] }
     var name: String {
         switch self {
         case .morgenlicht: tr("Morgenlicht")
+        case .harfe: tr("Harfe")
         case .glocke: tr("Glocke")
-        case .wellen: tr("Wellen")
+        case .voegel: tr("Vögel")
+        case .bach: tr("Bach")
+        case .wellen: tr("Meereswellen")
         case .klassisch: tr("Klassisch")
         case .system: tr("iPhone-Standard")
         case .custom: tr("Eigener Ton")
@@ -80,7 +83,7 @@ enum AlarmSoundRenderer {
         switch AlarmSound(rawValue: a.sound) ?? .system {
         case .system: return nil
         case .custom: return a.customSound.map { customDir.appendingPathComponent($0) }
-        default: return Bundle.main.url(forResource: a.sound, withExtension: "caf")
+        default: return Bundle.main.url(forResource: "wecker_" + a.sound, withExtension: "m4a")
         }
     }
 
