@@ -143,7 +143,8 @@ struct NightAnalysisView: View {
                             ProgressView(value: p).tint(Theme.moon).frame(maxWidth: 220)
                             Text("Geräusche der Nacht werden erkannt (\(Int(p * 100)) %)")
                                 .font(.callout).foregroundStyle(Theme.mist)
-                            Text("Das passiert einmal je Nacht und bleibt auf dem iPhone.")
+                            Text("Das passiert einmal je Nacht und bleibt auf dem iPhone. Du kannst die App "
+                                 + "verlassen: Was fehlt, erledigt das iPhone später am Ladekabel.")
                                 .font(.caption).foregroundStyle(Theme.mist)
                         } else {
                             ProgressView().tint(Theme.moon)
@@ -161,6 +162,8 @@ struct NightAnalysisView: View {
         .navigationTitle(result.map { Self.title($0.start) } ?? "Auswertung")
         .navigationBarTitleDisplayMode(.inline)
         .task {
+            BackgroundAnalysis.analysisStarted()
+            defer { BackgroundAnalysis.analysisEnded() }
             do {
                 result = try await NightAnalyzer.analyze(folder: folder) { p in
                     Task { @MainActor in soundProgress = p }

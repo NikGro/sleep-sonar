@@ -3,7 +3,10 @@ import UIKit
 
 @main
 struct SleepSonarApp: App {
+    @Environment(\.scenePhase) private var scenePhase
+
     init() {
+        BackgroundAnalysis.register()
         // Tab-Leiste in Nachttinte statt System-Grau
         let tab = UITabBarAppearance()
         tab.configureWithOpaqueBackground()
@@ -43,6 +46,9 @@ struct SleepSonarApp: App {
             }
             .tint(Theme.moon)
             .preferredColorScheme(.dark)
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .background { BackgroundAnalysis.appWentToBackground() }
+            }
         }
     }
 }
