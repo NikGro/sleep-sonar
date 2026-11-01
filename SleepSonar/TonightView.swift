@@ -45,7 +45,8 @@ struct TonightView: View {
             }
 
             Button {
-                Task { await rec.start() }
+                Haptics.tap()
+                Task { await rec.start(); if rec.isRunning { Haptics.success() } }
             } label: {
                 Text(tr("Aufnahme starten"))
             }
@@ -99,6 +100,7 @@ struct TonightView: View {
             SoundsCard()
 
             Button {
+                Haptics.tap()
                 confirmStop = true
             } label: {
                 Text(tr("Aufnahme beenden"))
@@ -111,7 +113,7 @@ struct TonightView: View {
                     .frame(height: 1)
                     .offset(y: -10)
                     .confirmationDialog(tr("Aufnahme beenden?"), isPresented: $confirmStop, titleVisibility: .visible) {
-                        Button(tr("Aufnahme beenden"), role: .destructive) { rec.stop() }
+                        Button(tr("Aufnahme beenden"), role: .destructive) { rec.stop(); Haptics.warning() }
                     } message: {
                         Text(tr("Die Nacht wird gespeichert und lässt sich danach auswerten."))
                     }

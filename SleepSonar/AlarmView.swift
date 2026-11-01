@@ -23,7 +23,7 @@ struct AlarmView: View {
                     .listRowBackground(Theme.ink)
                 }
                 ForEach(alarms.items) { a in
-                    AlarmRow(item: a) { on in alarms.setEnabled(a.id, on) }
+                    AlarmRow(item: a) { on in Haptics.select(); alarms.setEnabled(a.id, on) }
                         .contentShape(Rectangle())
                         .onTapGesture { editing = a }
                         .listRowBackground(Theme.ink)
@@ -52,7 +52,7 @@ struct AlarmView: View {
             .toolbar {
                 if SmartAlarm.isAvailable {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button { editing = AlarmItem() } label: { Image(systemName: "plus") }
+                        Button { Haptics.tap(); editing = AlarmItem() } label: { Image(systemName: "plus") }
                             .accessibilityLabel(tr("Wecker hinzufügen"))
                     }
                 }
@@ -170,6 +170,7 @@ struct AlarmEditView: View {
                     Section {
                         Button(tr("Wecker löschen"), role: .destructive) {
                             SmartAlarm.shared.delete(item.id)
+                            Haptics.warning()
                             dismiss()
                         }
                         .foregroundStyle(Theme.alert)
@@ -189,11 +190,15 @@ struct AlarmEditView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(tr("Sichern")) {
                         SmartAlarm.shared.save(item)
+                        Haptics.success()
                         dismiss()
                     }
                 }
             }
             .onDisappear { SoundPreview.shared.stop() }
+            .onChange(of: item.mode) { Haptics.select() }
+            .onChange(of: item.snooze) { Haptics.select() }
+            .onChange(of: item.smart) { Haptics.select() }
         }
         .tint(Theme.moon)            // Navigation (Abbrechen/Sichern) in Mondweiß
         .preferredColorScheme(.dark)
@@ -248,6 +253,7 @@ private struct RepeatList: View {
         List {
             ForEach(WeekdayPicker.ordered, id: \.self) { d in
                 Button {
+                    Haptics.select()
                     if days.contains(d) { days.removeAll { $0 == d } } else { days.append(d) }
                 } label: {
                     HStack {
@@ -337,6 +343,7 @@ private struct SoundList: View {
 
     private func row(_ title: String, selected: Bool, _ pick: @escaping () -> Void) -> some View {
         Button {
+            Haptics.select()
             preview.stop()
             pick()
         } label: {

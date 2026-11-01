@@ -13,7 +13,7 @@ struct SoundsView: View {
         NavigationStack {
             List {
                 Section {
-                    Button { player.togglePreview() } label: {
+                    Button { Haptics.tap(); player.togglePreview() } label: {
                         Label(player.isPlaying ? tr("Anhalten") : tr("Probehören"),
                               systemImage: player.isPlaying ? "pause.fill" : "play.fill")
                     }
@@ -105,7 +105,7 @@ struct SoundsView: View {
             .alert(tr("Mischung sichern"), isPresented: $naming) {
                 TextField(tr("Name"), text: $mixName)
                 Button(tr("Abbrechen"), role: .cancel) {}
-                Button(tr("Sichern")) { player.saveMix(named: mixName) }
+                Button(tr("Sichern")) { player.saveMix(named: mixName); Haptics.success() }
             }
         }
     }
@@ -124,6 +124,7 @@ private struct SoundRow: View {
         let on = (player.volumes[sound] ?? 0) > 0.01
         HStack(spacing: 12) {
             Button {
+                Haptics.select()
                 player.volumes[sound] = on ? 0 : 0.6
             } label: {
                 Image(systemName: sound.symbol)
@@ -174,7 +175,7 @@ struct SoundsCard: View {
                         .lineLimit(2)
                 }
                 Spacer()
-                Button { player.toggle() } label: {
+                Button { Haptics.tap(); player.toggle() } label: {
                     Image(systemName: player.isPlaying && !player.fading ? "pause.fill" : "play.fill")
                         .frame(width: 36, height: 36)
                         .background(FadeRing(start: player.fadeStart, end: player.fadeEnd))

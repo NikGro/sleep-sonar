@@ -85,9 +85,9 @@ struct DonationConsentView: View {
 
                 // beide Antworten gleich gewichtet (keine Vorauswahl, kein Hervorheben)
                 VStack(spacing: 12) {
-                    Button(tr("Ja, Nächte spenden")) { donation.grant(); dismiss() }
+                    Button(tr("Ja, Nächte spenden")) { Haptics.select(); donation.grant(); dismiss() }
                         .buttonStyle(MoonButtonStyle(prominent: false))
-                    Button(tr("Nein, danke")) { donation.decline(); dismiss() }
+                    Button(tr("Nein, danke")) { Haptics.select(); donation.decline(); dismiss() }
                         .buttonStyle(MoonButtonStyle(prominent: false))
                 }
                 .padding(.top, 4)
