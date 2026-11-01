@@ -202,7 +202,7 @@ struct AlarmEditView: View {
                 Haptics.select()
                 if item.mode == .duration && !hideDurationHint { showDurationHint = true }
             }
-            .sheet(isPresented: $showDurationHint) { DurationHint(hide: $hideDurationHint) }
+            .fullScreenCover(isPresented: $showDurationHint) { DurationHint(hide: $hideDurationHint) }
             .onChange(of: item.snooze) { Haptics.select() }
             .onChange(of: item.smart) { Haptics.select() }
         }
@@ -490,19 +490,26 @@ struct CountdownWheel: UIViewRepresentable {
     }
 }
 
-/// Hinweis beim Wechsel auf „Schlafdauer“, mit Haken zum Ausblenden.
+/// Hinweis beim Wechsel auf „Schlafdauer“ (Vollbild), mit Haken zum Ausblenden.
 private struct DurationHint: View {
     @Binding var hide: Bool
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Label(tr("Wecker nach Schlafdauer"), systemImage: "exclamationmark.circle")
-                .font(Theme.display(22))
+        VStack(spacing: 28) {
+            Spacer()
+            Image(systemName: "waveform.badge.exclamationmark")
+                .font(.system(size: 52))
                 .foregroundStyle(Theme.accent)
+            Text(tr("Wecker nach Schlafdauer"))
+                .font(Theme.display(30))
+                .multilineTextAlignment(.center)
             Text(tr("Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht."))
-                .font(.callout)
+                .font(.body)
+                .foregroundStyle(Theme.mist)
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
+            Spacer()
             Button {
                 Haptics.select()
                 hide.toggle()
@@ -515,11 +522,10 @@ private struct DurationHint: View {
             Button(tr("Verstanden")) { dismiss() }
                 .buttonStyle(MoonButtonStyle())
         }
-        .padding(24)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 32)
+        .padding(.bottom, 24)
         .foregroundStyle(Theme.moon)
-        .presentationDetents([.height(330)])
-        .presentationBackground(Theme.raised)
-        .presentationCornerRadius(28)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Theme.ink.ignoresSafeArea())
     }
 }

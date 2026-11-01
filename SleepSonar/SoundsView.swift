@@ -74,14 +74,16 @@ struct SoundsView: View {
                     .accessibilityHidden(true)
             }
             .contentShape(Circle())
-            .gesture(DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    guard !pressed, !player.active.isEmpty else { return }
-                    pressed = true
-                    Haptics.tap()
-                    player.togglePreview()
-                }
-                .onEnded { _ in pressed = false })
+            // UIKit-Berührung ohne Wartezeit: Die Scroll-Ansicht hält Berührungen sonst ~150 ms zurück,
+            // um zu prüfen, ob gescrollt wird – genau diese Zeit wirkte wie Verzögerung.
+            .gesture(TouchDown {
+                guard !player.active.isEmpty else { return }
+                pressed = true
+                Haptics.tap()
+                player.togglePreview()
+            } onUp: {
+                pressed = false
+            })
             .padding(.top, 24)
             .opacity(player.active.isEmpty ? 0.5 : 1)
             .accessibilityElement()
@@ -339,5 +341,36 @@ struct CurvedText: View {
                     .offset(x: radius * sin(angle), y: -radius * cos(angle))
             }
         }
+    }
+}
+
+/// Meldet das Aufsetzen des Fingers sofort (UILongPress mit Dauer 0, ohne Berührungsverzögerung).
+struct TouchDown: UIGestureRecognizerRepresentable {
+    var onDown: () -> Void
+    var onUp: () -> Void
+
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator() }
+
+    func makeUIGestureRecognizer(context: Context) -> UILongPressGestureRecognizer {
+        let g = UILongPressGestureRecognizer()
+        g.minimumPressDuration = 0
+        g.allowableMovement = 30
+        g.delaysTouchesBegan = false
+        g.cancelsTouchesInView = false
+        g.delegate = context.coordinator
+        return g
+    }
+
+    func handleUIGestureRecognizerAction(_ g: UILongPressGestureRecognizer, context: Context) {
+        switch g.state {
+        case .began: onDown()
+        case .ended, .cancelled, .failed: onUp()
+        default: break
+        }
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        func gestureRecognizer(_ g: UIGestureRecognizer,
+                               shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
     }
 }
