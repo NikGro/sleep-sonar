@@ -42,28 +42,46 @@ struct SleepScore: Codable, Equatable {
 
 import SwiftUI
 
-/// Schlafwert als Ring mit Zahl.
-struct ScoreRing: View {
+/// Schlafwert als Mondphase: 0 = Neumond, 100 = Vollmond (wie das Mond-Motiv der App).
+struct ScoreMoon: View {
     let score: Int
-    var size: CGFloat = 64
-    var line: CGFloat = 5
+    var size: CGFloat = 56
 
     var body: some View {
         ZStack {
-            Circle().stroke(Theme.hairline, lineWidth: line)
-            // Bogen von Tiefschlaf-Blau über REM-Violett zur Morgendämmerung
-            Circle()
-                .trim(from: 0, to: CGFloat(score) / 100)
-                .stroke(AngularGradient(colors: [Theme.color(.deep), Theme.color(.rem), Theme.color(.wake)],
-                                        center: .center, startAngle: .zero,
-                                        endAngle: .degrees(360 * Double(max(score, 1)) / 100)),
-                        style: StrokeStyle(lineWidth: line, lineCap: .butt))
-                .rotationEffect(.degrees(-90))
-            Text("\(score)")
-                .font(Theme.display(size * 0.38).monospacedDigit())
+            Circle().fill(Theme.raised)
+            Circle().strokeBorder(Theme.hairline, lineWidth: 1)
+            MoonPhase(lit: Double(score) / 100)
+                .fill(RadialGradient(colors: [Theme.moon, Theme.moon.opacity(0.82)],
+                                     center: UnitPoint(x: 0.62, y: 0.35), startRadius: 1, endRadius: size * 0.7))
+                .shadow(color: Theme.moon.opacity(0.35 * Double(score) / 100), radius: size * 0.22)
         }
         .frame(width: size, height: size)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(tr("Schlafwert %d von 100", score))
+    }
+}
+
+/// Beleuchteter Teil des Mondes (zunehmend, Licht von rechts).
+struct MoonPhase: Shape {
+    var lit: Double
+
+    func path(in rect: CGRect) -> Path {
+        let r = min(rect.width, rect.height) / 2
+        let c = CGPoint(x: rect.midX, y: rect.midY)
+        let f = min(1, max(0, lit))
+        guard f > 0.005 else { return Path() }
+        // Schattengrenze: Halbellipse mit Halbachse r·(1−2f); rechts gewölbt = Sichel, links = Dreiviertel
+        let rx = r * (1 - 2 * f)
+        var p = Path()
+        p.move(to: CGPoint(x: c.x, y: c.y - r))
+        p.addArc(center: c, radius: r, startAngle: .degrees(-90), endAngle: .degrees(90), clockwise: false)
+        let steps = 48
+        for i in 1...steps {
+            let t = Double.pi / 2 - Double.pi * Double(i) / Double(steps)   // +90° … −90°
+            p.addLine(to: CGPoint(x: c.x + rx * cos(t), y: c.y + r * sin(t)))
+        }
+        p.closeSubpath()
+        return p
     }
 }

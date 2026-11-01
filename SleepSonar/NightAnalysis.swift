@@ -193,7 +193,10 @@ struct NightAnalysisView: View {
             Spacer(minLength: 0)
             if let score = SleepScore.compute(r.ours, epochSeconds: r.epochSeconds) {
                 VStack(spacing: 6) {
-                    ScoreRing(score: score.total, size: 78, line: 6)
+                    ScoreMoon(score: score.total, size: 58)
+                    Text("\(score.total)")
+                        .font(Theme.display(30).monospacedDigit())
+                        .accessibilityHidden(true)
                     Text(tr("Schlafwert")).font(.caption).foregroundStyle(Theme.mist)
                 }
             }

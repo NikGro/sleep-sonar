@@ -209,7 +209,11 @@ private struct NightRow: View {
                 if busy {
                     ProgressView().tint(Theme.moon)
                 } else if let score = summary?.score {
-                    ScoreRing(score: score.total, size: 38, line: 3)
+                    HStack(spacing: 8) {
+                        ScoreMoon(score: score.total, size: 22)
+                        Text("\(score.total)").font(Theme.display(19).monospacedDigit())
+                            .accessibilityHidden(true)
+                    }
                 }
             }
             if recording {
