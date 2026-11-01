@@ -43,22 +43,36 @@ struct SleepScore: Codable, Equatable {
 import SwiftUI
 
 /// Schlafwert als Mondphase: 0 = Neumond, 100 = Vollmond (wie das Mond-Motiv der App).
+/// Mit `showNumber` steht die Zahl im Mond: hell auf dem dunklen Teil, dunkel auf dem hellen.
 struct ScoreMoon: View {
     let score: Int
     var size: CGFloat = 56
+    var showNumber = false
+
+    private var lit: Double { Double(score) / 100 }
 
     var body: some View {
         ZStack {
-            Circle().fill(Theme.raised)
-            Circle().strokeBorder(Theme.hairline, lineWidth: 1)
-            MoonPhase(lit: Double(score) / 100)
-                .fill(RadialGradient(colors: [Theme.moon, Theme.moon.opacity(0.82)],
+            // unbeleuchteter Teil: deutlich heller als der Hintergrund, damit die Form erkennbar bleibt
+            Circle().fill(Theme.hairline)
+            Circle().strokeBorder(Theme.mist.opacity(0.45), lineWidth: max(1, size / 40))
+            if showNumber { number(Theme.moon) }
+            MoonPhase(lit: lit)
+                .fill(RadialGradient(colors: [Theme.moon, Theme.moon.opacity(0.85)],
                                      center: UnitPoint(x: 0.62, y: 0.35), startRadius: 1, endRadius: size * 0.7))
-                .shadow(color: Theme.moon.opacity(0.35 * Double(score) / 100), radius: size * 0.22)
+                .shadow(color: Theme.moon.opacity(0.3 * lit), radius: size * 0.2)
+            if showNumber { number(Theme.ink).mask(MoonPhase(lit: lit)) }
         }
         .frame(width: size, height: size)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(tr("Schlafwert %d von 100", score))
+    }
+
+    private func number(_ color: Color) -> some View {
+        Text("\(score)")
+            .font(Theme.display(size * 0.44, weight: .medium).monospacedDigit())
+            .foregroundStyle(color)
+            .frame(width: size, height: size)
     }
 }
 

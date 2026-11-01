@@ -181,26 +181,33 @@ struct NightAnalysisView: View {
         let hasWatch = r.watch.contains { $0 != nil }
         let asleep = ours.filter { $0 != nil && $0 != .wake }.count
 
-        HStack(alignment: .center, spacing: 20) {
-            VStack(alignment: .leading, spacing: 4) {
+        // Dauer und Schlafwert nebeneinander: Mond so groß wie die Zahl, Beschriftungen in einer Zeile
+        let score = SleepScore.compute(r.ours, epochSeconds: r.epochSeconds)
+        Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 4) {
+            GridRow(alignment: .center) {
                 Text(Self.hm(Double(asleep) * r.epochSeconds))
                     .font(Theme.display(44, weight: .light))
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if let score {
+                    ScoreMoon(score: score.total, size: 52, showNumber: true)
+                        .gridColumnAlignment(.center)
+                }
+            }
+            GridRow(alignment: .firstTextBaseline) {
                 Text(tr("geschlafen, %@ bis %@ Uhr", r.start.formatted(date: .omitted, time: .shortened),
                         r.start.addingTimeInterval(Double(r.ours.count) * r.epochSeconds)
                             .formatted(date: .omitted, time: .shortened)))
                     .font(.callout).foregroundStyle(Theme.mist)
-            }
-            Spacer(minLength: 0)
-            if let score = SleepScore.compute(r.ours, epochSeconds: r.epochSeconds) {
-                VStack(spacing: 6) {
-                    ScoreMoon(score: score.total, size: 58)
-                    Text("\(score.total)")
-                        .font(Theme.display(30).monospacedDigit())
-                        .accessibilityHidden(true)
-                    Text(tr("Schlafwert")).font(.caption).foregroundStyle(Theme.mist)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if score != nil {
+                    Text(tr("Schlafwert")).font(.callout).foregroundStyle(Theme.mist)
+                        .fixedSize()
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 16)
 
         if let score = SleepScore.compute(r.ours, epochSeconds: r.epochSeconds) {
