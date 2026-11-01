@@ -4,6 +4,7 @@ import UIKit
 @main
 struct SleepSonarApp: App {
     @Environment(\.scenePhase) private var scenePhase
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
         BackgroundAnalysis.register()

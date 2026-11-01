@@ -2,7 +2,7 @@ name: SleepSonar
 options:
   bundleIdPrefix: de.nikgro
   deploymentTarget:
-    iOS: "17.0"
+    iOS: "18.0"
 packages:
   SonarDSP:
     path: Packages/SonarDSP
@@ -10,9 +10,10 @@ targets:
   SleepSonar:
     type: application
     platform: iOS
-    sources: [SleepSonar]
+    sources: [SleepSonar, Shared]
     dependencies:
       - package: SonarDSP
+      - target: SomnivoWidgets
     scheme: {}
     info:
       path: SleepSonar/Info.plist
@@ -21,9 +22,10 @@ targets:
         CFBundleShortVersionString: "0.3.0"
         CFBundleVersion: "2"
         UILaunchScreen: {}
+        NSSupportsLiveActivities: true
         UIBackgroundModes: [audio, processing]
         BGTaskSchedulerPermittedIdentifiers: [de.nikgro.sleepsonar.sounds]
-        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         NSMicrophoneUsageDescription: "Somnivo nimmt nachts Atem- und Bewegungsgeräusche auf, um deinen Schlaf auszuwerten. Die Aufnahmen bleiben auf deinem iPhone, bis du sie selbst teilst."
         NSHealthShareUsageDescription: "Somnivo liest die Schlafphasen deiner Apple Watch, um sie mit der eigenen Schätzung zu vergleichen."
         NSHealthUpdateUsageDescription: "Somnivo schreibt deine Schlafphasen (Wach, Kern, Tief, REM) in Apple Health."
@@ -36,3 +38,22 @@ targets:
         SWIFT_VERSION: "5.0"
         GENERATE_INFOPLIST_FILE: "NO"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  SomnivoWidgets:
+    type: app-extension
+    platform: iOS
+    sources: [Widgets, Shared]
+    info:
+      path: Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: Somnivo
+        CFBundleShortVersionString: "0.3.0"
+        CFBundleVersion: "2"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.nikgro.sleepsonar.widgets
+        CODE_SIGNING_ALLOWED: "NO"
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: "NO"

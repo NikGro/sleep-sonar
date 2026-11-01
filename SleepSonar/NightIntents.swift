@@ -1,11 +1,12 @@
 import AppIntents
 
 /// Kurzbefehle: Nachtaufnahme starten / beenden (Kurzbefehle-App, Siri, Automationen).
-struct StartNightRecordingIntent: AppIntent {
+/// `AudioRecordingIntent`: iOS erlaubt damit den Aufnahmestart im Hintergrund (ohne Entsperren),
+/// solange gleichzeitig eine Live-Aktivität läuft – die startet die Aufnahme selbst.
+struct StartNightRecordingIntent: AudioRecordingIntent {
     static var title: LocalizedStringResource = "Schlafaufnahme starten"
     static var description = IntentDescription("Startet die Nachtaufnahme von Somnivo (nur Mikrofon).")
-    /// iOS erlaubt den Start einer Mikrofonaufnahme nur aus dem Vordergrund.
-    static var openAppWhenRun: Bool = true
+    static var openAppWhenRun: Bool = false
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {

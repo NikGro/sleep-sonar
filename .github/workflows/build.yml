@@ -60,11 +60,16 @@ jobs:
           VERSION="$(echo "$BASE" | cut -d. -f1-2).${GITHUB_RUN_NUMBER}"
           /usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString $VERSION" "$PL"
           /usr/libexec/PlistBuddy -c "Set CFBundleVersion ${GITHUB_RUN_NUMBER}" "$PL"
+          for EX in build/SleepSonar.app/PlugIns/*.appex; do
+            /usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString $VERSION" "$EX/Info.plist"
+            /usr/libexec/PlistBuddy -c "Set CFBundleVersion ${GITHUB_RUN_NUMBER}" "$EX/Info.plist"
+          done
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "### SleepSonar $VERSION" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Ad-hoc sign with entitlements (AltStore re-signs later)
         run: |
+          for EX in build/SleepSonar.app/PlugIns/*.appex; do codesign --force --sign - "$EX"; done
           codesign --force --sign - \
             --entitlements SleepSonar/SleepSonar.entitlements \
             build/SleepSonar.app

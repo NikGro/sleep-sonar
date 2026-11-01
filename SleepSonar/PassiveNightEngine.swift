@@ -1,3 +1,4 @@
+import ActivityKit
 import AVFAudio
 import Foundation
 import UIKit
@@ -28,6 +29,7 @@ final class PassiveNightEngine: ObservableObject {
     private var motion: MotionLogger?
     private var observers: [NSObjectProtocol] = []
     private var watchdog: Timer?
+    private var activity: Activity<NightActivityAttributes>?
 
     func start() async {
         guard !isRunning else { return }
@@ -72,9 +74,12 @@ final class PassiveNightEngine: ObservableObject {
             m.start()
             motion = m
             observeSession()
+            // Live-Aktivität vor dem Mikrofon: Pflicht für den Start im Hintergrund per Kurzbefehl
+            startDate = Date()
+            startActivity()
             try buildAndStart()
             isRunning = true
-            startDate = Date()
+            Orientation.recordingChanged(true)
             log("Nachtaufnahme gestartet (nur Mikrofon)")
             logBattery()
             watchdog = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
@@ -105,7 +110,32 @@ final class PassiveNightEngine: ObservableObject {
         }
         recorder = nil
         isRunning = false
+        endActivity()
+        Orientation.recordingChanged(false)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
+    // MARK: - Live-Aktivität (Dynamic Island, Sperrbildschirm, StandBy)
+
+    private func startActivity() {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled, let startDate else { return }
+        // Reste einer abgebrochenen Nacht aufräumen
+        for old in Activity<NightActivityAttributes>.activities {
+            Task { await old.end(nil, dismissalPolicy: .immediate) }
+        }
+        do {
+            activity = try Activity.request(
+                attributes: NightActivityAttributes(start: startDate),
+                content: .init(state: .init(handled: false), staleDate: nil))
+        } catch {
+            log("Live-Aktivität nicht möglich: \(error.localizedDescription)")
+        }
+    }
+
+    private func endActivity() {
+        let all = Activity<NightActivityAttributes>.activities
+        activity = nil
+        for a in all { Task { await a.end(nil, dismissalPolicy: .immediate) } }
     }
 
     // MARK: - Engine
