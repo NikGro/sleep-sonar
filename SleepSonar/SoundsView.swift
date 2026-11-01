@@ -6,6 +6,7 @@ struct SoundsView: View {
     @ObservedObject private var rec = PassiveNightEngine.shared
     @State private var naming = false
     @State private var mixName = ""
+    @State private var loadedMix: UUID?
     private let timers = [0, 15, 30, 45, 60, 90, 120]
 
     var body: some View {
@@ -59,16 +60,29 @@ struct SoundsView: View {
 
                 Section {
                     ForEach(player.mixes) { mix in
+                        let current = player.volumes == mix.volumes
                         Button {
                             player.load(mix)
+                            loadedMix = mix.id
                         } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(mix.name).foregroundStyle(Theme.moon)
-                                Text(SleepSound.allCases.filter { (mix.volumes[$0] ?? 0) > 0.01 }.map(\.name)
-                                        .joined(separator: " + "))
-                                    .font(.caption).foregroundStyle(Theme.mist)
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(mix.name).foregroundStyle(Theme.moon)
+                                    Text(SleepSound.allCases.filter { (mix.volumes[$0] ?? 0) > 0.01 }.map(\.name)
+                                            .joined(separator: " + "))
+                                        .font(.caption).foregroundStyle(Theme.mist)
+                                }
+                                Spacer()
+                                // eingestellte Mischung sichtbar markieren
+                                if current {
+                                    Image(systemName: "checkmark").foregroundStyle(Theme.accent)
+                                        .transition(.scale.combined(with: .opacity))
+                                }
                             }
+                            .contentShape(Rectangle())
+                            .animation(.snappy, value: current)
                         }
+                        .accessibilityAddTraits(current ? .isSelected : [])
                     }
                     .onDelete(perform: player.deleteMixes)
                     Button(tr("Aktuelle Mischung sichern …")) { mixName = ""; naming = true }
@@ -87,6 +101,7 @@ struct SoundsView: View {
             .navigationTitle(tr("Klänge"))
             .toolbarTitleDisplayMode(.inlineLarge)
             .toolbarBackground(Theme.ink, for: .navigationBar)
+            .sensoryFeedback(.selection, trigger: loadedMix)
             .alert(tr("Mischung sichern"), isPresented: $naming) {
                 TextField(tr("Name"), text: $mixName)
                 Button(tr("Abbrechen"), role: .cancel) {}
