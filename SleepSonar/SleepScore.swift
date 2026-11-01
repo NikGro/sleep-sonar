@@ -51,9 +51,13 @@ struct ScoreRing: View {
     var body: some View {
         ZStack {
             Circle().stroke(Theme.hairline, lineWidth: line)
+            // Bogen von Tiefschlaf-Blau über REM-Violett zur Morgendämmerung
             Circle()
                 .trim(from: 0, to: CGFloat(score) / 100)
-                .stroke(Theme.moon, style: StrokeStyle(lineWidth: line, lineCap: .round))
+                .stroke(AngularGradient(colors: [Theme.color(.deep), Theme.color(.rem), Theme.color(.wake)],
+                                        center: .center, startAngle: .zero,
+                                        endAngle: .degrees(360 * Double(max(score, 1)) / 100)),
+                        style: StrokeStyle(lineWidth: line, lineCap: .butt))
                 .rotationEffect(.degrees(-90))
             Text("\(score)")
                 .font(Theme.display(size * 0.38).monospacedDigit())

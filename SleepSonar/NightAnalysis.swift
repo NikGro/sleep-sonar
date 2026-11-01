@@ -203,10 +203,13 @@ struct NightAnalysisView: View {
         if let score = SleepScore.compute(r.ours, epochSeconds: r.epochSeconds) {
             VStack(alignment: .leading, spacing: 10) {
                 SectionTitle(tr("Schlafwert"))
-                ScorePart(label: tr("Dauer"), value: score.duration, max: 50)
-                ScorePart(label: tr("Ruhe"), value: score.efficiency, max: 20)
-                ScorePart(label: tr("Tief und REM"), value: score.depth, max: 20)
-                ScorePart(label: tr("Wenig Aufwachen"), value: score.interruptions, max: 10)
+                // Farbe je Teil nach dem, was er misst (wie die Phasenfarben)
+                ScorePart(label: tr("Dauer"), value: score.duration, max: 50, colors: [Theme.color(.core)])
+                ScorePart(label: tr("Ruhe"), value: score.efficiency, max: 20, colors: [Theme.color(.deep)])
+                ScorePart(label: tr("Tief und REM"), value: score.depth, max: 20,
+                          colors: [Theme.color(.deep), Theme.color(.rem)])
+                ScorePart(label: tr("Wenig Aufwachen"), value: score.interruptions, max: 10,
+                          colors: [Theme.color(.wake)])
             }
         }
 
@@ -284,6 +287,7 @@ private struct ScorePart: View {
     let label: String
     let value: Int
     let max: Int
+    let colors: [Color]
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -294,11 +298,12 @@ private struct ScorePart: View {
             GeometryReader { g in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Theme.raised)
-                    Capsule().fill(Theme.moon.opacity(0.8))
-                        .frame(width: Swift.max(4, g.size.width * CGFloat(value) / CGFloat(max)))
+                    Capsule().fill(LinearGradient(colors: colors.count > 1 ? colors : colors + colors,
+                                                  startPoint: .leading, endPoint: .trailing))
+                        .frame(width: Swift.max(8, g.size.width * CGFloat(value) / CGFloat(max)))
                 }
             }
-            .frame(height: 6)
+            .frame(height: 8)
         }
         .accessibilityElement(children: .combine)
     }
