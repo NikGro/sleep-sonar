@@ -215,23 +215,12 @@ struct AlarmEditView: View {
             .listRowBackground(Color.clear)
     }
 
-    /// 0 h 1 min bis 23 h 59 min
+    /// 1 min bis 23 h 59 min: das Schlafdauer-Rad der Uhr-App (Timer), mit endlos drehenden Rädern
     private var durationPicker: some View {
-        HStack(spacing: 0) {
-            Picker(tr("Stunden"), selection: Binding(
-                get: { item.durationMinutes / 60 },
-                set: { item.durationMinutes = max(1, $0 * 60 + item.durationMinutes % 60) })) {
-                    ForEach(0...23, id: \.self) { Text(tr("%d h", $0)).tag($0) }
-                }
-            Picker(tr("Minuten"), selection: Binding(
-                get: { item.durationMinutes % 60 },
-                set: { item.durationMinutes = max(1, item.durationMinutes / 60 * 60 + $0) })) {
-                    ForEach(0...59, id: \.self) { Text(tr("%d min", $0)).tag($0) }
-                }
-        }
-        .pickerStyle(.wheel)
-        .frame(height: 170)
-        .listRowBackground(Color.clear)
+        CountdownWheel(minutes: $item.durationMinutes)
+            .frame(height: 216)
+            .frame(maxWidth: .infinity)
+            .listRowBackground(Color.clear)
     }
 
     /// Kurzbeschreibung für die Liste
@@ -386,5 +375,35 @@ struct WeekdayPicker: View {
         if set == [2, 3, 4, 5, 6] { return tr("Werktags") }
         if set == [1, 7] { return tr("Am Wochenende") }
         return ordered.filter(set.contains).map { Calendar.current.shortWeekdaySymbols[$0 - 1] }.joined(separator: " ")
+    }
+}
+
+/// Nativer Dauer-Picker (UIDatePicker im Timer-Modus, wie in der Uhr-App).
+struct CountdownWheel: UIViewRepresentable {
+    @Binding var minutes: Int
+
+    func makeUIView(context: Context) -> UIDatePicker {
+        let p = UIDatePicker()
+        p.datePickerMode = .countDownTimer
+        p.preferredDatePickerStyle = .wheels
+        p.minuteInterval = 1
+        p.countDownDuration = Double(max(1, minutes)) * 60
+        p.addTarget(context.coordinator, action: #selector(Coordinator.changed(_:)), for: .valueChanged)
+        return p
+    }
+
+    func updateUIView(_ p: UIDatePicker, context: Context) {
+        let want = Double(max(1, minutes)) * 60
+        if abs(p.countDownDuration - want) > 1 { p.countDownDuration = want }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject {
+        let parent: CountdownWheel
+        init(_ parent: CountdownWheel) { self.parent = parent }
+        @MainActor @objc func changed(_ p: UIDatePicker) {
+            parent.minutes = min(23 * 60 + 59, max(1, Int(p.countDownDuration / 60)))
+        }
     }
 }
