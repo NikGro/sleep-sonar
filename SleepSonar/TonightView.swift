@@ -195,9 +195,10 @@ struct BreathLine: View {
 
             guard values.count > 1 else { return }
             // leicht geglättet (±0,2 s), damit die Linie fließt statt zittert
-            let values = values.indices.map { i in
-                let a = max(0, i - 2), b = min(values.count - 1, i + 2)
-                return values[a...b].reduce(0, +) / Double(b - a + 1)
+            let raw = self.values
+            let values = raw.indices.map { i in
+                let a = max(0, i - 2), b = min(raw.count - 1, i + 2)
+                return raw[a...b].reduce(0, +) / Double(b - a + 1)
             }
             let lo = values.min() ?? 0, hi = values.max() ?? 1
             let span = max(hi - lo, 6)  // mind. 6 dB, damit Stille nicht wie Sturm aussieht

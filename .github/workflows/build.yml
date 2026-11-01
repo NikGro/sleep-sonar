@@ -50,6 +50,7 @@ jobs:
             -derivedDataPath build/dd \
             CODE_SIGNING_ALLOWED=NO \
             build | tee build.log | grep -E "error:|warning:|BUILD" || true
+          grep -q "BUILD SUCCEEDED" build.log || { grep -E "error:" build.log; exit 1; }
           test -d build/dd/Build/Products/Release-iphoneos/SleepSonar.app
           cp -R build/dd/Build/Products/Release-iphoneos/SleepSonar.app build/
 
