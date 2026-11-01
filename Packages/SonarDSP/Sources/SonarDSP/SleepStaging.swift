@@ -1,19 +1,19 @@
 import Foundation
 
-/// Erste, regelbasierte Schlafphasen-Schätzung aus Raumgeräuschen und Handy-Bewegung.
+/// Regelbasierte Schlafphasen-Schätzung aus Raumgeräuschen und Handy-Bewegung (Version 5).
 ///
-/// Eingabe: je Sekunde Gesamtpegel und Bandpegel (dBFS) sowie optional die
-/// Beschleunigung des iPhones. Ausgabe: 30-s-Epochen mit Wach/Kern/Tief/REM.
+/// Eingabe: je Sekunde Gesamtpegel und Bandpegel (dBFS) sowie optional die Beschleunigung
+/// des iPhones. Ausgabe: 30-s-Epochen mit Wach/Kern/Tief/REM.
 ///
-/// Idee (regelbasiert, Parameter an Nacht 1 mit Apple Watch abgestimmt, Kappa 0,49):
-/// - Geräuschereignisse = Sekunden deutlich über dem ruhigen Grundpegel (Rascheln, Bewegung, Husten …)
-/// - Wach = viele Ereignisse in der Umgebung (wie Aktigraphie) oder iPhone angefasst
-/// - Einschlafen/Aufwachen = erstes/letztes Fenster mit 10 min überwiegend Schlaf
-/// - Ruhe und Atemregelmäßigkeit werden über ±4 min gemittelt; Schwellen relativ zur Nacht
-///   (Quantile), damit es nicht vom Mikrofonpegel abhängt
-/// - Tief = sehr ruhig + Atmung regelmäßiger als 60 % der Schlafzeit, in den ersten 60 % der Nacht
-/// - REM = Atmung unregelmäßiger als 60 % der Schlafzeit, frühestens 60 min nach dem Einschlafen
-/// - sonst Kern
+/// Grundlage (an zwei Nächten mit Apple Watch geprüft, in beiden gleich):
+/// - **Atemtempo:** Im Tiefschlaf ist die Atmung am langsamsten (Periode ~4,8–5 s), im REM am
+///   schnellsten (~3,4 s), Kern liegt dazwischen.
+/// - **Ruhe:** Tiefschlaf ist am leisesten und ruhigsten.
+/// - **Regelmäßigkeit:** Im REM ist die Atmung am unregelmäßigsten.
+/// - **Wach** wird nur aus *hellen* Geräuschen (Rascheln der Decke, ~4,5 kHz) erkannt. Dumpfe
+///   Geräusche wie Schritte oder Rumpeln von Nachbarn zählen nicht.
+/// Alle Schwellen sind relativ zur jeweiligen Nacht (Abweichung vom Median in Standardabweichungen),
+/// damit Mikrofon, Abstand und Raum keine Rolle spielen.
 public enum SleepStaging {
     public enum Stage: Int, CaseIterable, Sendable {
         case wake = 0, rem = 1, core = 2, deep = 3
@@ -42,34 +42,40 @@ public enum SleepStaging {
         public var stage: Stage
         public var events: Int
         public var regularity: Double
+        /// geschätzte Atemperiode in Sekunden (0 = unbekannt)
+        public var breathPeriod: Double
         public var handled: Bool
         public var hasData: Bool
     }
 
     public struct Parameters: Sendable {
         public var epochSeconds = 30
-        /// Ereignis: so viele dB über dem ruhigen Grundpegel
+        /// Unruhe für die Ruhe-Bewertung: Gesamtpegel so viele dB über dem Grundpegel
         public var eventDB = 12.0
+        /// Unruhe für Wach/Schlaf: helles Band (Rascheln) so viele dB über seinem Grundpegel
+        public var wakeDB = 14.0
         /// Handy gilt als angefasst ab dieser mittleren Beschleunigung (g)
         public var handledG = 0.02
-        /// Aktivitätsschwelle für „wach“ (gewichtete Ereignissekunden)
-        public var wakeScore = 6.0
-        /// Mittelung von Ruhe und Atemregelmäßigkeit: ± so viele Epochen
-        public var smoothEpochs = 8
-        /// Tief: höchstens so viele Ereignisse je Epoche (gemittelt)
-        public var deepMaxEvents = 0.3
-        /// Tief: Regelmäßigkeit mindestens dieses Quantil der Schlafzeit
-        public var deepRegularityQuantile = 0.6
-        public var deepMaxProgress = 0.6
-        /// REM: Regelmäßigkeit höchstens dieses Quantil der Schlafzeit
-        public var remRegularityQuantile = 0.4
-        public var remMaxEvents = 2.0
+        /// Aktivitätsschwelle für „wach“ (gewichtete Unruhe-Sekunden)
+        public var wakeScore = 11.6
+        /// Kurze Wach-Abschnitte mitten im Schlaf (kürzer als so viele Epochen) → Schlaf
+        public var minWakeEpochs = 4
+        /// Mittelung der Merkmale: ± so viele Epochen
+        public var smoothEpochs = 5
+        /// Tief, wenn Tief-Wert über dieser Schwelle (Standardabweichungen)
+        public var deepThreshold = 1.06
+        /// REM, wenn REM-Wert über dieser Schwelle
+        public var remThreshold = 0.37
+        public var weightBreathPeriod = 0.89
+        public var weightLevel = 0.85
+        public var weightUnrest = 1.18
+        public var weightIrregularity = 0.60
         /// REM frühestens so viele Epochen nach dem Einschlafen
-        public var remDelayEpochs = 120
-        /// Mehrheitsglättung: ± so viele Epochen (Watch-ähnliche Blöcke)
+        public var remDelayEpochs = 74
+        /// Mehrheitsglättung: ± so viele Epochen
         public var majorityEpochs = 10
-        /// Tief/REM-Blöcke kürzer als so viele Epochen (5 min) → Kern
-        public var minBlockEpochs = 10
+        /// Tief/REM-Blöcke kürzer als so viele Epochen → Kern
+        public var minBlockEpochs = 13
         public init() {}
     }
 
@@ -77,45 +83,53 @@ public enum SleepStaging {
     ///   - seconds: ein Eintrag je Sekunde ab Start; `nil` = Lücke (keine Daten)
     ///   - motion: Beschleunigung je Sekunde (gleiche Zeitachse), `nil` = unbekannt
     ///   - sleepSounds: Sekunden mit Schlafgeräuschen (z. B. Schnarchen) – zählen nicht als Unruhe
-    ///   - wakeSounds: Sekunden mit Wachgeräuschen (Sprechen, Husten …) – zählen immer als Unruhe
+    ///   - wakeSounds: Sekunden mit Wachgeräuschen (z. B. Husten) – zählen immer als Unruhe
     public static func estimate(seconds: [Second?], motion: [Double?] = [],
                                 sleepSounds: Set<Int> = [], wakeSounds: Set<Int> = [],
                                 parameters p: Parameters = Parameters()) -> [Epoch] {
-        let n = seconds.count / p.epochSeconds
+        let ep = p.epochSeconds
+        let n = seconds.count / ep
         guard n > 0 else { return [] }
 
-        // 1) Grundpegel: 20-%-Quantil in ±150 s, je Epoche
+        // 1) Grundpegel (20-%-Quantil in ±150 s) für Gesamtpegel und helles Band
         let rms = seconds.map { $0?.rms }
-        var baseline = [Double](repeating: -120, count: n)
-        for e in 0..<n {
-            let c = e * p.epochSeconds + p.epochSeconds / 2
-            let lo = max(0, c - 150), hi = min(rms.count, c + 150)
-            let vals = rms[lo..<hi].compactMap { $0 }.sorted()
-            if !vals.isEmpty { baseline[e] = vals[vals.count / 5] }
-        }
+        let high = seconds.map { $0?.high }
+        let mid = seconds.map { $0?.mid }
+        let baseRMS = baselines(rms, n: n, ep: ep)
+        let baseHigh = baselines(high, n: n, ep: ep)
 
-        // 2) Je Epoche: Ereignisse, angefasst, Atemregelmäßigkeit
+        // 2) Je Epoche: Unruhe, angefasst, Pegel, Atemtempo, Regelmäßigkeit
         var epochs: [Epoch] = []
         epochs.reserveCapacity(n)
+        var wakeUnrest = [Double](repeating: 0, count: n)
+        var level = [Double](repeating: 0, count: n)
         for e in 0..<n {
-            let a = e * p.epochSeconds, b = a + p.epochSeconds
-            var events = 0, valid = 0
+            let a = e * ep, b = a + ep
+            var events = 0, valid = 0, sum = 0.0, wakeEvents = 0
             for s in a..<b {
                 guard let v = rms[s] else { continue }
                 valid += 1
+                sum += v
+                if v - baseRMS[e] > p.eventDB { events += 1 }
                 if wakeSounds.contains(s) {
-                    events += 1
-                } else if v - baseline[e] > p.eventDB && !sleepSounds.contains(s) {
-                    events += 1
+                    wakeEvents += 1
+                } else if let h = high[s], h - baseHigh[e] > p.wakeDB, !sleepSounds.contains(s) {
+                    wakeEvents += 1
                 }
             }
             var handled = false
             if !motion.isEmpty {
                 for s in a..<min(b, motion.count) where (motion[s] ?? 0) > p.handledG { handled = true; break }
             }
-            let reg = regularity(seconds, center: a + p.epochSeconds / 2)
-            epochs.append(Epoch(index: e, stage: .core, events: events, regularity: reg,
-                                handled: handled, hasData: valid >= p.epochSeconds / 2))
+            let c = a + ep / 2
+            let periods = [breathPeriod(mid, center: c),
+                           breathPeriod(high, center: c)].compactMap { $0 }
+            let period = periods.isEmpty ? 0 : periods.reduce(0, +) / Double(periods.count)
+            let reg = autocorrelation(high, center: c, half: 150, lags: 2...12)?.best ?? 0
+            wakeUnrest[e] = Double(wakeEvents)
+            level[e] = valid > 0 ? sum / Double(valid) : -120
+            epochs.append(Epoch(index: e, stage: .core, events: events, regularity: reg, breathPeriod: period,
+                                handled: handled, hasData: valid >= ep / 2))
         }
 
         // 3) Wach/Schlaf mit gewichteter Nachbarschaft (ähnlich Aktigraphie)
@@ -124,9 +138,7 @@ public enum SleepStaging {
         for e in 0..<n {
             guard epochs[e].hasData, !epochs[e].handled else { continue }
             var score = 0.0
-            for (k, w) in weights where e + k >= 0 && e + k < n {
-                score += w * Double(epochs[e + k].events)
-            }
+            for (k, w) in weights where e + k >= 0 && e + k < n { score += w * wakeUnrest[e + k] }
             asleep[e] = score <= p.wakeScore
         }
         // kurze Schlafinseln (< 1,5 min) zwischen Wach → wach
@@ -138,8 +150,7 @@ public enum SleepStaging {
             if j - i < 3 && i > 0 && j < n { for k in i..<j { asleep[k] = false } }
             i = j
         }
-
-        // 4) Einschlafen / Aufwachen: 10-min-Fenster mit ≥ 90 % Schlaf
+        // Einschlafen / Aufwachen: 10-min-Fenster mit ≥ 90 % Schlaf
         let win = 20
         var onset = n, offset = -1
         if n >= win {
@@ -148,24 +159,43 @@ public enum SleepStaging {
             where asleep[s..<(s + win)].filter({ $0 }).count >= 18 { offset = s + win - 1; break }
         }
         for e in 0..<n where e < onset || e > offset { asleep[e] = false }
+        // kurze Wach-Striche mitten im Schlaf → Schlaf (Watch-ähnlich ruhiger)
+        i = max(onset, 0)
+        while i <= offset && i < n {
+            if asleep[i] { i += 1; continue }
+            var j = i
+            while j <= offset && !asleep[j] { j += 1 }
+            let touched = (i..<j).contains { epochs[$0].handled || !epochs[$0].hasData }
+            if j - i < p.minWakeEpochs && !touched { for k in i..<j { asleep[k] = true } }
+            i = j
+        }
 
-        // 5) Phasen innerhalb des Schlafs
-        let k = p.smoothEpochs
-        let q = movingMean(epochs.map { Double($0.events) }, k)
-        let r = movingMean(epochs.map(\.regularity), k)
+        // 4) Phasen innerhalb des Schlafs über relative Merkmale
         let sleepIdx = (0..<n).filter { asleep[$0] }
         var stages = [Stage](repeating: .wake, count: n)
-        if !sleepIdx.isEmpty {
-            let rs = sleepIdx.map { r[$0] }.sorted()
-            func quantile(_ x: Double) -> Double { rs[min(rs.count - 1, Int(x * Double(rs.count - 1)))] }
-            let rDeep = quantile(p.deepRegularityQuantile)
-            let rRem = quantile(p.remRegularityQuantile)
-            let span = max(1, offset - onset)
+        if sleepIdx.count >= 20 {
+            let k = p.smoothEpochs
+            let knownPeriods = sleepIdx.map { epochs[$0].breathPeriod }.filter { $0 > 0 }.sorted()
+            let fallback = knownPeriods.isEmpty ? 4 : knownPeriods[knownPeriods.count / 2]
+            func z(_ raw: [Double]) -> [Double] {
+                let x = movingMean(raw, k)
+                let vals = sleepIdx.map { x[$0] }.sorted()
+                let median = vals[vals.count / 2]
+                let mean = vals.reduce(0, +) / Double(vals.count)
+                let sd = (vals.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(vals.count)).squareRoot() + 1e-9
+                return x.map { ($0 - median) / sd }
+            }
+            let zPeriod = z(epochs.map { $0.breathPeriod > 0 ? $0.breathPeriod : fallback })
+            let zLevel = z(level)
+            let zUnrest = z(epochs.map { Double($0.events) })
+            let zReg = z(epochs.map(\.regularity))
+            let onsetIdx = sleepIdx[0]
             for e in sleepIdx {
-                let progress = Double(e - onset) / Double(span)
-                if q[e] <= p.deepMaxEvents && r[e] >= rDeep && progress < p.deepMaxProgress {
+                let deepScore = p.weightBreathPeriod * zPeriod[e] - p.weightLevel * zLevel[e] - p.weightUnrest * zUnrest[e]
+                let remScore = -p.weightBreathPeriod * zPeriod[e] - p.weightIrregularity * zReg[e]
+                if deepScore > p.deepThreshold {
                     stages[e] = .deep
-                } else if r[e] <= rRem && q[e] <= p.remMaxEvents && e - onset >= p.remDelayEpochs {
+                } else if remScore > p.remThreshold && e - onsetIdx >= p.remDelayEpochs {
                     stages[e] = .rem
                 } else {
                     stages[e] = .core
@@ -177,24 +207,50 @@ public enum SleepStaging {
         return epochs
     }
 
-    /// Atemregelmäßigkeit: Autokorrelations-Maximum des Hochton-Pegels
-    /// (Atemrauschen) in 2 Minuten um `center`, Perioden 3–10 s.
-    static func regularity(_ seconds: [Second?], center: Int) -> Double {
-        let lo = max(0, center - 60), hi = min(seconds.count, center + 60)
-        let x = seconds[lo..<hi].map { $0?.high }
-        guard x.count >= 60, x.allSatisfy({ $0 != nil }) else { return 0 }
-        let v = x.map { $0! }
+    static func baselines(_ x: [Double?], n: Int, ep: Int) -> [Double] {
+        (0..<n).map { e in
+            let c = e * ep + ep / 2
+            let lo = max(0, c - 150), hi = min(x.count, c + 150)
+            let vals = x[lo..<hi].compactMap { $0 }.sorted()
+            return vals.isEmpty ? -120 : vals[vals.count / 5]
+        }
+    }
+
+    /// Autokorrelation des Pegels in [center−half, center+half): bestes Maximum und dessen Lag.
+    static func autocorrelation(_ x: [Double?], center: Int, half: Int,
+                                lags: ClosedRange<Int>) -> (best: Double, lag: Int, r: [Int: Double])? {
+        let lo = center - half, hi = center + half
+        guard lo >= 0, hi <= x.count else { return nil }
+        let w = x[lo..<hi]
+        guard w.allSatisfy({ $0 != nil }) else { return nil }
+        let v = w.map { $0! }
         let m = v.reduce(0, +) / Double(v.count)
         let d = v.map { $0 - m }
         let denom = d.reduce(0) { $0 + $1 * $1 }
-        guard denom > 1e-9 else { return 0 }
-        var best = 0.0
-        for lag in 3...10 {
+        guard denom > 1e-9 else { return nil }
+        var r: [Int: Double] = [:]
+        var best = -1.0, bestLag = lags.lowerBound
+        for lag in (lags.lowerBound - 1)...(lags.upperBound + 1) where lag >= 1 && lag < d.count {
             var s = 0.0
-            for k in 0..<(d.count - lag) { s += d[k] * d[k + lag] }
-            best = max(best, s / denom)
+            for i in 0..<(d.count - lag) { s += d[i] * d[i + lag] }
+            r[lag] = s / denom
+            if lags.contains(lag), r[lag]! > best { best = r[lag]!; bestLag = lag }
         }
-        return best
+        return (max(best, 0), bestLag, r)
+    }
+
+    /// Atemperiode (s): Maximum der Autokorrelation (2–12 s) im 2-min-Fenster, per Parabel verfeinert.
+    static func breathPeriod(_ x: [Double?], center: Int) -> Double? {
+        guard let a = autocorrelation(x, center: center, half: 60, lags: 2...12),
+              let y0 = a.r[a.lag - 1], let y1 = a.r[a.lag], let y2 = a.r[a.lag + 1] else { return nil }
+        let den = y0 - 2 * y1 + y2
+        let off = abs(den) > 1e-9 ? min(0.5, max(-0.5, 0.5 * (y0 - y2) / den)) : 0
+        return Double(a.lag) + off
+    }
+
+    /// Atemregelmäßigkeit (für Anzeige/Tests): Autokorrelations-Maximum des hellen Bandes, 2 min um `center`.
+    static func regularity(_ seconds: [Second?], center: Int) -> Double {
+        autocorrelation(seconds.map { $0?.high }, center: center, half: 60, lags: 3...10)?.best ?? 0
     }
 
     static func movingMean(_ x: [Double], _ k: Int) -> [Double] {
@@ -210,7 +266,9 @@ public enum SleepStaging {
         for i in 0..<s.count where asleep[i] {
             var counts = [Stage: Int]()
             for k in -majority...majority where i + k >= 0 && i + k < s.count && asleep[i + k] { counts[s[i + k], default: 0] += 1 }
-            if let best = counts.max(by: { $0.value < $1.value })?.key { out[i] = best }
+            if let best = counts.max(by: { $0.value < $1.value || ($0.value == $1.value && $0.key.rawValue > $1.key.rawValue) })?.key {
+                out[i] = best
+            }
         }
         var i = 0
         while i < out.count {
