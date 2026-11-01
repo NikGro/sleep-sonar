@@ -45,3 +45,17 @@ struct PlaySoundsIntent: LiveActivityIntent {
 enum PlaySoundsAction {
     nonisolated(unsafe) static var run: (@Sendable () async -> Void)?
 }
+
+/// Knopf „Sofort aus“ während des Ausblendens.
+struct StopSoundsIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Klänge sofort aus"
+    static var openAppWhenRun: Bool = false
+    func perform() async throws -> some IntentResult {
+        await StopSoundsAction.run?()
+        return .result()
+    }
+}
+
+enum StopSoundsAction {
+    nonisolated(unsafe) static var run: (@Sendable () async -> Void)?
+}

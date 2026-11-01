@@ -7,6 +7,7 @@ struct SoundsView: View {
     @ObservedObject private var player = SleepSoundPlayer.shared
     @ObservedObject private var rec = PassiveNightEngine.shared
     private let timers = [0, 15, 30, 45, 60, 90, 120]
+    @State private var pressed = false
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12),
                            GridItem(.flexible(), spacing: 12)]
 
@@ -41,39 +42,46 @@ struct SoundsView: View {
     // Runder Knopf: leuchtet, solange etwas spielt
     private var hero: some View {
         VStack(spacing: 14) {
-            Button {
-                Haptics.tap()
-                var t = Transaction(); t.disablesAnimations = true
-                withTransaction(t) { player.togglePreview() }
-            } label: {
-                ZStack {
-                    // Leuchten als Verlauf (billig beim Scrollen, anders als ein weicher Schatten)
-                    if player.isPlaying {
-                        Circle().fill(RadialGradient(colors: [Theme.accent.opacity(0.35), .clear],
-                                                     center: .center, startRadius: 50, endRadius: 86))
-                            .frame(width: 172, height: 172)
-                    }
-                    Circle().fill(Theme.raised).frame(width: 112, height: 112)
-                    Circle().strokeBorder(player.isPlaying ? Theme.accent : Theme.hairline, lineWidth: 2)
-                        .frame(width: 112, height: 112)
-                    Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 34, weight: .medium))
-                        .foregroundStyle(player.isPlaying ? Theme.accent : Theme.moon)
-                        .offset(x: player.isPlaying ? 0 : 3)
-                }
-                .frame(width: 112, height: 112)
-                .overlay {
-                    // Beschriftung entlang der Rundung: macht klar, dass dies nur zum Ausprobieren ist
-                    CurvedText(text: player.isPlaying ? tr("Probe läuft") : tr("Probehören"), radius: 70, size: 15)
-                        .foregroundStyle(player.isPlaying ? Theme.accent : Theme.mist)
-                        .allowsHitTesting(false)
-                        .accessibilityHidden(true)
-                }
-                .contentShape(Circle())
+            // Reagiert schon beim Berühren (nicht erst beim Loslassen): In einer Scroll-Ansicht hält iOS
+            // Berührungen sonst kurz zurück, das wirkte verzögert. Das Leuchten blendet weich, der Rest sofort.
+            ZStack {
+                Circle().fill(RadialGradient(colors: [Theme.accent.opacity(0.35), .clear],
+                                             center: .center, startRadius: 50, endRadius: 86))
+                    .frame(width: 172, height: 172)
+                    .opacity(player.isPlaying ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.7), value: player.isPlaying)
+                Circle().fill(Theme.raised).frame(width: 112, height: 112)
+                Circle().strokeBorder(player.isPlaying ? Theme.accent : Theme.hairline, lineWidth: 2)
+                    .frame(width: 112, height: 112)
+                Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 34, weight: .medium))
+                    .foregroundStyle(player.isPlaying ? Theme.accent : Theme.moon)
+                    .offset(x: player.isPlaying ? 0 : 3)
             }
-            .buttonStyle(.plain)
+            .frame(width: 112, height: 112)
+            .scaleEffect(pressed ? 0.94 : 1)
+            .animation(.spring(duration: 0.2), value: pressed)
+            .overlay {
+                // Beschriftung entlang der Rundung: macht klar, dass dies nur zum Ausprobieren ist
+                CurvedText(text: player.isPlaying ? tr("Probe läuft") : tr("Probehören"), radius: 70, size: 15)
+                    .foregroundStyle(player.isPlaying ? Theme.accent : Theme.mist)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+            .contentShape(Circle())
+            .gesture(DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    guard !pressed, !player.active.isEmpty else { return }
+                    pressed = true
+                    Haptics.tap()
+                    player.togglePreview()
+                }
+                .onEnded { _ in pressed = false })
             .padding(.top, 24)
-            .disabled(player.active.isEmpty)
+            .opacity(player.active.isEmpty ? 0.5 : 1)
+            .accessibilityElement()
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { player.togglePreview() }
             .accessibilityLabel(player.isPlaying ? tr("Anhalten") : tr("Probehören"))
             VStack(spacing: 4) {
                 Text(player.active.isEmpty ? tr("Wähle unten einen Klang") : player.activeNames)

@@ -159,6 +159,11 @@ struct SoundsRow: View {
                         Label(tr("Ausblenden"), systemImage: "pause.fill").font(.caption.weight(.semibold))
                     }
                     .tint(accent)
+                } else {
+                    Button(intent: StopSoundsIntent()) {
+                        Label(tr("Sofort aus"), systemImage: "stop.fill").font(.caption.weight(.semibold))
+                    }
+                    .tint(accent)
                 }
             } else {
                 Button(intent: PlaySoundsIntent()) {

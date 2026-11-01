@@ -121,6 +121,7 @@
 "Klänge an: %@" = "Sounds on: %@";
 "Klänge aus" = "Sounds off";
 "Klänge ausblenden" = "Fade out sounds";
+"Klänge sofort aus" = "Sounds off now";
 "Lauter werden" = "Get louder";
 "Lautstärke" = "Volume";
 "Lautstärke %@" = "Volume %@";
@@ -194,6 +195,7 @@
 "Sicherheit %d Prozent" = "Confidence %d percent";
 "Sichern" = "Save";
 "Sofort" = "Right away";
+"Sofort aus" = "Off now";
 "Sommernacht" = "Summer night";
 "Sonnenaufgang" = "Sunrise";
 "Spende widerrufen" = "Withdraw donation";

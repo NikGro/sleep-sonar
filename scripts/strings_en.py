@@ -246,6 +246,8 @@ EN = {
 "Hier nur zum Probehören. Für die Nacht startest du die Klänge mit der Aufnahme unter „Heute Nacht“ – sie helfen beim Einschlafen und enden mit der Aufnahme.": "Preview only. For the night, start the sounds with the recording under “Tonight” – they help you fall asleep and end with the recording.",
 "Probe läuft": "Previewing",
 "Klänge abspielen": "Play sounds",
+"Klänge sofort aus": "Sounds off now",
+"Sofort aus": "Off now",
 "Mit der Nachtaufnahme starten": "Start with the night recording",
 "In der Nacht": "At night",
 "Was zuerst eintritt, blendet die Klänge über 30 Sekunden aus. Spätestens mit dem Ende der Aufnahme sind sie aus.": "Whichever comes first fades the sounds out over 30 seconds. They stop at the latest when the recording ends.",
@@ -300,7 +302,7 @@ EN = {
 "Beendet die laufende Nachtaufnahme von Suya.": "Stops Suya's running night recording.",
 }
 # Schlüssel, die nicht über tr("…") im Code stehen (für die Vollständigkeitsprüfung)
-DYNAMIC = ["Aus", "Schlummern", "Klänge ausblenden", "Klänge abspielen", "Wach", "REM", "Kern", "Tief", "Im Bett", "Schlafend", "Schnarchen", "Sprechen",
+DYNAMIC = ["Aus", "Schlummern", "Klänge ausblenden", "Klänge abspielen", "Klänge sofort aus", "Wach", "REM", "Kern", "Tief", "Im Bett", "Schlafend", "Schnarchen", "Sprechen",
            "Seufzen und Quengeln", "Husten und Niesen", "Luftschnappen", "Tiere", "Auffällige Geräusche",
            "Schlafaufnahme starten", "Schlafaufnahme beenden",
            "Startet die Nachtaufnahme von Suya (nur Mikrofon).", "Beendet die laufende Nachtaufnahme von Suya."]
