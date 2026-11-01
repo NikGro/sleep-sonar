@@ -9,12 +9,13 @@ import SoundAnalysis
 /// Abgespielt wird direkt aus der Nachtaufnahme an der passenden Stelle.
 struct SoundEvent: Codable, Hashable, Identifiable {
     enum Kind: String, Codable, CaseIterable {
-        case snoring, talking, coughing, gasping, animal, noise
+        case snoring, talking, fussing, coughing, gasping, animal, noise
 
         var name: String {
             switch self {
             case .snoring: "Schnarchen"
             case .talking: "Sprechen"
+            case .fussing: "Seufzen und Quengeln"
             case .coughing: "Husten und Niesen"
             case .gasping: "Luftschnappen"
             case .animal: "Tiere"
@@ -26,6 +27,7 @@ struct SoundEvent: Codable, Hashable, Identifiable {
             switch self {
             case .snoring: "zzz"
             case .talking: "bubble.left"
+            case .fussing: "face.dashed"
             case .coughing: "lungs"
             case .gasping: "wind"
             case .animal: "pawprint"
@@ -43,7 +45,10 @@ struct SoundEvent: Codable, Hashable, Identifiable {
             switch self {
             case .snoring: ["snoring"]
             case .talking: ["speech", "whispering", "shout", "yell", "laughter", "giggling", "chuckle_chortle",
-                            "crying_sobbing", "screaming", "singing", "humming"]
+                            "screaming", "singing"]
+            // Apple kennt kein „Quengeln“ oder „Stöhnen“; am nächsten kommen Seufzen, Wimmern/Schluchzen
+            // und Summen („mmh“). Wer das Geräusch macht, kann die Erkennung nicht unterscheiden.
+            case .fussing: ["sigh", "crying_sobbing", "humming"]
             case .coughing: ["cough", "sneeze", "nose_blowing", "throat_clearing"]
             case .gasping: ["gasp"]
             case .animal: ["dog", "dog_bark", "dog_whimper", "dog_growl", "cat", "cat_meow", "cat_purr"]
@@ -56,6 +61,7 @@ struct SoundEvent: Codable, Hashable, Identifiable {
             switch self {
             case .snoring: 0.5
             case .talking: 0.6
+            case .fussing: 0.4
             default: 0.5
             }
         }
@@ -73,7 +79,7 @@ struct SoundEvent: Codable, Hashable, Identifiable {
 }
 
 struct SoundEventFile: Codable {
-    static let currentVersion = 1
+    static let currentVersion = 2
     var version: Int
     var events: [SoundEvent]
 }
