@@ -50,17 +50,22 @@ struct SoundsView: View {
                     .frame(width: 172, height: 172)
                     .opacity(player.isPlaying ? 1 : 0)
                     .animation(.easeInOut(duration: 0.7), value: player.isPlaying)
-                Circle().fill(Theme.raised).frame(width: 112, height: 112)
-                Circle().strokeBorder(player.isPlaying ? Theme.accent : Theme.hairline, lineWidth: 2)
-                    .frame(width: 112, height: 112)
-                Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 34, weight: .medium))
-                    .foregroundStyle(player.isPlaying ? Theme.accent : Theme.moon)
-                    .offset(x: player.isPlaying ? 0 : 3)
+                // Ring und Symbol wechseln sofort (eigene Transaktion ohne Animation). Vorher hat die
+                // Eindrück-Animation sie mitgenommen: Symbol und Ring glitten 0,2 s und wirkten verzögert.
+                Group {
+                    Circle().fill(Theme.raised).frame(width: 112, height: 112)
+                    Circle().strokeBorder(player.isPlaying ? Theme.accent : Theme.hairline, lineWidth: 2)
+                        .frame(width: 112, height: 112)
+                    Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 34, weight: .medium))
+                        .foregroundStyle(player.isPlaying ? Theme.accent : Theme.moon)
+                        .offset(x: player.isPlaying ? 0 : 3)
+                }
+                .transaction { $0.animation = nil; $0.disablesAnimations = true }
             }
             .frame(width: 112, height: 112)
             .scaleEffect(pressed ? 0.94 : 1)
-            .animation(.spring(duration: 0.2), value: pressed)
+            .animation(.spring(duration: 0.18), value: pressed)
             .overlay {
                 // Beschriftung entlang der Rundung: macht klar, dass dies nur zum Ausprobieren ist
                 CurvedText(text: player.isPlaying ? tr("Probe läuft") : tr("Probehören"), radius: 70, size: 15)
