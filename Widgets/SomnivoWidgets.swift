@@ -1,4 +1,5 @@
 import ActivityKit
+import AlarmKit
 import SwiftUI
 import WidgetKit
 
@@ -6,6 +7,9 @@ import WidgetKit
 struct SomnivoWidgets: WidgetBundle {
     var body: some Widget {
         NightLiveActivity()
+        if #available(iOS 26.0, *) {
+            SnoozeLiveActivity()
+        }
     }
 }
 
@@ -67,6 +71,59 @@ struct NightLiveActivity: Widget {
                 Image(systemName: "moon.zzz.fill").foregroundStyle(moon)
             }
             .keylineTint(moon)
+        }
+    }
+}
+
+/// Anzeige beim Schlummern (AlarmKit-Wecker mit Countdown bis zum nächsten Klingeln).
+@available(iOS 26.0, *)
+struct SnoozeLiveActivity: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: AlarmAttributes<WakeMetadata>.self) { ctx in
+            HStack(spacing: 14) {
+                Image(systemName: "zzz").font(.title2).foregroundStyle(moon)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(ctx.attributes.metadata?.label ?? "Somnivo")
+                        .font(.system(.headline, design: .serif))
+                        .foregroundStyle(moon)
+                    Text(tr("Schlummern")).font(.caption).foregroundStyle(mist)
+                }
+                Spacer()
+                countdown(ctx.state)
+                    .font(.system(.title2, design: .serif).monospacedDigit())
+                    .foregroundStyle(moon)
+            }
+            .padding(16)
+            .activityBackgroundTint(ink)
+            .activitySystemActionForegroundColor(moon)
+        } dynamicIsland: { ctx in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    Image(systemName: "zzz").font(.title2).foregroundStyle(moon)
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    countdown(ctx.state).monospacedDigit().foregroundStyle(moon)
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    Text(ctx.attributes.metadata?.label ?? "Somnivo").font(.caption).foregroundStyle(mist)
+                }
+            } compactLeading: {
+                Image(systemName: "zzz").foregroundStyle(moon)
+            } compactTrailing: {
+                countdown(ctx.state).monospacedDigit().foregroundStyle(moon).frame(maxWidth: 44)
+            } minimal: {
+                Image(systemName: "zzz").foregroundStyle(moon)
+            }
+        }
+    }
+
+    @ViewBuilder private func countdown(_ state: AlarmPresentationState) -> some View {
+        switch state.mode {
+        case .countdown(let c):
+            Text(timerInterval: Date.now...c.fireDate, countsDown: true)
+                .multilineTextAlignment(.trailing)
+        default:
+            Text("")
         }
     }
 }

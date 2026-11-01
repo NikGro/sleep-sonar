@@ -31,11 +31,12 @@ enum Theme {
 /// Ruhige Abschnittsüberschrift: Serif, normale Schreibweise, kein Großbuchstaben-Etikett.
 struct SectionTitle: View {
     let text: String
-    init(_ text: String) { self.text = text }
+    var color: Color = Theme.moon
+    init(_ text: String, color: Color = Theme.moon) { self.text = text; self.color = color }
     var body: some View {
         Text(text)
             .font(Theme.display(20, weight: .medium))
-            .foregroundStyle(Theme.moon)
+            .foregroundStyle(color)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

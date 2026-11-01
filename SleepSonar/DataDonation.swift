@@ -51,41 +51,46 @@ struct DonationConsentView: View {
     @ObservedObject private var donation = DataDonation.shared
     @Environment(\.dismiss) private var dismiss
 
+    /// Überschriften in REM-Violett, Text in Mondweiß; Symbole je Abschnitt in einer Phasenfarbe
+    private let heading = Theme.color(.rem)
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                Text(tr("Nächte spenden?"))
-                    .font(Theme.display(30))
-                    .padding(.top, 28)
-                Text(tr("Somnivo lernt Schlafphasen aus Geräuschen. Mit gespendeten Nächten wird ein Modell trainiert, das die Schätzung für alle genauer machen soll."))
-                    .font(.body)
-
+            VStack(alignment: .leading, spacing: 28) {
                 VStack(alignment: .leading, spacing: 14) {
-                    SectionTitle(tr("Was übertragen wird"))
-                    point("waveform.slash", tr("Ein grobes Klangbild der Nacht (Spektrogramm, 10-mal pro Sekunde) und die Lautstärke je Sekunde. Daraus lässt sich Atem, Schnarchen und Bewegung erkennen, aber keine Sprache verstehen. Kein Ton, keine Aufnahmen."))
-                    point("applewatch", tr("Die Schlafphasen deiner Apple Watch für dieselbe Zeit."))
-                    point("person.crop.circle.badge.questionmark", tr("iPhone-Modell, App-Version und eine zufällige Spender-Nummer. Kein Name, keine Apple-ID, kein Datum."))
+                    MoonDisc(lit: true)
+                        .frame(width: 56, height: 56)
+                        .accessibilityHidden(true)
+                    Text(tr("Nächte spenden?"))
+                        .font(Theme.display(32))
+                        .foregroundStyle(heading)
+                    Text(tr("Somnivo lernt Schlafphasen aus Geräuschen. Mit gespendeten Nächten wird ein Modell trainiert, das die Schätzung für alle genauer machen soll."))
+                        .font(.body)
                 }
+                .padding(.top, 28)
 
-                VStack(alignment: .leading, spacing: 14) {
-                    SectionTitle(tr("Welche Nächte"))
-                    point("moon.zzz", tr("Nur Nächte mit mindestens 5 Stunden Aufnahme und Schlafphasen der Watch."))
-                }
+                section(tr("Was übertragen wird"), color: Theme.color(.core), points: [
+                    ("waveform.slash", tr("Ein grobes Klangbild der Nacht (Spektrogramm, 10-mal pro Sekunde) und die Lautstärke je Sekunde. Daraus lässt sich Atem, Schnarchen und Bewegung erkennen, aber keine Sprache verstehen. Kein Ton, keine Aufnahmen.")),
+                    ("applewatch", tr("Die Schlafphasen deiner Apple Watch für dieselbe Zeit.")),
+                    ("person.crop.circle.badge.questionmark", tr("iPhone-Modell, App-Version und eine zufällige Spender-Nummer. Kein Name, keine Apple-ID, kein Datum.")),
+                ])
+                section(tr("Welche Nächte"), color: Theme.color(.rem), points: [
+                    ("moon.zzz", tr("Nur Nächte mit mindestens 5 Stunden Aufnahme und Schlafphasen der Watch.")),
+                ])
+                section(tr("Deine Entscheidung"), color: Theme.color(.wake), points: [
+                    ("hand.raised", tr("Freiwillig. Somnivo funktioniert ohne Spende genauso.")),
+                    ("arrow.uturn.backward", tr("Du kannst jederzeit unter „Mehr“ widerrufen und mit deiner Spender-Nummer die Löschung verlangen.")),
+                    ("clock", tr("Noch wird nichts gesendet. Die Übertragung kommt mit einem späteren Update.")),
+                ])
 
-                VStack(alignment: .leading, spacing: 14) {
-                    SectionTitle(tr("Deine Entscheidung"))
-                    point("hand.raised", tr("Freiwillig. Somnivo funktioniert ohne Spende genauso."))
-                    point("arrow.uturn.backward", tr("Du kannst jederzeit unter „Mehr“ widerrufen und mit deiner Spender-Nummer die Löschung verlangen."))
-                    point("clock", tr("Noch wird nichts gesendet. Die Übertragung kommt mit einem späteren Update."))
-                }
-
+                // beide Antworten gleich gewichtet (keine Vorauswahl, kein Hervorheben)
                 VStack(spacing: 12) {
                     Button(tr("Ja, Nächte spenden")) { donation.grant(); dismiss() }
                         .buttonStyle(MoonButtonStyle(prominent: false))
                     Button(tr("Nein, danke")) { donation.decline(); dismiss() }
                         .buttonStyle(MoonButtonStyle(prominent: false))
                 }
-                .padding(.top, 8)
+                .padding(.top, 4)
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 32)
@@ -94,10 +99,21 @@ struct DonationConsentView: View {
         .interactiveDismissDisabled()
     }
 
-    private func point(_ symbol: String, _ text: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Image(systemName: symbol).frame(width: 22).foregroundStyle(Theme.mist)
-            Text(text).font(.callout)
+    private func section(_ title: String, color: Color, points: [(String, String)]) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SectionTitle(title, color: heading)
+            ForEach(points, id: \.1) { symbol, text in
+                HStack(alignment: .top, spacing: 14) {
+                    Image(systemName: symbol)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(color)
+                        .frame(width: 34, height: 34)
+                        .background(Circle().fill(color.opacity(0.16)))
+                    Text(text).font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 7)
+                }
+            }
         }
     }
 }
