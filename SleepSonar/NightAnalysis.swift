@@ -223,7 +223,12 @@ struct NightAnalysisView: View {
             }
         }
 
-        SoundSection(events: r.events, start: r.start,
+        // Nur Geräusche, während derer geschlafen wurde (Gespräche vorm Einschlafen u. Ä. ausblenden)
+        let asleepEvents = r.events.filter { e in
+            let i = Int(((e.start + e.end) / 2) / r.epochSeconds)
+            return i >= 0 && i < r.ours.count && r.ours[i] != .wake
+        }
+        SoundSection(events: asleepEvents, start: r.start,
                      total: Double(r.ours.count) * r.epochSeconds, folder: folder, player: player)
 
         if r.agreement.epochs > 0 {

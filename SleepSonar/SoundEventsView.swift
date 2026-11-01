@@ -16,16 +16,16 @@ struct SoundSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            SectionTitle("Geräusche")
+            SectionTitle("Geräusche im Schlaf")
             if events.isEmpty {
-                Text("Keine auffälligen Geräusche erkannt. Für Nächte ohne Audio (oder wenn es gelöscht wurde) "
+                Text("Während des Schlafs wurden keine auffälligen Geräusche erkannt. Für Nächte ohne Audio "
                      + "lässt sich das nicht auswerten.")
                     .font(.callout).foregroundStyle(Theme.mist)
             } else {
                 timeline
                 ForEach(kinds, id: \.self) { kind in kindBlock(kind) }
-                Text("Erkannt mit Apples Geräuscherkennung direkt auf dem iPhone. Schnarchen zählt in der "
-                     + "Auswertung als Schlaf, Sprechen und Husten als Unruhe.")
+                Text("Erkannt mit Apples Geräuscherkennung direkt auf dem iPhone. Gezeigt wird nur, was "
+                     + "während des Schlafs war. Zum Anhören wird jeder Moment automatisch lauter gemacht.")
                     .font(.caption).foregroundStyle(Theme.mist)
             }
         }

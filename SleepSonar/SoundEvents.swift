@@ -240,42 +240,70 @@ final class LiveSoundAnalyzer: @unchecked Sendable {
     }
 }
 
-/// Spielt einen Ausschnitt der Nachtaufnahme ab (2 s Vorlauf, höchstens 20 s).
+/// Spielt einen Ausschnitt der Nachtaufnahme ab (2 s Vorlauf, insgesamt höchstens 30 s).
+///
+/// Die Aufnahme bleibt im Original (wichtig für die Auswertung). Nur zum Anhören wird der Ausschnitt
+/// auf eine angenehme Lautstärke angehoben (bis +40 dB, ohne zu übersteuern).
 @MainActor
 final class NightClipPlayer: ObservableObject {
     @Published private(set) var playingID: String?
-    private var player: AVAudioPlayer?
-    private var stopTask: Task<Void, Never>?
+    private let engine = AVAudioEngine()
+    private let node = AVAudioPlayerNode()
+
+    init() { engine.attach(node) }
 
     func toggle(_ event: SoundEvent, folder: URL) {
         if playingID == event.id { stop(); return }
         stop()
-        let file = Int(event.start / PassiveRecorder.secondsPerFile)
-        let url = folder.appendingPathComponent(String(format: "audio_%03d.m4a", file))
-        guard FileManager.default.fileExists(atPath: url.path),
-              let p = try? AVAudioPlayer(contentsOf: url) else { return }
+        let fileIndex = Int(event.start / PassiveRecorder.secondsPerFile)
+        let url = folder.appendingPathComponent(String(format: "audio_%03d.m4a", fileIndex))
+        guard let file = try? AVAudioFile(forReading: url) else { return }
+        let sr = file.processingFormat.sampleRate
+        let local = event.start - Double(fileIndex) * PassiveRecorder.secondsPerFile
+        let startFrame = AVAudioFramePosition(max(0, local - 2) * sr)
+        guard startFrame < file.length else { return }
+        let want = AVAudioFrameCount(min(event.duration + 4, 30) * sr)   // 2 s Vorlauf, Geräusch, 2 s Nachlauf, max. 30 s
+        let count = min(want, AVAudioFrameCount(file.length - startFrame))
+        guard let buf = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: count) else { return }
+        file.framePosition = startFrame
+        guard (try? file.read(into: buf, frameCount: count)) != nil, buf.frameLength > 0 else { return }
+        Self.makeAudible(buf)
+
         if !PassiveNightEngine.shared.isRunning {
             try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
             try? AVAudioSession.sharedInstance().setActive(true)
         }
-        let local = event.start - Double(file) * PassiveRecorder.secondsPerFile
-        p.currentTime = max(0, local - 2)
-        p.volume = 1
-        p.play()
-        player = p
-        playingID = event.id
-        let length = min(event.duration + 4, 20)
-        stopTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(length))
-            if !Task.isCancelled { self?.stop() }
+        engine.connect(node, to: engine.mainMixerNode, format: buf.format)
+        do { if !engine.isRunning { try engine.start() } } catch { return }
+        let id = event.id
+        node.scheduleBuffer(buf, completionCallbackType: .dataPlayedBack) { [weak self] _ in
+            Task { @MainActor in if self?.playingID == id { self?.stop() } }
         }
+        node.play()
+        playingID = id
     }
 
     func stop() {
-        stopTask?.cancel()
-        stopTask = nil
-        player?.stop()
-        player = nil
+        node.stop()
+        if engine.isRunning { engine.stop() }
         playingID = nil
+    }
+
+    /// Lautstärke anheben: Spitze auf etwa -3 dBFS, höchstens +40 dB, kurz ein- und ausblenden.
+    private static func makeAudible(_ buf: AVAudioPCMBuffer) {
+        guard let data = buf.floatChannelData else { return }
+        let n = Int(buf.frameLength), channels = Int(buf.format.channelCount)
+        var peak: Float = 1e-6
+        for c in 0..<channels { for i in 0..<n { peak = max(peak, abs(data[c][i])) } }
+        let gain = min(Float(100), 0.7 / peak)
+        let fade = min(n / 4, Int(buf.format.sampleRate * 0.05))
+        for c in 0..<channels {
+            for i in 0..<n {
+                var g = gain
+                if i < fade { g *= Float(i) / Float(fade) }
+                if i >= n - fade { g *= Float(n - 1 - i) / Float(fade) }
+                data[c][i] = max(-1, min(1, data[c][i] * g))
+            }
+        }
     }
 }
