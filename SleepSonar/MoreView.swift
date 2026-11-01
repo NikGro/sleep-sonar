@@ -32,6 +32,16 @@ struct MoreView: View {
                 .listRowBackground(Theme.raised)
 
                 Section {
+                    DonationSection()
+                } header: {
+                    header(tr("Datenspende"))
+                } footer: {
+                    Text(tr("Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur Merkmale je Sekunde."))
+                        .foregroundStyle(Theme.mist)
+                }
+                .listRowBackground(Theme.raised)
+
+                Section {
                     tip("moon.zzz", tr("„Schlafaufnahme starten“ und „Schlafaufnahme beenden“ gibt es in der Kurzbefehle-App, zum Beispiel als Automation beim Schlaf-Fokus."))
                     tip("bolt", tr("Über Nacht ans Ladekabel. Die Aufnahme braucht etwa so viel Strom wie Musik hören."))
                     tip("iphone.gen3", tr("Unterseite mit dem Mikrofon zu dir, etwa eine Armlänge entfernt."))

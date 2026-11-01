@@ -1,4 +1,5 @@
 /* Erzeugt von scripts/gen_strings.py – nicht von Hand ändern. */
+"NSAlarmKitUsageDescription" = "Somnivo wakes you within the window you set, as soon as you're sleeping lightly.";
 "NSHealthShareUsageDescription" = "Somnivo reads your Apple Watch sleep stages to compare them with its own estimate.";
 "NSHealthUpdateUsageDescription" = "Somnivo writes your sleep stages (awake, core, deep, REM) to Apple Health.";
 "NSMicrophoneUsageDescription" = "Somnivo records breathing and movement sounds at night to analyze your sleep. The recordings stay on your iPhone until you share them yourself.";

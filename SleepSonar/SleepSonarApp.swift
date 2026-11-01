@@ -5,6 +5,7 @@ import UIKit
 struct SleepSonarApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @State private var askDonation = false
 
     init() {
         BackgroundAnalysis.register()
@@ -42,6 +43,8 @@ struct SleepSonarApp: App {
             TabView {
                 TonightView()
                     .tabItem { Label(tr("Heute Nacht"), systemImage: "moon.stars") }
+                AlarmView()
+                    .tabItem { Label(tr("Wecker"), systemImage: "alarm") }
                 NightView()
                     .tabItem { Label(tr("Nächte"), systemImage: "chart.bar.xaxis") }
                 MoreView()
@@ -51,7 +54,11 @@ struct SleepSonarApp: App {
             .preferredColorScheme(.dark)
             .onChange(of: scenePhase) { _, phase in
                 if phase == .background { BackgroundAnalysis.appWentToBackground() }
+                if phase == .active { SmartAlarm.shared.refresh() }
             }
+            // Einmal bei der Einrichtung fragen (und wieder, wenn sich der Text ändert)
+            .onAppear { askDonation = DataDonation.shared.shouldAsk }
+            .sheet(isPresented: $askDonation) { DonationConsentView() }
         }
     }
 }

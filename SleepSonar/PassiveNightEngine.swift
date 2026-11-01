@@ -1,5 +1,6 @@
 import ActivityKit
 import AVFAudio
+import SonarDSP
 import Foundation
 import UIKit
 
@@ -32,6 +33,11 @@ final class PassiveNightEngine: ObservableObject {
     private var observers: [NSObjectProtocol] = []
     private var watchdog: Timer?
     private var activity: Activity<NightActivityAttributes>?
+    /// Sekundenwerte der laufenden Nacht für den Wecker (gleiche Daten wie levels.csv)
+    private var secondsHistory: [SleepStaging.Second?] = []
+    private var motionHistory: [Double?] = []
+    private var motionPeak = 0.0
+    private var alarmTimer: Timer?
 
     func start() async {
         guard !isRunning else { return }
@@ -64,6 +70,9 @@ final class PassiveNightEngine: ObservableObject {
                     guard let self else { return }
                     self.levelDB = db
                     self.bandDB = bands
+                    self.secondsHistory.append(.init(rms: db, mid: bands[1], high: bands[2]))
+                    self.motionHistory.append(self.motionPeak)
+                    self.motionPeak = 0
                 }
             }
             rec.onTick = { [weak self] high, index in
@@ -82,7 +91,10 @@ final class PassiveNightEngine: ObservableObject {
             folder = rec.folder
             let m = MotionLogger { [weak self] activity, maxDelta, pitch, roll in
                 rec.appendMotion(activity: activity, maxDelta: maxDelta, pitch: pitch, roll: roll)
-                Task { @MainActor in self?.motionActivity = activity }
+                Task { @MainActor in
+                    self?.motionActivity = activity
+                    self?.motionPeak = max(self?.motionPeak ?? 0, activity)
+                }
             }
             m.start()
             motion = m
@@ -98,6 +110,15 @@ final class PassiveNightEngine: ObservableObject {
             watchdog = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
                 Task { @MainActor in self?.checkAlive() }
             }
+            secondsHistory = []
+            motionHistory = []
+            if let startDate { SmartAlarm.shared.recordingStarted(at: startDate) }
+            alarmTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+                Task { @MainActor in
+                    guard let self else { return }
+                    SmartAlarm.shared.tick(seconds: self.secondsHistory, motion: self.motionHistory)
+                }
+            }
         } catch {
             errorMessage = tr("Audio-Fehler: %@", error.localizedDescription)
             stop()
@@ -107,6 +128,9 @@ final class PassiveNightEngine: ObservableObject {
     func stop() {
         watchdog?.invalidate()
         watchdog = nil
+        if alarmTimer != nil { SmartAlarm.shared.recordingStopped() }
+        alarmTimer?.invalidate()
+        alarmTimer = nil
         observers.forEach { NotificationCenter.default.removeObserver($0) }
         observers.removeAll()
         if let engine {
