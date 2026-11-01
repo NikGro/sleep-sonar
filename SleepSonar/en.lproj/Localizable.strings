@@ -102,6 +102,7 @@
 "Luftschnappen" = "Gasping";
 "Mehr" = "More";
 "Mikrofon" = "Microphone";
+"Min." = "min";
 "Minuten" = "Minutes";
 "Mit Apple Watch kannst du die Schätzung morgens vergleichen." = "With an Apple Watch you can compare the estimate in the morning.";
 "Morgenlicht" = "Morning light";
@@ -161,6 +162,7 @@
 "Start fehlgeschlagen: %@" = "Start failed: %@";
 "Starte heute Abend unter „Heute Nacht“ die Aufnahme. Morgens findest du sie hier." = "Start the recording tonight under “Tonight”. In the morning you'll find it here.";
 "Startet die Nachtaufnahme von Somnivo (nur Mikrofon)." = "Starts Somnivo's night recording (microphone only).";
+"Std." = "hours";
 "Stunden" = "Hours";
 "Technische Details" = "Technical details";
 "Tief" = "Deep";

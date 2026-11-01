@@ -75,6 +75,7 @@ struct NightView: View {
             .listStyle(.plain)
             .nightBackground()
             .navigationTitle(tr("Nächte"))
+            .toolbarTitleDisplayMode(.inlineLarge)
             .toolbarBackground(Theme.ink, for: .navigationBar)
             .onAppear(perform: refresh)
             .onChange(of: rec.isRunning) { refresh() }

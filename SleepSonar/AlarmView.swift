@@ -47,7 +47,7 @@ struct AlarmView: View {
             .listStyle(.plain)
             .nightBackground()
             .navigationTitle(tr("Wecker"))
-            .navigationBarTitleDisplayMode(.large)
+            .toolbarTitleDisplayMode(.inlineLarge)   // großer Titel in einer Zeile mit den Knöpfen
             .toolbarBackground(Theme.ink, for: .navigationBar)
             .toolbar {
                 if SmartAlarm.isAvailable {
@@ -125,6 +125,7 @@ struct AlarmEditView: View {
                     .listRowBackground(Color.clear)
                     if item.mode == .time { timePicker } else { durationPicker }
                 }
+                .listRowBackground(Color.clear)
 
                 Section {
                     if item.mode == .time {
@@ -150,6 +151,7 @@ struct AlarmEditView: View {
                         }
                     }
                 }
+                .listRowBackground(Theme.raised)
 
                 Section {
                     Toggle(tr("Im leichten Schlaf wecken"), isOn: $item.smart)
@@ -162,6 +164,7 @@ struct AlarmEditView: View {
                     Text(item.smart ? tr("Weckt in den letzten %d min vor der spätesten Zeit, sobald du leicht schläfst. Dafür muss die Nachtaufnahme laufen.", item.windowMinutes)
                                     : tr("Klingelt genau zur eingestellten Zeit."))
                 }
+                .listRowBackground(Theme.raised)
 
                 if !isNew {
                     Section {
@@ -171,6 +174,7 @@ struct AlarmEditView: View {
                         }
                         .frame(maxWidth: .infinity)
                     }
+                    .listRowBackground(Theme.raised)
                 }
             }
             .scrollContentBackground(.hidden)
@@ -253,6 +257,7 @@ private struct RepeatList: View {
                     }
                 }
             }
+            .listRowBackground(Theme.raised)
         }
         .scrollContentBackground(.hidden)
         .background(Theme.ink.ignoresSafeArea())
@@ -281,6 +286,7 @@ private struct SoundList: View {
             } footer: {
                 if let importError { Text(importError).foregroundStyle(Theme.alert) }
             }
+            .listRowBackground(Theme.raised)
 
             if item.sound != AlarmSound.system.rawValue {
                 Section {
@@ -298,10 +304,12 @@ private struct SoundList: View {
                 } footer: {
                     Text(tr("Somnivo verwendet höchstens die ersten 30 Sekunden eines Tons. Deshalb wird er höchstens 30 Sekunden lang lauter."))
                 }
+                .listRowBackground(Theme.raised)
             } else {
                 Section {} footer: {
                     Text(tr("Der iPhone-Standardton folgt der Lautstärke in den Einstellungen. iOS gibt die Töne der Uhr-App nicht für andere Apps frei."))
                 }
+                .listRowBackground(Theme.raised)
             }
         }
         .scrollContentBackground(.hidden)
@@ -378,32 +386,69 @@ struct WeekdayPicker: View {
     }
 }
 
-/// Nativer Dauer-Picker (UIDatePicker im Timer-Modus, wie in der Uhr-App).
+/// Dauer-Rad wie der Timer der Uhr-App, aber beide Räder drehen endlos (UIPickerView mit
+/// vielen Wiederholungen, mittig gestartet). 0 h 1 min bis 23 h 59 min.
 struct CountdownWheel: UIViewRepresentable {
     @Binding var minutes: Int
+    private static let loops = 200
 
-    func makeUIView(context: Context) -> UIDatePicker {
-        let p = UIDatePicker()
-        p.datePickerMode = .countDownTimer
-        p.preferredDatePickerStyle = .wheels
-        p.minuteInterval = 1
-        p.countDownDuration = Double(max(1, minutes)) * 60
-        p.addTarget(context.coordinator, action: #selector(Coordinator.changed(_:)), for: .valueChanged)
+    func makeUIView(context: Context) -> UIPickerView {
+        let p = UIPickerView()
+        p.dataSource = context.coordinator
+        p.delegate = context.coordinator
+        context.coordinator.select(p, minutes: minutes, animated: false)
         return p
     }
 
-    func updateUIView(_ p: UIDatePicker, context: Context) {
-        let want = Double(max(1, minutes)) * 60
-        if abs(p.countDownDuration - want) > 1 { p.countDownDuration = want }
+    func updateUIView(_ p: UIPickerView, context: Context) {
+        context.coordinator.parent = self
+        let h = p.selectedRow(inComponent: 0) % 24, m = p.selectedRow(inComponent: 1) % 60
+        if h * 60 + m != minutes { context.coordinator.select(p, minutes: minutes, animated: false) }
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
-    final class Coordinator: NSObject {
-        let parent: CountdownWheel
+    final class Coordinator: NSObject, UIPickerViewDataSource, UIPickerViewDelegate {
+        var parent: CountdownWheel
         init(_ parent: CountdownWheel) { self.parent = parent }
-        @MainActor @objc func changed(_ p: UIDatePicker) {
-            parent.minutes = min(23 * 60 + 59, max(1, Int(p.countDownDuration / 60)))
+
+        func select(_ p: UIPickerView, minutes: Int, animated: Bool) {
+            p.selectRow(24 * (loops / 2) + minutes / 60, inComponent: 0, animated: animated)
+            p.selectRow(60 * (loops / 2) + minutes % 60, inComponent: 1, animated: animated)
+        }
+
+        func numberOfComponents(in pickerView: UIPickerView) -> Int { 2 }
+        func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent c: Int) -> Int {
+            (c == 0 ? 24 : 60) * loops
+        }
+        func pickerView(_ pickerView: UIPickerView, rowHeightForComponent component: Int) -> CGFloat { 34 }
+
+        func pickerView(_ pickerView: UIPickerView, viewForRow row: Int, forComponent c: Int,
+                        reusing view: UIView?) -> UIView {
+            let label = (view as? UILabel) ?? UILabel()
+            let value = c == 0 ? row % 24 : row % 60
+            let unit = c == 0 ? tr("Std.") : tr("Min.")
+            let text = NSMutableAttributedString(string: "\(value)", attributes: [
+                .font: UIFont.monospacedDigitSystemFont(ofSize: 23, weight: .regular),
+                .foregroundColor: UIColor(Theme.moon)])
+            text.append(NSAttributedString(string: "  " + unit, attributes: [
+                .font: UIFont.systemFont(ofSize: 17, weight: .semibold),
+                .foregroundColor: UIColor(Theme.moon)]))
+            label.attributedText = text
+            label.textAlignment = .center
+            return label
+        }
+
+        func pickerView(_ p: UIPickerView, didSelectRow row: Int, inComponent c: Int) {
+            var h = p.selectedRow(inComponent: 0) % 24, m = p.selectedRow(inComponent: 1) % 60
+            if h == 0 && m == 0 {   // mindestens 1 Minute, wie beim Timer
+                m = 1
+                p.selectRow(60 * (loops / 2) + 1, inComponent: 1, animated: true)
+            }
+            h = min(h, 23)
+            // zurück in die Mitte, damit man nie ans Ende kommt
+            select(p, minutes: h * 60 + m, animated: false)
+            Task { @MainActor in self.parent.minutes = h * 60 + m }
         }
     }
 }

@@ -157,6 +157,8 @@ EN = {
 "Guten Morgen": "Good morning",
 "Aus": "Stop",
 "Abbrechen": "Cancel",
+"Std.": "hours",
+"Min.": "min",
 "Am Wochenende": "Weekends",
 "Anhören": "Play",
 "Anhören beenden": "Stop playing",

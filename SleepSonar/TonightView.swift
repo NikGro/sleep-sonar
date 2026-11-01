@@ -20,7 +20,7 @@ struct TonightView: View {
             .scrollDisabled(!rec.isRunning)
             .nightBackground()
             .navigationTitle(tr("Heute Nacht"))
-            .navigationBarTitleDisplayMode(.large)
+            .toolbarTitleDisplayMode(.inlineLarge)   // großer Titel in einer Zeile mit den Knöpfen
             .toolbarBackground(Theme.ink, for: .navigationBar)
         }
     }

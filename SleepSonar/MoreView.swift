@@ -69,6 +69,7 @@ struct MoreView: View {
             }
             .nightBackground()
             .navigationTitle(tr("Mehr"))
+            .toolbarTitleDisplayMode(.inlineLarge)
             .toolbarBackground(Theme.ink, for: .navigationBar)
         }
     }
