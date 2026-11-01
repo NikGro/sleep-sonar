@@ -52,7 +52,7 @@ struct DonationConsentView: View {
     @Environment(\.dismiss) private var dismiss
 
     /// Überschriften in REM-Violett, Text in Mondweiß; Symbole je Abschnitt in einer Phasenfarbe
-    private let heading = Theme.color(.rem)
+    private let heading = Theme.accent
 
     var body: some View {
         ScrollView {
@@ -129,8 +129,9 @@ struct DonationSection: View {
             case .granted:
                 Text(tr("Du spendest Nächte seit %@.", donation.date?.formatted(date: .abbreviated, time: .omitted) ?? ""))
                     .font(.callout)
-                Button(tr("Spende widerrufen"), role: .destructive) { donation.decline() }
-                    .foregroundStyle(Theme.alert)
+                // Widerrufen so leicht und gleich gestaltet wie Zustimmen
+                Button(tr("Spende widerrufen")) { donation.decline() }
+                    .foregroundStyle(Theme.moon)
             case .declined, .undecided:
                 Text(tr("Du spendest keine Nächte.")).font(.callout)
                 Button(tr("Nächte spenden …")) { asking = true }

@@ -24,7 +24,7 @@ struct MoreView: View {
                         Text(healthNote).font(.caption).foregroundStyle(Theme.mist)
                     }
                 } header: {
-                    header("Apple Health")
+                    ListHeader("Apple Health")
                 } footer: {
                     Text(tr("Somnivo liest die Schlafphasen deiner Apple Watch, um sie mit der eigenen Schätzung zu vergleichen."))
                         .foregroundStyle(Theme.mist)
@@ -34,7 +34,7 @@ struct MoreView: View {
                 Section {
                     DonationSection()
                 } header: {
-                    header(tr("Datenspende"))
+                    ListHeader(tr("Datenspende"))
                 } footer: {
                     Text(tr("Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur ein grobes Klangbild, aus dem sich keine Sprache verstehen lässt."))
                         .foregroundStyle(Theme.mist)
@@ -47,7 +47,7 @@ struct MoreView: View {
                     tip("iphone.gen3", tr("Unterseite mit dem Mikrofon zu dir, etwa eine Armlänge entfernt."))
                     tip("hand.raised", tr("Somnivo sendet keinen Ton aus und stört andere Apps nicht."))
                 } header: {
-                    header(tr("Tipps"))
+                    ListHeader(tr("Tipps"))
                 }
                 .listRowBackground(Theme.raised)
 
@@ -55,7 +55,7 @@ struct MoreView: View {
                     Text(tr("Die Schlafphasen sind eine Schätzung aus Geräuschen und keine medizinische Messung. Bei Verdacht auf Schlafstörungen hilft ein Arzt oder ein Schlaflabor."))
                         .font(.callout).foregroundStyle(Theme.mist)
                 } header: {
-                    header(tr("Wichtig"))
+                    ListHeader(tr("Wichtig"))
                 }
                 .listRowBackground(Theme.raised)
 
@@ -63,7 +63,7 @@ struct MoreView: View {
                     NavigationLink(tr("Health-Schreibtest")) { HealthTestView() }
                     LabeledContent(tr("Version"), value: Self.version)
                 } header: {
-                    header(tr("Für Entwickler"))
+                    ListHeader(tr("Für Entwickler"))
                 }
                 .listRowBackground(Theme.raised)
             }
@@ -72,10 +72,6 @@ struct MoreView: View {
             .toolbarTitleDisplayMode(.inlineLarge)
             .toolbarBackground(Theme.ink, for: .navigationBar)
         }
-    }
-
-    private func header(_ t: String) -> some View {
-        Text(t).font(Theme.display(17, weight: .medium)).foregroundStyle(Theme.moon).textCase(nil)
     }
 
     private func tip(_ symbol: String, _ text: String) -> some View {

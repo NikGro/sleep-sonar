@@ -18,7 +18,7 @@ struct HealthTestView: View {
                     await health.readBack()
                 }
             } header: {
-                header(tr("Schritt für Schritt"))
+                ListHeader(tr("Schritt für Schritt"))
             }
             .listRowBackground(Theme.raised)
 
@@ -37,7 +37,7 @@ struct HealthTestView: View {
                     Text(line).font(.callout)
                 }
             } header: {
-                header(tr("Protokoll"))
+                ListHeader(tr("Protokoll"))
             }
             .listRowBackground(Theme.raised)
         }
@@ -47,10 +47,6 @@ struct HealthTestView: View {
         .toolbarBackground(Theme.ink, for: .navigationBar)
         .disabled(busy)
         .overlay { if busy { ProgressView().tint(Theme.moon) } }
-    }
-
-    private func header(_ t: String) -> some View {
-        Text(t).font(Theme.display(17, weight: .medium)).foregroundStyle(Theme.moon).textCase(nil)
     }
 
     private func action(_ title: String, systemImage: String, destructive: Bool = false,

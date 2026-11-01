@@ -430,7 +430,7 @@ enum AlarmBackend {
             alert: alert,
             countdown: AlarmPresentation.Countdown(title: LocalizedStringResource("Schlummern")))
         let attributes = AlarmAttributes(presentation: presentation, metadata: WakeMetadata(label: a.title),
-                                         tintColor: Theme.color(.rem))
+                                         tintColor: Theme.accent)
         let sound: AlertConfiguration.AlertSound = AlarmSoundRenderer.prepare(a).map { .named($0) } ?? .default
         let config = AlarmManager.AlarmConfiguration<WakeMetadata>(
             countdownDuration: a.snooze ? Alarm.CountdownDuration(preAlert: nil, postAlert: Double(a.snoozeMinutes) * 60) : nil,

@@ -87,7 +87,7 @@ private struct AlarmRow: View {
             Spacer()
             Toggle("", isOn: Binding(get: { item.enabled }, set: toggle))
                 .labelsHidden()
-                .tint(Theme.color(.rem))
+                .tint(Theme.accent)
         }
         .padding(.vertical, 8)
         .accessibilityElement(children: .combine)
@@ -144,7 +144,7 @@ struct AlarmEditView: View {
                     } label: {
                         LabeledContent(tr("Ton"), value: soundName)
                     }
-                    Toggle(tr("Schlummern"), isOn: $item.snooze)
+                    Toggle(tr("Schlummern"), isOn: $item.snooze).tint(Theme.accent)
                     if item.snooze {
                         Picker(tr("Schlummerdauer"), selection: $item.snoozeMinutes) {
                             ForEach(snoozes, id: \.self) { Text(tr("%d min", $0)).tag($0) }
@@ -154,7 +154,7 @@ struct AlarmEditView: View {
                 .listRowBackground(Theme.raised)
 
                 Section {
-                    Toggle(tr("Im leichten Schlaf wecken"), isOn: $item.smart)
+                    Toggle(tr("Im leichten Schlaf wecken"), isOn: $item.smart).tint(Theme.accent)
                     if item.smart {
                         Picker(tr("Zeitraum"), selection: $item.windowMinutes) {
                             ForEach(windows, id: \.self) { Text(tr("%d min", $0)).tag($0) }
@@ -172,6 +172,7 @@ struct AlarmEditView: View {
                             SmartAlarm.shared.delete(item.id)
                             dismiss()
                         }
+                        .foregroundStyle(Theme.alert)
                         .frame(maxWidth: .infinity)
                     }
                     .listRowBackground(Theme.raised)
@@ -194,7 +195,7 @@ struct AlarmEditView: View {
             }
             .onDisappear { SoundPreview.shared.stop() }
         }
-        .tint(Theme.color(.rem))
+        .tint(Theme.moon)            // Navigation (Abbrechen/Sichern) in Mondweiß
         .preferredColorScheme(.dark)
     }
 
@@ -253,7 +254,7 @@ private struct RepeatList: View {
                         Text(tr("Jeden %@", Calendar.current.weekdaySymbols[d - 1]))
                             .foregroundStyle(Theme.moon)
                         Spacer()
-                        if days.contains(d) { Image(systemName: "checkmark") }
+                        if days.contains(d) { Image(systemName: "checkmark").foregroundStyle(Theme.accent) }
                     }
                 }
             }
@@ -283,6 +284,7 @@ private struct SoundList: View {
                     row(name, selected: item.sound == AlarmSound.custom.rawValue) { item.sound = AlarmSound.custom.rawValue }
                 }
                 Button(tr("Eigenen Ton auswählen …")) { importing = true }
+                    .foregroundStyle(Theme.moon)
             } footer: {
                 if let importError { Text(importError).foregroundStyle(Theme.alert) }
             }
@@ -293,6 +295,7 @@ private struct SoundList: View {
                     HStack(spacing: 12) {
                         Image(systemName: "speaker.fill").foregroundStyle(Theme.mist)
                         Slider(value: $item.volume, in: 0...1, onEditingChanged: { _ in preview.stop() })
+                            .tint(Theme.accent)
                         Image(systemName: "speaker.wave.3.fill").foregroundStyle(Theme.mist)
                     }
                     Picker(tr("Lauter werden"), selection: $item.rampSeconds) {
@@ -300,7 +303,7 @@ private struct SoundList: View {
                     }
                     Button(preview.playing ? tr("Anhören beenden") : tr("Anhören")) { preview.toggle(item) }
                 } header: {
-                    Text(tr("Lautstärke"))
+                    ListHeader(tr("Lautstärke"))
                 } footer: {
                     Text(tr("Somnivo verwendet höchstens die ersten 30 Sekunden eines Tons. Deshalb wird er höchstens 30 Sekunden lang lauter."))
                 }
@@ -340,7 +343,7 @@ private struct SoundList: View {
             HStack {
                 Text(title).foregroundStyle(Theme.moon)
                 Spacer()
-                if selected { Image(systemName: "checkmark") }
+                if selected { Image(systemName: "checkmark").foregroundStyle(Theme.accent) }
             }
         }
     }
@@ -365,7 +368,7 @@ struct WeekdayPicker: View {
                     Text(Calendar.current.veryShortWeekdaySymbols[d - 1])
                         .font(.callout.weight(.medium))
                         .frame(maxWidth: .infinity, minHeight: 36)
-                        .background(Circle().fill(on ? Theme.color(.rem) : Theme.hairline))
+                        .background(Circle().fill(on ? Theme.accent : Theme.hairline))
                         .foregroundStyle(on ? Theme.ink : Theme.moon)
                 }
                 .buttonStyle(.plain)
