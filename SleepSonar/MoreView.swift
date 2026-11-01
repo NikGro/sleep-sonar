@@ -60,6 +60,7 @@ struct MoreView: View {
                 .listRowBackground(Theme.raised)
 
                 Section {
+                    NavigationLink(tr("Quellen der Klänge")) { SoundCreditsView() }
                     NavigationLink(tr("Health-Schreibtest")) { HealthTestView() }
                     LabeledContent(tr("Version"), value: Self.version)
                 } header: {

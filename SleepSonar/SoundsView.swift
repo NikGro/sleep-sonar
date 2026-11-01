@@ -174,3 +174,25 @@ struct SoundsCard: View {
         }
     }
 }
+
+/// Herkunft und Lizenzen der Naturklänge (Namensnennung für CC BY).
+struct SoundCreditsView: View {
+    var body: some View {
+        List {
+            Section {
+                ForEach(SleepSound.allCases.filter { $0.credit != nil }) { s in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(s.name).foregroundStyle(Theme.moon)
+                        Text(s.credit ?? "").font(.caption).foregroundStyle(Theme.mist)
+                    }
+                }
+            } footer: {
+                Text(tr("Gekürzt und als nahtlose Schleife bearbeitet, teils über das Projekt Blanket. Ventilator und Rauschen hat Suya selbst erzeugt."))
+            }
+            .listRowBackground(Theme.raised)
+        }
+        .nightBackground()
+        .navigationTitle(tr("Quellen der Klänge"))
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}

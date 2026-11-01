@@ -3,17 +3,29 @@ import Foundation
 import SonarDSP
 import SwiftUI
 
-/// Eingebaute Schlafklänge (eigene Synthese, nahtlose 60-s-Schleifen in SleepSounds/).
+/// Eingebaute Schlafklänge als nahtlose Schleifen (SleepSounds/<rawValue>.m4a).
+/// Naturklänge: echte Aufnahmen (CC0, gemeinfrei, CC BY; Quellen siehe `credit`).
+/// Ventilator und Rauschen: selbst erzeugt.
 enum SleepSound: String, CaseIterable, Identifiable, Codable {
-    case regen, wellen, wind, kamin, ventilator, rosa, braun
+    case regen, gewitter, wellen, bach, wind, kamin, voegel, sommernacht, zug, boot, cafe, stadt
+    case ventilator, weiss, rosa, braun
     var id: String { rawValue }
     var name: String {
         switch self {
         case .regen: tr("Regen")
+        case .gewitter: tr("Gewitter")
         case .wellen: tr("Meereswellen")
+        case .bach: tr("Bach")
         case .wind: tr("Wind")
         case .kamin: tr("Kaminfeuer")
+        case .voegel: tr("Vögel")
+        case .sommernacht: tr("Sommernacht")
+        case .zug: tr("Zugfahrt")
+        case .boot: tr("Boot")
+        case .cafe: tr("Café")
+        case .stadt: tr("Stadt")
         case .ventilator: tr("Ventilator")
+        case .weiss: tr("Weißes Rauschen")
         case .rosa: tr("Rosa Rauschen")
         case .braun: tr("Braunes Rauschen")
         }
@@ -21,12 +33,39 @@ enum SleepSound: String, CaseIterable, Identifiable, Codable {
     var symbol: String {
         switch self {
         case .regen: "cloud.rain"
+        case .gewitter: "cloud.bolt.rain"
         case .wellen: "water.waves"
+        case .bach: "drop"
         case .wind: "wind"
         case .kamin: "flame"
+        case .voegel: "bird"
+        case .sommernacht: "moon.stars"
+        case .zug: "tram"
+        case .boot: "sailboat"
+        case .cafe: "cup.and.saucer"
+        case .stadt: "building.2"
         case .ventilator: "fan"
-        case .rosa: "waveform"
-        case .braun: "waveform.path"
+        case .weiss: "waveform"
+        case .rosa: "waveform.path"
+        case .braun: "waveform.path.ecg"
+        }
+    }
+    /// Herkunft und Lizenz (CC BY verlangt Namensnennung)
+    var credit: String? {
+        switch self {
+        case .regen: "alex36917, freesound.org · CC BY"
+        case .gewitter: "Digifish music, freesound.org · CC BY"
+        case .wellen: "Luftrum, freesound.org · CC BY"
+        case .bach: "gluckose, freesound.org · CC0"
+        case .wind: "felix.blume, freesound.org · CC0"
+        case .kamin: "ezwa, soundbible.com · gemeinfrei"
+        case .voegel: "kvgarlic, freesound.org · CC0"
+        case .sommernacht: "Lisa Redfern, soundbible.com · gemeinfrei"
+        case .zug: "SDLx, freesound.org · CC BY 3.0"
+        case .boot: "Falcet, freesound.org · CC0"
+        case .cafe: "stephan, soundbible.com · gemeinfrei"
+        case .stadt: "gezortenplotz, freesound.org · CC BY"
+        default: nil
         }
     }
 }
@@ -108,7 +147,8 @@ final class SleepSoundPlayer: ObservableObject {
 
     // MARK: Wiedergabe
 
-    func toggle() { isPlaying ? stop(fade: true) : play() }
+    /// Knopf: sofort (kurz ausgeblendet) anhalten bzw. starten
+    func toggle() { isPlaying && !fading ? stop(fade: true, seconds: 1.5) : (isPlaying ? stopNow() : play()) }
 
     func play() {
         guard !active.isEmpty else { return }
@@ -118,18 +158,8 @@ final class SleepSoundPlayer: ObservableObject {
             try session.setCategory(.playAndRecord, mode: .measurement, options: [.mixWithOthers, .defaultToSpeaker])
             try session.setActive(true)
             let engine = AVAudioEngine()
-            for s in SleepSound.allCases {
-                guard let url = Bundle.main.url(forResource: s.rawValue, withExtension: "m4a"),
-                      let file = try? AVAudioFile(forReading: url),
-                      let buf = AVAudioPCMBuffer(pcmFormat: file.processingFormat,
-                                                 frameCapacity: AVAudioFrameCount(file.length)) else { continue }
-                try file.read(into: buf)
-                let node = AVAudioPlayerNode()
-                engine.attach(node)
-                engine.connect(node, to: engine.mainMixerNode, format: buf.format)
-                node.scheduleBuffer(buf, at: nil, options: .loops)
-                nodes[s] = node
-            }
+            self.engine = engine
+            for s in active { attach(s) }
             // Referenz für das Herausrechnen aus dem Mikrofon
             let mixer = engine.mainMixerNode
             EchoCanceller.shared.reset()
@@ -138,7 +168,6 @@ final class SleepSoundPlayer: ObservableObject {
             }
             try engine.start()
             nodes.values.forEach { $0.play() }
-            self.engine = engine
             // startet die Aufnahme, ändert sich die Audio-Konfiguration: Wiedergabe neu aufbauen
             configObserver = NotificationCenter.default.addObserver(
                 forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
@@ -164,17 +193,17 @@ final class SleepSoundPlayer: ObservableObject {
         if let until { scheduleTimer(until: until) }
     }
 
-    func stop(fade: Bool) {
+    func stop(fade: Bool, seconds: Double = 30) {
         guard isPlaying else { return }
         if fade {
             fading = true
-            self.fade(to: 0, seconds: 30) { [weak self] in self?.stopNow() }
+            self.fade(to: 0, seconds: seconds) { [weak self] in self?.stopNow() }
         } else {
             stopNow()
         }
     }
 
-    private func stopNow(quiet: Bool = false) {
+    func stopNow(quiet: Bool = false) {
         if let configObserver { NotificationCenter.default.removeObserver(configObserver) }
         configObserver = nil
         timer?.invalidate(); timer = nil
@@ -192,7 +221,25 @@ final class SleepSoundPlayer: ObservableObject {
         stopsAt = nil
     }
 
+    /// Klang laden und an den Mischer hängen (beim Start oder wenn er während der Wiedergabe dazukommt)
+    @discardableResult private func attach(_ s: SleepSound) -> AVAudioPlayerNode? {
+        guard let engine, nodes[s] == nil,
+              let url = Bundle.main.url(forResource: s.rawValue, withExtension: "m4a"),
+              let file = try? AVAudioFile(forReading: url),
+              let buf = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)),
+              (try? file.read(into: buf)) != nil else { return nil }
+        let node = AVAudioPlayerNode()
+        engine.attach(node)
+        engine.connect(node, to: engine.mainMixerNode, format: buf.format)
+        node.scheduleBuffer(buf, at: nil, options: .loops)
+        node.volume = Float(volumes[s] ?? 0)
+        nodes[s] = node
+        if engine.isRunning { node.play() }
+        return node
+    }
+
     private func applyVolumes() {
+        if isPlaying { for s in active where nodes[s] == nil { attach(s) } }
         for (s, node) in nodes { node.volume = Float(volumes[s] ?? 0) }
         engine?.mainMixerNode.outputVolume = Float(master * fadeGain)
     }

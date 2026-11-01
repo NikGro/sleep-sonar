@@ -56,8 +56,9 @@ def fan():
 def pinknoise(): return norm(lp(pink(), 9000))
 def brownnoise(): return norm(lp(brown(), 4000))
 
-SOUNDS = {"regen": rain, "wellen": waves, "wind": wind, "kamin": fire, "ventilator": fan,
-          "rosa": pinknoise, "braun": brownnoise}
+def whitenoise(): return norm(lp(white(), 10000))
+# Naturklänge kommen aus import_sleep_sounds.py (echte Aufnahmen); hier nur Rauschen und Ventilator
+SOUNDS = {"ventilator": fan, "rosa": pinknoise, "braun": brownnoise, "weiss": whitenoise}
 for name, fn in SOUNDS.items():
     x = fn(); n = SR * DUR; f = SR * FADE
     # nahtlos: Ende in den Anfang überblenden
