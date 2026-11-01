@@ -16,9 +16,9 @@ struct TonightView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 40)
             }
-            .scrollBounceBehavior(.basedOnSize)
             .nightBackground()
             .navigationTitle("Heute Nacht")
+            .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(Theme.ink, for: .navigationBar)
         }
     }
