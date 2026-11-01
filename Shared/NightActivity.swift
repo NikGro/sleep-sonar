@@ -7,8 +7,10 @@ struct NightActivityAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
         /// iPhone wird gerade bewegt
         var handled: Bool
-        /// laufende Schlafklänge (nil = keine)
+        /// eingestellte Schlafklänge (nil = keine gewählt)
         var sounds: String? = nil
+        /// Klänge laufen gerade
+        var playing: Bool = false
         /// Ausblenden läuft von … bis …
         var fadeStart: Date? = nil
         var fadeEnd: Date? = nil
@@ -27,5 +29,19 @@ struct FadeSoundsIntent: LiveActivityIntent {
 }
 
 enum FadeSoundsAction {
+    nonisolated(unsafe) static var run: (@Sendable () async -> Void)?
+}
+
+/// Knopf „Abspielen“ für die Schlafklänge in der Live-Aktivität.
+struct PlaySoundsIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Klänge abspielen"
+    static var openAppWhenRun: Bool = false
+    func perform() async throws -> some IntentResult {
+        await PlaySoundsAction.run?()
+        return .result()
+    }
+}
+
+enum PlaySoundsAction {
     nonisolated(unsafe) static var run: (@Sendable () async -> Void)?
 }

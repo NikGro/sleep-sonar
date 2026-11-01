@@ -137,12 +137,13 @@ struct SnoozeLiveActivity: Widget {
 
 private let accent = Color(red: 0xC5 / 255, green: 0x9B / 255, blue: 0xFF / 255)
 
-/// Laufende Schlafklänge mit Knopf „Ausblenden“; während des Ausblendens füllt sich ein Balken.
+/// Schlafklänge mit Abspielen/Ausblenden; während des Ausblendens füllt sich ein Balken.
 struct SoundsRow: View {
     let state: NightActivityAttributes.ContentState
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "speaker.wave.2.fill").foregroundStyle(accent)
+            Image(systemName: state.playing ? "speaker.wave.2.fill" : "speaker.fill")
+                .foregroundStyle(state.playing ? accent : mist)
             VStack(alignment: .leading, spacing: 4) {
                 Text(state.sounds ?? "").font(.caption).foregroundStyle(moon).lineLimit(1)
                 if let a = state.fadeStart, let b = state.fadeEnd, b > a {
@@ -152,9 +153,16 @@ struct SoundsRow: View {
                 }
             }
             Spacer(minLength: 8)
-            if state.fadeStart == nil {
-                Button(intent: FadeSoundsIntent()) {
-                    Text(tr("Ausblenden")).font(.caption.weight(.semibold))
+            if state.playing {
+                if state.fadeStart == nil {
+                    Button(intent: FadeSoundsIntent()) {
+                        Label(tr("Ausblenden"), systemImage: "pause.fill").font(.caption.weight(.semibold))
+                    }
+                    .tint(accent)
+                }
+            } else {
+                Button(intent: PlaySoundsIntent()) {
+                    Label(tr("Abspielen"), systemImage: "play.fill").font(.caption.weight(.semibold))
                 }
                 .tint(accent)
             }

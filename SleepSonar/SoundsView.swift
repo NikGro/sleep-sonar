@@ -62,9 +62,17 @@ struct SoundsView: View {
                         .offset(x: player.isPlaying ? 0 : 3)
                 }
                 .frame(width: 112, height: 112)
+                .overlay {
+                    // Beschriftung entlang der Rundung: macht klar, dass dies nur zum Ausprobieren ist
+                    CurvedText(text: player.isPlaying ? tr("Probe läuft") : tr("Probehören"), radius: 70, size: 15)
+                        .foregroundStyle(player.isPlaying ? Theme.accent : Theme.mist)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
                 .contentShape(Circle())
             }
             .buttonStyle(.plain)
+            .padding(.top, 24)
             .disabled(player.active.isEmpty)
             .accessibilityLabel(player.isPlaying ? tr("Anhalten") : tr("Probehören"))
             VStack(spacing: 4) {
@@ -73,7 +81,7 @@ struct SoundsView: View {
                     .multilineTextAlignment(.center)
                 Text(rec.isRunning
                      ? tr("Die Klänge laufen gerade für die Nacht.")
-                     : tr("Zum Ausprobieren. In der Nacht laufen die Klänge mit der Aufnahme und enden mit ihr."))
+                     : tr("Hier nur zum Probehören. Für die Nacht startest du die Klänge mit der Aufnahme unter „Heute Nacht“ – sie helfen beim Einschlafen und enden mit der Aufnahme."))
                     .font(.caption).foregroundStyle(Theme.mist)
                     .multilineTextAlignment(.center)
             }
@@ -294,6 +302,28 @@ struct FadeRing: View {
                         .rotationEffect(.degrees(-90))
                         .padding(1.5)
                 }
+            }
+        }
+    }
+}
+
+/// Text entlang des oberen Kreisbogens (Zeichen einzeln gedreht).
+struct CurvedText: View {
+    let text: String
+    let radius: CGFloat
+    let size: CGFloat
+
+    var body: some View {
+        let chars = Array(text)
+        let step = size * 0.56 / radius             // ungefähre Zeichenbreite als Winkel
+        let total = step * CGFloat(max(chars.count - 1, 0))
+        ZStack {
+            ForEach(Array(chars.enumerated()), id: \.offset) { i, c in
+                let angle = -total / 2 + step * CGFloat(i)          // 0 = oben
+                Text(String(c))
+                    .font(Theme.display(size, weight: .medium))
+                    .rotationEffect(.radians(angle))
+                    .offset(x: radius * sin(angle), y: -radius * cos(angle))
             }
         }
     }

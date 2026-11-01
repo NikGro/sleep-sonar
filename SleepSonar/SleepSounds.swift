@@ -84,7 +84,13 @@ final class SleepSoundPlayer: ObservableObject {
     static let shared = SleepSoundPlayer()
 
     private let d = UserDefaults.standard
-    @Published var volumes: [SleepSound: Double] { didSet { applyVolumes(); persist() } }
+    @Published var volumes: [SleepSound: Double] {
+        didSet {
+            applyVolumes(); persist()
+            // Live-Aktivität nur auffrischen, wenn sich die Auswahl ändert (nicht bei jedem Regler-Schritt)
+            if Set(oldValue.filter { $0.value > 0.01 }.keys) != Set(active) { PassiveNightEngine.shared.updateActivity() }
+        }
+    }
     @Published var master: Double { didSet { applyVolumes(); d.set(master, forKey: "sounds.master") } }
     /// Ausschalten nach Minuten (0 = kein Zeitlimit)
     @Published var timerMinutes: Int { didSet { d.set(timerMinutes, forKey: "sounds.timer"); scheduleTimer() } }

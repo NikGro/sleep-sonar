@@ -12,6 +12,7 @@ struct SleepSonarApp: App {
         SmartAlarm.shared.watchAlarms()
         // „Ausblenden“ in der Live-Aktivität
         FadeSoundsAction.run = { await MainActor.run { SleepSoundPlayer.shared.stop(fade: true) } }
+        PlaySoundsAction.run = { await MainActor.run { SleepSoundPlayer.shared.play() } }
         // Ab iOS 26 schwebende Glas-Tab-Leiste vom System; davor in Nachttinte statt System-Grau
         if #unavailable(iOS 26) {
             let tab = UITabBarAppearance()

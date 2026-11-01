@@ -188,7 +188,7 @@ final class PassiveNightEngine: ObservableObject {
         guard let activity else { return }
         let p = SleepSoundPlayer.shared
         let state = NightActivityAttributes.ContentState(
-            handled: false, sounds: p.isPlaying ? p.activeNames : nil,
+            handled: false, sounds: p.active.isEmpty ? nil : p.activeNames, playing: p.isPlaying,
             fadeStart: p.isPlaying ? p.fadeStart : nil, fadeEnd: p.isPlaying ? p.fadeEnd : nil)
         Task { await activity.update(.init(state: state, staleDate: nil)) }
     }

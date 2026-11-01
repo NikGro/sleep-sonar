@@ -101,6 +101,7 @@
 "Health-Schreibtest" = "Health write test";
 "Health-Zugriff erlauben" = "Allow Health access";
 "Heute Nacht" = "Tonight";
+"Hier nur zum Probehören. Für die Nacht startest du die Klänge mit der Aufnahme unter „Heute Nacht“ – sie helfen beim Einschlafen und enden mit der Aufnahme." = "Preview only. For the night, start the sounds with the recording under “Tonight” – they help you fall asleep and end with the recording.";
 "Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur ein grobes Klangbild, aus dem sich keine Sprache verstehen lässt." = "Helps make the estimate more accurate for everyone. No sound, only a coarse sound picture from which speech can't be understood.";
 "Husten und Niesen" = "Coughing and sneezing";
 "Im Bett" = "In bed";
@@ -116,6 +117,7 @@
 "Klassisch" = "Classic";
 "Klingelt genau zur eingestellten Zeit." = "Rings exactly at the set time.";
 "Klänge" = "Sounds";
+"Klänge abspielen" = "Play sounds";
 "Klänge an: %@" = "Sounds on: %@";
 "Klänge aus" = "Sounds off";
 "Klänge ausblenden" = "Fade out sounds";
@@ -165,6 +167,7 @@
 "Ob du schläfst, erkennt Suya nur, während die Nachtaufnahme läuft." = "Suya can only tell that you're asleep while the night recording is running.";
 "Pegel" = "Level";
 "Phase gleich" = "Same stage";
+"Probe läuft" = "Previewing";
 "Probehören" = "Preview";
 "Protokoll" = "Log";
 "Quellen der Klänge" = "Sound credits";
