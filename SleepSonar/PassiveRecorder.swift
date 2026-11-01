@@ -49,6 +49,8 @@ final class PassiveRecorder: @unchecked Sendable {
     private var motion: FileHandle?
     private var events: FileHandle?
     private var meta: [String: Any]
+    /// Geräuscherkennung live mitlaufen lassen (Schnarchen, Sprechen …)
+    private var live: LiveSoundAnalyzer?
 
     init(meta: [String: Any], onSecond: @escaping @Sendable (Double, [Double]) -> Void) throws {
         startDate = Date()
@@ -65,6 +67,7 @@ final class PassiveRecorder: @unchecked Sendable {
         self.meta["mode"] = "passive_audio"
         self.meta["audio_sample_rate"] = Self.sampleRate
         self.meta["audio_bitrate"] = Self.bitRate
+        live = LiveSoundAnalyzer(format: outFormat)
         writeMeta()
     }
 
@@ -103,6 +106,7 @@ final class PassiveRecorder: @unchecked Sendable {
             guard out.frameLength > 0 else { return }
             try write(out)
             measure(out)
+            live?.feed(out)
         } catch {
             eventLocked("Audio-Fehler: \(error.localizedDescription)")
         }
@@ -195,7 +199,10 @@ final class PassiveRecorder: @unchecked Sendable {
         finished = true
         file = nil          // AAC-Datei abschließen
         let files = fileIndex + 1
+        let live = self.live
+        self.live = nil
         lock.unlock()
+        live?.finish(folder: folder)
         let end = Date()
         io.sync {
             meta["end"] = iso.string(from: end)

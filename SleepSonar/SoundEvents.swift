@@ -35,7 +35,8 @@ struct SoundEvent: Codable, Hashable, Identifiable {
 
         /// Schlafgeräusch (zählt nicht als Unruhe) oder Wachgeräusch (zählt als Unruhe)?
         var meansSleep: Bool { self == .snoring || self == .gasping }
-        var meansWake: Bool { self == .talking || self == .coughing }
+        /// Sprechen zählt bewusst nicht: oft Partner, Fernseher oder Podcast vor dem Einschlafen.
+        var meansWake: Bool { self == .coughing }
 
         /// Apple-Klassen (SNClassifierIdentifier.version1), die zu dieser Art gehören
         var labels: Set<String> {
@@ -88,36 +89,71 @@ enum SoundEventDetector {
         return file.events
     }
 
+    /// Laufende Auswertungen (damit Verlassen und Wiederöffnen nicht von vorn beginnt).
+    @MainActor private static var running: [URL: Task<[SoundEvent], Error>] = [:]
+    @MainActor private static var listeners: [URL: [@Sendable (Double) -> Void]] = [:]
+
     /// Wertet alle Audiodateien der Nacht aus. `progress` bekommt 0…1.
+    @MainActor
     static func analyze(folder: URL, progress: @escaping @Sendable (Double) -> Void) async throws -> [SoundEvent] {
         if let c = cached(in: folder) { return c }
+        listeners[folder, default: []].append(progress)
+        if let t = running[folder] { return try await t.value }
         let files = NightExport.audioFiles(in: folder)
-        let events = try await Task.detached(priority: .userInitiated) { () throws -> [SoundEvent] in
-            var windows: [(kind: SoundEvent.Kind, start: Double, end: Double, conf: Double)] = []
-            for (i, url) in files.enumerated() {
+        let report: @Sendable (Double) -> Void = { p in
+            Task { @MainActor in listeners[folder]?.forEach { $0(p) } }
+        }
+        let task = Task.detached(priority: .userInitiated) { () throws -> [SoundEvent] in
+            let partialURL = folder.appendingPathComponent("events_partial.json")
+            var partial = (try? JSONDecoder().decode(Partial.self, from: Data(contentsOf: partialURL)))
+                ?? Partial(done: [], windows: [])
+            for (i, url) in files.enumerated() where !partial.done.contains(url.lastPathComponent) {
                 // Dateiname audio_NNN.m4a: jede Datei deckt genau eine Stunde ab
                 let idx = Int(url.deletingPathExtension().lastPathComponent.split(separator: "_").last ?? "") ?? i
                 let offset = Double(idx) * PassiveRecorder.secondsPerFile
                 let analyzer = try SNAudioFileAnalyzer(url: url)
                 let request = try SNClassifySoundRequest(classifierIdentifier: .version1)
                 request.overlapFactor = 0.5
-                let observer = Collector()
+                let observer = WindowCollector { t in
+                    report((Double(i) + min(1, t / PassiveRecorder.secondsPerFile)) / Double(max(1, files.count)))
+                }
                 try analyzer.add(request, withObserver: observer)
                 analyzer.analyze()
-                for w in observer.windows {
-                    windows.append((w.kind, w.start + offset, w.end + offset, w.conf))
-                }
-                progress(Double(i + 1) / Double(max(1, files.count)))
+                partial.windows += observer.windows.map { Window(kind: $0.kind, start: $0.start + offset,
+                                                                 end: $0.end + offset, conf: $0.conf) }
+                partial.done.append(url.lastPathComponent)
+                try? JSONEncoder().encode(partial).write(to: partialURL)
             }
-            return merge(windows)
-        }.value
+            report(1)
+            let events = merge(partial.windows)
+            try save(events, in: folder)
+            try? FileManager.default.removeItem(at: partialURL)
+            return events
+        }
+        running[folder] = task
+        defer { running[folder] = nil; listeners[folder] = nil }
+        return try await task.value
+    }
+
+    static func save(_ events: [SoundEvent], in folder: URL) throws {
         let data = try JSONEncoder().encode(SoundEventFile(version: SoundEventFile.currentVersion, events: events))
-        try? data.write(to: fileURL(folder))
-        return events
+        try data.write(to: fileURL(folder))
+    }
+
+    struct Window: Codable {
+        var kind: SoundEvent.Kind
+        var start: Double
+        var end: Double
+        var conf: Double
+    }
+
+    private struct Partial: Codable {
+        var done: [String]
+        var windows: [Window]
     }
 
     /// Fenster gleicher Art mit weniger als 20 s Abstand zu einer Episode zusammenfassen.
-    static func merge(_ windows: [(kind: SoundEvent.Kind, start: Double, end: Double, conf: Double)]) -> [SoundEvent] {
+    static func merge(_ windows: [Window]) -> [SoundEvent] {
         var out: [SoundEvent] = []
         for kind in SoundEvent.Kind.allCases {
             let ws = windows.filter { $0.kind == kind }.sorted { $0.start < $1.start }
@@ -145,25 +181,62 @@ enum SoundEventDetector {
         }
         return (sleep, wake)
     }
+}
 
-    private final class Collector: NSObject, SNResultsObserving, @unchecked Sendable {
-        var windows: [(kind: SoundEvent.Kind, start: Double, end: Double, conf: Double)] = []
+/// Sammelt erkannte Geräusch-Fenster (Zeiten relativ zum Analysebeginn, in Sekunden).
+final class WindowCollector: NSObject, SNResultsObserving, @unchecked Sendable {
+    private let lock = NSLock()
+    private var collected: [SoundEventDetector.Window] = []
+    private let onTime: ((Double) -> Void)?
 
-        func request(_ request: SNRequest, didProduce result: SNResult) {
-            guard let r = result as? SNClassificationResult else { return }
-            let start = r.timeRange.start.seconds
-            let end = start + r.timeRange.duration.seconds
-            for kind in SoundEvent.Kind.allCases {
-                var best = 0.0
-                for label in kind.labels {
-                    if let c = r.classification(forIdentifier: label)?.confidence { best = max(best, c) }
-                }
-                if best >= kind.threshold { windows.append((kind, start, end, best)) }
+    init(onTime: ((Double) -> Void)? = nil) { self.onTime = onTime }
+
+    var windows: [SoundEventDetector.Window] { lock.lock(); defer { lock.unlock() }; return collected }
+
+    func request(_ request: SNRequest, didProduce result: SNResult) {
+        guard let r = result as? SNClassificationResult else { return }
+        let start = r.timeRange.start.seconds
+        let end = start + r.timeRange.duration.seconds
+        var found: [SoundEventDetector.Window] = []
+        for kind in SoundEvent.Kind.allCases {
+            var best = 0.0
+            for label in kind.labels {
+                if let c = r.classification(forIdentifier: label)?.confidence { best = max(best, c) }
             }
+            if best >= kind.threshold { found.append(.init(kind: kind, start: start, end: end, conf: best)) }
         }
+        lock.lock(); collected += found; lock.unlock()
+        if Int(end) % 60 < 2 { onTime?(end) }
+    }
 
-        func request(_ request: SNRequest, didFailWithError error: Error) {}
-        func requestDidComplete(_ request: SNRequest) {}
+    func request(_ request: SNRequest, didFailWithError error: Error) {}
+    func requestDidComplete(_ request: SNRequest) {}
+}
+
+/// Geräuscherkennung live während der Aufnahme, damit die Auswertung morgens sofort fertig ist.
+final class LiveSoundAnalyzer: @unchecked Sendable {
+    private let queue = DispatchQueue(label: "de.nikgro.sleepsonar.sound", qos: .utility)
+    private let analyzer: SNAudioStreamAnalyzer
+    private let collector = WindowCollector()
+    private var position: AVAudioFramePosition = 0
+
+    init?(format: AVAudioFormat) {
+        analyzer = SNAudioStreamAnalyzer(format: format)
+        guard let request = try? SNClassifySoundRequest(classifierIdentifier: .version1) else { return nil }
+        request.overlapFactor = 0.5
+        do { try analyzer.add(request, withObserver: collector) } catch { return nil }
+    }
+
+    /// Vom Audio-Thread aufrufen; der Puffer darf danach nicht mehr verändert werden.
+    func feed(_ buffer: AVAudioPCMBuffer) {
+        let pos = position
+        position += AVAudioFramePosition(buffer.frameLength)
+        queue.async { self.analyzer.analyze(buffer, atAudioFramePosition: pos) }
+    }
+
+    func finish(folder: URL) {
+        queue.sync { analyzer.completeAnalysis() }
+        try? SoundEventDetector.save(SoundEventDetector.merge(collector.windows), in: folder)
     }
 }
 
