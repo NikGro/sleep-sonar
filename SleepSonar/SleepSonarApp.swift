@@ -9,6 +9,8 @@ struct SleepSonarApp: App {
 
     init() {
         BackgroundAnalysis.register()
+        // „Ausblenden“ in der Live-Aktivität
+        FadeSoundsAction.run = { await MainActor.run { SleepSoundPlayer.shared.stop(fade: true) } }
         // Ab iOS 26 schwebende Glas-Tab-Leiste vom System; davor in Nachttinte statt System-Grau
         if #unavailable(iOS 26) {
             let tab = UITabBarAppearance()
@@ -55,7 +57,10 @@ struct SleepSonarApp: App {
             .tint(Theme.moon)
             .preferredColorScheme(.dark)
             .onChange(of: scenePhase) { _, phase in
-                if phase == .background { BackgroundAnalysis.appWentToBackground() }
+                if phase == .background {
+                    BackgroundAnalysis.appWentToBackground()
+                    SleepSoundPlayer.shared.appBackgrounded()
+                }
                 if phase == .active { SmartAlarm.shared.refresh() }
             }
             // Einmal bei der Einrichtung fragen (und wieder, wenn sich der Text ändert)

@@ -38,6 +38,7 @@
 "Aufnahme stand still" = "Recording had stalled";
 "Aufnahme starten" = "Start recording";
 "Aus" = "Stop";
+"Ausblenden" = "Fade out";
 "Ausblenden, wenn du schläfst" = "Fade out when you're asleep";
 "Ausschalten" = "Turn off";
 "Ausschalten nach" = "Turn off after";
@@ -56,6 +57,7 @@
 "Deine Entscheidung" = "Your choice";
 "Der Wecker braucht iOS 26 oder neuer." = "The alarm needs iOS 26 or later.";
 "Der iPhone-Standardton folgt der Lautstärke in den Einstellungen. iOS gibt die Töne der Uhr-App nicht für andere Apps frei." = "The iPhone default sound follows the volume in Settings. iOS doesn't make the Clock app's sounds available to other apps.";
+"Die Klänge laufen gerade für die Nacht." = "The sounds are playing for the night right now.";
 "Die Nacht wird gespeichert und lässt sich danach auswerten." = "The night will be saved and can be analyzed afterwards.";
 "Die Nachtaufnahme läuft bereits." = "The night recording is already running.";
 "Die Schlafphasen deiner Apple Watch für dieselbe Zeit." = "Your Apple Watch sleep stages for the same time.";
@@ -99,6 +101,7 @@
 "Im Bett" = "In bed";
 "Im leichten Schlaf wecken" = "Wake in light sleep";
 "Im leichten Schlaf wecken geht nur, während die Nachtaufnahme läuft. Ohne Aufnahme klingelt jeder Wecker zur eingestellten Zeit." = "Waking in light sleep only works while the night recording is running. Without a recording, every alarm rings at its set time.";
+"In der Nacht" = "At night";
 "Ja, Nächte spenden" = "Yes, donate nights";
 "Jeden %@" = "Every %@";
 "Kaminfeuer" = "Fireplace";
@@ -110,6 +113,7 @@
 "Klänge" = "Sounds";
 "Klänge an: %@" = "Sounds on: %@";
 "Klänge aus" = "Sounds off";
+"Klänge ausblenden" = "Fade out sounds";
 "Lauter werden" = "Get louder";
 "Lautstärke" = "Volume";
 "Lautstärke %@" = "Volume %@";
@@ -128,6 +132,7 @@
 "Mischen" = "Mix";
 "Mischung sichern" = "Save mix";
 "Mit Apple Watch kannst du die Schätzung morgens vergleichen." = "With an Apple Watch you can compare the estimate in the morning.";
+"Mit der Nachtaufnahme starten" = "Start with the night recording";
 "Morgenlicht" = "Morning light";
 "NICHT am Strom" = "NOT charging";
 "Nacht wird ausgewertet" = "Analyzing the night";
@@ -153,6 +158,7 @@
 "Ob du schläfst, erkennt Suya nur, während die Nachtaufnahme läuft." = "Suya can only tell that you're asleep while the night recording is running.";
 "Pegel" = "Level";
 "Phase gleich" = "Same stage";
+"Probehören" = "Preview";
 "Protokoll" = "Log";
 "Quellen der Klänge" = "Sound credits";
 "REM" = "REM";
@@ -216,6 +222,7 @@
 "Version" = "Version";
 "Vögel" = "Birds";
 "Wach" = "Awake";
+"Was zuerst eintritt, blendet die Klänge über 15 Sekunden aus. Spätestens mit dem Ende der Aufnahme sind sie aus." = "Whichever comes first fades the sounds out over 15 seconds. They stop at the latest when the recording ends.";
 "Was zuerst eintritt, blendet die Klänge über 30 Sekunden aus." = "Whichever comes first fades the sounds out over 30 seconds.";
 "Was übertragen wird" = "What is sent";
 "Watch" = "Watch";
@@ -245,6 +252,7 @@
 "Zeit je Phase" = "Time per stage";
 "Zeitraum" = "Window";
 "Zugfahrt" = "Train ride";
+"Zum Ausprobieren. In der Nacht laufen die Klänge mit der Aufnahme und enden mit ihr." = "For trying out. At night, the sounds play with the recording and end with it.";
 "aus um %@" = "off at %@";
 "geschlafen, %@ bis %@ Uhr" = "asleep, %@ to %@";
 "hört zu" = "listening";

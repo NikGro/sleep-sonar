@@ -113,6 +113,7 @@ final class PassiveNightEngine: ObservableObject {
             secondsHistory = []
             motionHistory = []
             if let startDate { SmartAlarm.shared.recordingStarted(at: startDate) }
+            SleepSoundPlayer.shared.recordingStarted()
             alarmTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
                 Task { @MainActor in
                     guard let self else { return }
@@ -148,12 +149,10 @@ final class PassiveNightEngine: ObservableObject {
         }
         recorder = nil
         isRunning = false
+        SleepSoundPlayer.shared.recordingStopped()
         endActivity()
-        // laufende Schlafklänge nicht mit abschalten
         Orientation.recordingChanged(false)
-        if !SleepSoundPlayer.shared.isPlaying {
-            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        }
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
     /// Eintrag ins Protokoll der laufenden Nacht (z. B. Klänge an/aus)
@@ -178,9 +177,20 @@ final class PassiveNightEngine: ObservableObject {
                 attributes: NightActivityAttributes(start: startDate),
                 content: .init(state: .init(handled: false), staleDate: nil))
             log(tr("Live-Aktivität gestartet"))
+            updateActivity()
         } catch {
             log(tr("Live-Aktivität nicht möglich: %@", error.localizedDescription))
         }
+    }
+
+    /// Klänge in der Live-Aktivität aktuell halten
+    func updateActivity() {
+        guard let activity else { return }
+        let p = SleepSoundPlayer.shared
+        let state = NightActivityAttributes.ContentState(
+            handled: false, sounds: p.isPlaying ? p.activeNames : nil,
+            fadeStart: p.isPlaying ? p.fadeStart : nil, fadeEnd: p.isPlaying ? p.fadeEnd : nil)
+        Task { await activity.update(.init(state: state, staleDate: nil)) }
     }
 
     private func endActivity() {

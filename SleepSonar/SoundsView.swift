@@ -12,20 +12,19 @@ struct SoundsView: View {
         NavigationStack {
             List {
                 Section {
-                    Button { player.toggle() } label: {
-                        Label(player.isPlaying ? tr("Anhalten") : tr("Abspielen"),
+                    Button { player.togglePreview() } label: {
+                        Label(player.isPlaying ? tr("Anhalten") : tr("Probehören"),
                               systemImage: player.isPlaying ? "pause.fill" : "play.fill")
                     }
                     .buttonStyle(MoonButtonStyle(prominent: !player.isPlaying))
                     .disabled(player.active.isEmpty)
                     .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets())
-                    if player.isPlaying {
-                        Text(SoundStatus.text(player))
-                            .font(.callout).foregroundStyle(Theme.mist)
-                            .frame(maxWidth: .infinity)
-                            .listRowBackground(Color.clear)
-                    }
+                } footer: {
+                    Text(rec.isRunning
+                         ? tr("Die Klänge laufen gerade für die Nacht.")
+                         : tr("Zum Ausprobieren. In der Nacht laufen die Klänge mit der Aufnahme und enden mit ihr."))
                 }
 
                 Section {
@@ -44,6 +43,7 @@ struct SoundsView: View {
                 .listRowBackground(Theme.raised)
 
                 Section {
+                    Toggle(tr("Mit der Nachtaufnahme starten"), isOn: $player.autoStart).tint(Theme.accent)
                     Picker(tr("Ausschalten nach"), selection: $player.timerMinutes) {
                         ForEach(timers, id: \.self) { m in
                             Text(m == 0 ? tr("Nie") : NightAnalysisView.hm(Double(m) * 60)).tag(m)
@@ -51,11 +51,9 @@ struct SoundsView: View {
                     }
                     Toggle(tr("Ausblenden, wenn du schläfst"), isOn: $player.stopOnSleep).tint(Theme.accent)
                 } header: {
-                    ListHeader(tr("Ausschalten"))
+                    ListHeader(tr("In der Nacht"))
                 } footer: {
-                    Text(rec.isRunning || !player.stopOnSleep
-                         ? tr("Was zuerst eintritt, blendet die Klänge über 30 Sekunden aus.")
-                         : tr("Ob du schläfst, erkennt Suya nur, während die Nachtaufnahme läuft."))
+                    Text(tr("Was zuerst eintritt, blendet die Klänge über 15 Sekunden aus. Spätestens mit dem Ende der Aufnahme sind sie aus."))
                 }
                 .listRowBackground(Theme.raised)
 
@@ -162,9 +160,9 @@ struct SoundsCard: View {
                 }
                 Spacer()
                 Button { player.toggle() } label: {
-                    Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+                    Image(systemName: player.isPlaying && !player.fading ? "pause.fill" : "play.fill")
                         .frame(width: 36, height: 36)
-                        .background(Circle().strokeBorder(Theme.hairline))
+                        .background(FadeRing(start: player.fadeStart, end: player.fadeEnd))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(player.isPlaying ? tr("Anhalten") : tr("Abspielen"))
@@ -194,5 +192,25 @@ struct SoundCreditsView: View {
         .nightBackground()
         .navigationTitle(tr("Quellen der Klänge"))
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// Kreis um den Knopf, der sich während des Ausblendens füllt.
+struct FadeRing: View {
+    let start: Date?
+    let end: Date?
+    var body: some View {
+        ZStack {
+            Circle().strokeBorder(Theme.hairline, lineWidth: 1.5)
+            if let start, let end {
+                TimelineView(.animation) { tl in
+                    let p = min(1, max(0, tl.date.timeIntervalSince(start) / end.timeIntervalSince(start)))
+                    Circle().trim(from: 0, to: p)
+                        .stroke(Theme.accent, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .padding(1.5)
+                }
+            }
+        }
     }
 }

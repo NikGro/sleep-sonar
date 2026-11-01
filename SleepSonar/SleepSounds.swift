@@ -90,10 +90,18 @@ final class SleepSoundPlayer: ObservableObject {
     @Published var timerMinutes: Int { didSet { d.set(timerMinutes, forKey: "sounds.timer"); scheduleTimer() } }
     /// Ausblenden, sobald die Nachtaufnahme Schlaf erkennt
     @Published var stopOnSleep: Bool { didSet { d.set(stopOnSleep, forKey: "sounds.sleep") } }
+    /// Mischung automatisch mit der Nachtaufnahme starten
+    @Published var autoStart: Bool { didSet { d.set(autoStart, forKey: "sounds.auto") } }
+    /// Probehören im Klänge-Tab: ohne Zeitlimit, ohne Ausblenden beim Schlaf, endet im Hintergrund
+    @Published private(set) var preview = false
     @Published private(set) var mixes: [SoundMix] = []
     @Published private(set) var isPlaying = false
     @Published private(set) var stopsAt: Date?
     @Published private(set) var fading = false
+    /// Ausblenden läuft von … bis … (für die sich füllenden Knöpfe)
+    @Published private(set) var fadeStart: Date?
+    @Published private(set) var fadeEnd: Date?
+    static let fadeSeconds = 15.0
 
     private var engine: AVAudioEngine?
     private var nodes: [SleepSound: AVAudioPlayerNode] = [:]
@@ -113,6 +121,7 @@ final class SleepSoundPlayer: ObservableObject {
         master = d.object(forKey: "sounds.master") as? Double ?? 0.6
         timerMinutes = d.object(forKey: "sounds.timer") as? Int ?? 30
         stopOnSleep = d.object(forKey: "sounds.sleep") as? Bool ?? true
+        autoStart = d.bool(forKey: "sounds.auto")
         if let data = d.data(forKey: "sounds.mixes"), let m = try? JSONDecoder().decode([SoundMix].self, from: data) {
             mixes = m
         }
@@ -148,10 +157,36 @@ final class SleepSoundPlayer: ObservableObject {
     // MARK: Wiedergabe
 
     /// Knopf: sofort (kurz ausgeblendet) anhalten bzw. starten
-    func toggle() { isPlaying && !fading ? stop(fade: true, seconds: 1.5) : (isPlaying ? stopNow() : play()) }
+    func toggle() { isPlaying && !fading ? stop(fade: true) : (isPlaying ? stopNow() : play()) }
 
-    func play() {
+    /// Klänge-Tab: zum Testen an/aus (sofort, ohne Ausblenden)
+    func togglePreview() {
+        if isPlaying { stopNow(); return }
+        play(preview: !PassiveNightEngine.shared.isRunning)
+    }
+
+    /// App geht in den Hintergrund: Probehören endet
+    func appBackgrounded() { if preview { stopNow() } }
+
+    /// Nachtaufnahme beginnt: Probehören wird zur Nacht-Wiedergabe, sonst ggf. automatisch starten
+    func recordingStarted() {
+        if isPlaying {
+            preview = false
+            scheduleTimer()
+            PassiveNightEngine.shared.updateActivity()
+        } else if autoStart {
+            play()
+        }
+    }
+
+    /// Nachtaufnahme endet: Klänge enden auch
+    func recordingStopped() { if isPlaying { stopNow() } }
+
+    func play(preview: Bool = false) {
         guard !active.isEmpty else { return }
+        // Nacht-Wiedergabe nur während der Aufnahme
+        guard preview || PassiveNightEngine.shared.isRunning else { return }
+        self.preview = preview
         do {
             let session = AVAudioSession.sharedInstance()
             // gleiche Einstellung wie die Aufnahme, damit beide ohne Unterbrechung zusammen laufen
@@ -180,6 +215,7 @@ final class SleepSoundPlayer: ObservableObject {
             fade(to: 1, seconds: 3)
             scheduleTimer()
             PassiveNightEngine.shared.note(tr("Klänge an: %@", activeNames))
+            PassiveNightEngine.shared.updateActivity()
         } catch {
             stopNow()
         }
@@ -189,14 +225,17 @@ final class SleepSoundPlayer: ObservableObject {
         guard isPlaying, !fading else { return }
         let until = stopsAt
         stopNow(quiet: true)
-        play()
+        play(preview: preview)
         if let until { scheduleTimer(until: until) }
     }
 
-    func stop(fade: Bool, seconds: Double = 30) {
-        guard isPlaying else { return }
+    func stop(fade: Bool, seconds: Double = SleepSoundPlayer.fadeSeconds) {
+        guard isPlaying, !fading else { return }
         if fade {
             fading = true
+            fadeStart = Date()
+            fadeEnd = Date().addingTimeInterval(seconds)
+            PassiveNightEngine.shared.updateActivity()
             self.fade(to: 0, seconds: seconds) { [weak self] in self?.stopNow() }
         } else {
             stopNow()
@@ -217,8 +256,12 @@ final class SleepSoundPlayer: ObservableObject {
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
         isPlaying = false
+        preview = false
         fading = false
+        fadeStart = nil
+        fadeEnd = nil
         stopsAt = nil
+        PassiveNightEngine.shared.updateActivity()
     }
 
     /// Klang laden und an den Mischer hängen (beim Start oder wenn er während der Wiedergabe dazukommt)
@@ -268,7 +311,7 @@ final class SleepSoundPlayer: ObservableObject {
 
     private func scheduleTimer(until: Date? = nil) {
         timer?.invalidate(); timer = nil
-        guard isPlaying, timerMinutes > 0 || until != nil else { stopsAt = nil; return }
+        guard isPlaying, !preview, timerMinutes > 0 || until != nil else { stopsAt = nil; return }
         let at = until ?? Date().addingTimeInterval(Double(timerMinutes) * 60)
         stopsAt = at
         timer = Timer.scheduledTimer(withTimeInterval: max(1, at.timeIntervalSinceNow), repeats: false) { [weak self] _ in
@@ -279,7 +322,7 @@ final class SleepSoundPlayer: ObservableObject {
     // MARK: Schlaf erkannt → ausblenden (jede Minute von der Nachtaufnahme aufgerufen)
 
     func tick(seconds: [SleepStaging.Second?], motion: [Double?]) {
-        guard isPlaying, stopOnSleep, !fading, !checking, seconds.count >= 12 * 60 else { return }
+        guard isPlaying, !preview, stopOnSleep, !fading, !checking, seconds.count >= 12 * 60 else { return }
         checking = true
         Task {
             let asleep = await Task.detached(priority: .utility) {

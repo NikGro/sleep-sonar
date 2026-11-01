@@ -21,6 +21,7 @@ struct NightLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: NightActivityAttributes.self) { ctx in
             // Sperrbildschirm und StandBy
+            VStack(spacing: 12) {
             HStack(spacing: 14) {
                 Image(systemName: "moon.zzz.fill")
                     .font(.title2)
@@ -40,6 +41,8 @@ struct NightLiveActivity: Widget {
                     .multilineTextAlignment(.trailing)
                     .frame(maxWidth: 110, alignment: .trailing)
             }
+            if ctx.state.sounds != nil { SoundsRow(state: ctx.state) }
+            }
             .padding(16)
             .activityBackgroundTint(ink)
             .activitySystemActionForegroundColor(moon)
@@ -56,9 +59,13 @@ struct NightLiveActivity: Widget {
                         .frame(maxWidth: 90, alignment: .trailing)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text(tr("Nachtaufnahme läuft"))
-                        .font(.caption)
-                        .foregroundStyle(mist)
+                    if ctx.state.sounds != nil {
+                        SoundsRow(state: ctx.state)
+                    } else {
+                        Text(tr("Nachtaufnahme läuft"))
+                            .font(.caption)
+                            .foregroundStyle(mist)
+                    }
                 }
             } compactLeading: {
                 Image(systemName: "moon.zzz.fill").foregroundStyle(moon)
@@ -124,6 +131,33 @@ struct SnoozeLiveActivity: Widget {
                 .multilineTextAlignment(.trailing)
         default:
             Text("")
+        }
+    }
+}
+
+private let accent = Color(red: 0xC5 / 255, green: 0x9B / 255, blue: 0xFF / 255)
+
+/// Laufende Schlafklänge mit Knopf „Ausblenden“; während des Ausblendens füllt sich ein Balken.
+struct SoundsRow: View {
+    let state: NightActivityAttributes.ContentState
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "speaker.wave.2.fill").foregroundStyle(accent)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(state.sounds ?? "").font(.caption).foregroundStyle(moon).lineLimit(1)
+                if let a = state.fadeStart, let b = state.fadeEnd, b > a {
+                    ProgressView(timerInterval: a...b, countsDown: false) { EmptyView() } currentValueLabel: { EmptyView() }
+                        .progressViewStyle(.linear)
+                        .tint(accent)
+                }
+            }
+            Spacer(minLength: 8)
+            if state.fadeStart == nil {
+                Button(intent: FadeSoundsIntent()) {
+                    Text(tr("Ausblenden")).font(.caption.weight(.semibold))
+                }
+                .tint(accent)
+            }
         }
     }
 }
