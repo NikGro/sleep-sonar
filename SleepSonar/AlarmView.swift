@@ -278,7 +278,7 @@ private struct SoundList: View {
     @ObservedObject private var preview = SoundPreview.shared
     @State private var importing = false
     @State private var importError: String?
-    private let ramps = [0, 5, 10, 15, 20, 30]
+    private let ramps = [0, 10, 30, 60, 120, 180, 300]
 
     var body: some View {
         List {
@@ -305,13 +305,15 @@ private struct SoundList: View {
                         Image(systemName: "speaker.wave.3.fill").foregroundStyle(Theme.mist)
                     }
                     Picker(tr("Lauter werden"), selection: $item.rampSeconds) {
-                        ForEach(ramps, id: \.self) { Text($0 == 0 ? tr("Sofort") : tr("in %d s", $0)).tag($0) }
+                        ForEach(ramps, id: \.self) { r in
+                            Text(r == 0 ? tr("Sofort") : r < 60 ? tr("in %d s", r) : tr("in %d min", r / 60)).tag(r)
+                        }
                     }
                     Button(preview.playing ? tr("Anhören beenden") : tr("Anhören")) { preview.toggle(item) }
                 } header: {
                     ListHeader(tr("Lautstärke"))
                 } footer: {
-                    Text(tr("Suya verwendet höchstens die ersten 30 Sekunden eines Tons. Deshalb wird er höchstens 30 Sekunden lang lauter."))
+                    Text(tr("Lautstärke und Lauterwerden gelten, solange die Nachtaufnahme läuft: Dann spielt Suya den Ton selbst, mit der Medienlautstärke des iPhones. Zur Sicherheit klingelt 2 Minuten später der normale Wecker, falls Suya nicht mehr läuft. Ohne Aufnahme klingelt der Ton in voller Lautstärke."))
                 }
                 .listRowBackground(Theme.raised)
             } else {

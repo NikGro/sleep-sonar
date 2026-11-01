@@ -254,6 +254,12 @@ EN = {
 "Harfe": "Harp",
 "Antippen zum Mischen, zur Seite ziehen für die Lautstärke.": "Tap to mix, drag sideways for volume.",
 "aus": "off",
+"Sonnenaufgang": "Sunrise",
+"Spieluhr": "Music box",
+"Gitarre": "Guitar",
+"in %d min": "in %d min",
+"Wecker klingelt: %@": "Alarm ringing: %@",
+"Lautstärke und Lauterwerden gelten, solange die Nachtaufnahme läuft: Dann spielt Suya den Ton selbst, mit der Medienlautstärke des iPhones. Zur Sicherheit klingelt 2 Minuten später der normale Wecker, falls Suya nicht mehr läuft. Ohne Aufnahme klingelt der Ton in voller Lautstärke.": "Volume and getting louder apply while the night recording is running: Suya then plays the sound itself, using the iPhone's media volume. As a safety net, the regular alarm rings 2 minutes later in case Suya is no longer running. Without a recording, the sound rings at full volume.",
 # Datenspende
 "Datenspende": "Data donation",
 "Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur ein grobes Klangbild, aus dem sich keine Sprache verstehen lässt.": "Helps make the estimate more accurate for everyone. No sound, only a coarse sound picture from which speech can't be understood.",

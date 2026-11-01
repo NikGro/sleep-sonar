@@ -91,6 +91,7 @@
 "Gesamtlautstärke" = "Overall volume";
 "Gestoppt" = "Stopped";
 "Gewitter" = "Thunderstorm";
+"Gitarre" = "Guitar";
 "Glocke" = "Bell";
 "Guten Morgen" = "Good morning";
 "Harfe" = "Harp";
@@ -120,6 +121,7 @@
 "Lauter werden" = "Get louder";
 "Lautstärke" = "Volume";
 "Lautstärke %@" = "Volume %@";
+"Lautstärke und Lauterwerden gelten, solange die Nachtaufnahme läuft: Dann spielt Suya den Ton selbst, mit der Medienlautstärke des iPhones. Zur Sicherheit klingelt 2 Minuten später der normale Wecker, falls Suya nicht mehr läuft. Ohne Aufnahme klingelt der Ton in voller Lautstärke." = "Volume and getting louder apply while the night recording is running: Suya then plays the sound itself, using the iPhone's media volume. As a safety net, the regular alarm rings 2 minutes later in case Suya is no longer running. Without a recording, the sound rings at full volume.";
 "Leg dein iPhone neben das Bett" = "Put your iPhone next to your bed";
 "Leichten Schlaf suchen" = "Look for light sleep";
 "Letzte 30 Sekunden" = "Last 30 seconds";
@@ -189,8 +191,10 @@
 "Sichern" = "Save";
 "Sofort" = "Right away";
 "Sommernacht" = "Summer night";
+"Sonnenaufgang" = "Sunrise";
 "Spende widerrufen" = "Withdraw donation";
 "Spender-Nummer" = "Donor number";
+"Spieluhr" = "Music box";
 "Sprechen" = "Talking";
 "Späteste Weckzeit" = "Latest wake-up time";
 "Stadt" = "City";
@@ -235,6 +239,7 @@
 "Wecker" = "Alarm";
 "Wecker bearbeiten" = "Edit alarm";
 "Wecker hinzufügen" = "Add alarm";
+"Wecker klingelt: %@" = "Alarm ringing: %@";
 "Wecker konnte nicht gestellt werden: %@" = "Couldn't set the alarm: %@";
 "Wecker löschen" = "Delete alarm";
 "Weckt in den letzten %d min vor der spätesten Zeit, sobald du leicht schläfst. Dafür muss die Nachtaufnahme laufen." = "Wakes you in the last %d min before the latest time, as soon as you're sleeping lightly. The night recording has to be running for this.";
@@ -267,6 +272,7 @@
 "iPhone wird bewegt" = "iPhone is being moved";
 "iPhone-Modell, App-Version und eine zufällige Spender-Nummer. Kein Name, keine Apple-ID, kein Datum." = "iPhone model, app version and a random donor number. No name, no Apple ID, no date.";
 "iPhone-Standard" = "iPhone default";
+"in %d min" = "in %d min";
 "in %d s" = "in %d s";
 "leicht ab %d min vorher" = "light sleep from %d min before";
 "lädt" = "charging";
