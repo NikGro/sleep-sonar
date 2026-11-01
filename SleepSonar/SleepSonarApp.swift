@@ -7,13 +7,15 @@ struct SleepSonarApp: App {
 
     init() {
         BackgroundAnalysis.register()
-        // Tab-Leiste in Nachttinte statt System-Grau
-        let tab = UITabBarAppearance()
-        tab.configureWithOpaqueBackground()
-        tab.backgroundColor = UIColor(Theme.ink)
-        tab.shadowColor = UIColor(Theme.hairline)
-        UITabBar.appearance().standardAppearance = tab
-        UITabBar.appearance().scrollEdgeAppearance = tab
+        // Ab iOS 26 schwebende Glas-Tab-Leiste vom System; davor in Nachttinte statt System-Grau
+        if #unavailable(iOS 26) {
+            let tab = UITabBarAppearance()
+            tab.configureWithOpaqueBackground()
+            tab.backgroundColor = UIColor(Theme.ink)
+            tab.shadowColor = UIColor(Theme.hairline)
+            UITabBar.appearance().standardAppearance = tab
+            UITabBar.appearance().scrollEdgeAppearance = tab
+        }
         // Große Titel in New York
         let nav = UINavigationBarAppearance()
         nav.configureWithOpaqueBackground()

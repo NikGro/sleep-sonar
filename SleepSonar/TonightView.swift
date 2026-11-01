@@ -8,13 +8,23 @@ struct TonightView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 28) {
-                    if rec.isRunning { running } else { ready }
+            Group {
+                if rec.isRunning {
+                    ScrollView {
+                        running
+                            .padding(.horizontal, 24)
+                            .padding(.top, 12)
+                            .padding(.bottom, 40)
+                    }
+                } else {
+                    // passt ohne Scrollen auf jeden Bildschirm: notfalls ohne Hinweise
+                    ViewThatFits(in: .vertical) {
+                        ready(tips: true)
+                        ready(tips: false)
+                    }
+                    .padding(.horizontal, 24)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
-                .padding(.bottom, 40)
             }
             .nightBackground()
             .navigationTitle("Heute Nacht")
@@ -29,11 +39,11 @@ struct TonightView: View {
 
     // MARK: Vor dem Schlafen
 
-    private var ready: some View {
-        VStack(spacing: 28) {
+    private func ready(tips: Bool) -> some View {
+        VStack(spacing: 24) {
+            Spacer(minLength: 0)
             MoonDisc(lit: true)
-                .frame(width: 180, height: 180)
-                .padding(.top, 24)
+                .frame(width: 140, height: 140)
                 .accessibilityHidden(true)
 
             VStack(spacing: 8) {
@@ -58,12 +68,13 @@ struct TonightView: View {
                 Text(e).font(.callout).foregroundStyle(Theme.alert).multilineTextAlignment(.center)
             }
 
-            VStack(alignment: .leading, spacing: 14) {
-                Checklist(symbol: "bolt", text: "Ans Ladekabel, Mikrofon (Unterseite) zeigt zu dir.")
-                Checklist(symbol: "applewatch", text: "Mit Apple Watch kannst du die Schätzung morgens vergleichen.")
-                Checklist(symbol: "lock", text: "Bildschirm sperren ist okay. Die App nur nicht wegwischen.")
+            if tips {
+                VStack(alignment: .leading, spacing: 10) {
+                    Checklist(symbol: "bolt", text: "Ans Ladekabel, Unterseite zu dir.")
+                    Checklist(symbol: "lock", text: "Sperren ist okay, nur nicht wegwischen.")
+                }
             }
-            .padding(.top, 8)
+            Spacer(minLength: 0)
         }
     }
 

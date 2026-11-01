@@ -20,9 +20,15 @@ concurrency:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+
+      - name: Select newest Xcode (iOS-26-SDK, sonst alte Tab-Leiste im Kompatibilitätsmodus)
+        run: |
+          XC=$(ls -d /Applications/Xcode_*.app | grep -vi beta | sort -V | tail -1)
+          sudo xcode-select -s "$XC"
+          xcodebuild -version
 
       - name: Install XcodeGen
         run: brew install xcodegen
