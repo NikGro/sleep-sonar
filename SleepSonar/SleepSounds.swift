@@ -87,6 +87,7 @@ final class SleepSoundPlayer: ObservableObject {
     @Published var volumes: [SleepSound: Double] {
         didSet {
             applyVolumes(); persist()
+            if isPlaying && active.isEmpty { stopSoft() }
             // Live-Aktivität nur auffrischen, wenn sich die Auswahl ändert (nicht bei jedem Regler-Schritt)
             if Set(oldValue.filter { $0.value > 0.01 }.keys) != Set(active) { PassiveNightEngine.shared.updateActivity() }
         }
@@ -223,10 +224,21 @@ final class SleepSoundPlayer: ObservableObject {
     func recordingStopped() { if isPlaying { stopNow() } }
 
     func play(preview: Bool = false) {
-        guard !active.isEmpty else { return }
+        guard !active.isEmpty, !isPlaying else { return }
         // Nacht-Wiedergabe nur während der Aufnahme
         guard preview || PassiveNightEngine.shared.isRunning else { return }
         self.preview = preview
+        // Oberfläche sofort umschalten, Ton im nächsten Durchlauf (dann sanft eingeblendet)
+        isPlaying = true
+        fading = false
+        Task { @MainActor in
+            await Task.yield()
+            self.startEngine()
+        }
+    }
+
+    private func startEngine() {
+        guard isPlaying, engine == nil else { return }
         do {
             let session = AVAudioSession.sharedInstance()
             // gleiche Einstellung wie die Aufnahme; nur umstellen, wenn nötig (jede Umstellung knackt)
@@ -254,8 +266,6 @@ final class SleepSoundPlayer: ObservableObject {
                 forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
                 Task { @MainActor in self?.restartAfterChange() }
             }
-            isPlaying = true
-            fading = false
             applyVolumes()
             fade(to: 1, seconds: preview ? 0.25 : 1.5)
             scheduleTimer()
