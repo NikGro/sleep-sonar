@@ -101,11 +101,17 @@ struct TonightView: View {
                 Text("Aufnahme beenden")
             }
             .buttonStyle(MoonButtonStyle(prominent: false))
-            // am Knopf verankert, damit die Rückfrage dort erscheint (iOS 26 zeigt sie als Sprechblase)
-            .confirmationDialog("Aufnahme beenden?", isPresented: $confirmStop, titleVisibility: .visible) {
-                Button("Aufnahme beenden", role: .destructive) { rec.stop() }
-            } message: {
-                Text("Die Nacht wird gespeichert und lässt sich danach auswerten.")
+            // iOS 26 zeigt die Rückfrage als Sprechblase: verankert an einem unsichtbaren Punkt
+            // knapp über dem Knopf, damit sie ihn nicht berührt
+            .background(alignment: .top) {
+                Color.clear
+                    .frame(height: 1)
+                    .offset(y: -10)
+                    .confirmationDialog("Aufnahme beenden?", isPresented: $confirmStop, titleVisibility: .visible) {
+                        Button("Aufnahme beenden", role: .destructive) { rec.stop() }
+                    } message: {
+                        Text("Die Nacht wird gespeichert und lässt sich danach auswerten.")
+                    }
             }
 
             DisclosureGroup(isExpanded: $showDetails) {
