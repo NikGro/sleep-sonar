@@ -101,7 +101,7 @@ final class SleepSoundPlayer: ObservableObject {
     /// Ausblenden läuft von … bis … (für die sich füllenden Knöpfe)
     @Published private(set) var fadeStart: Date?
     @Published private(set) var fadeEnd: Date?
-    static let fadeSeconds = 15.0
+    static let fadeSeconds = 30.0
 
     private var engine: AVAudioEngine?
     private var nodes: [SleepSound: AVAudioPlayerNode] = [:]
@@ -157,12 +157,46 @@ final class SleepSoundPlayer: ObservableObject {
     // MARK: Wiedergabe
 
     /// Knopf: sofort (kurz ausgeblendet) anhalten bzw. starten
-    func toggle() { isPlaying && !fading ? stop(fade: true) : (isPlaying ? stopNow() : play()) }
+    func toggle() {
+        if !isPlaying { play() } else if fading { stopSoft() } else { stop(fade: true) }
+    }
 
     /// Klänge-Tab: zum Testen an/aus (sofort, ohne Ausblenden)
     func togglePreview() {
-        if isPlaying { stopNow(); return }
+        if isPlaying { stopSoft(); return }
         play(preview: !PassiveNightEngine.shared.isRunning)
+    }
+
+    /// Sofort, aber ohne Knacken: in 0,3 s ausblenden
+    func stopSoft() {
+        guard isPlaying else { return }
+        fade(to: 0, seconds: 0.3) { [weak self] in self?.stopNow() }
+    }
+
+    // MARK: Puffer (einmal dekodieren, dann sofort startbereit)
+
+    private static var cache: [SleepSound: AVAudioPCMBuffer] = [:]
+    private var loading: Set<SleepSound> = []
+
+    /// Klänge im Hintergrund dekodieren, damit Abspielen sofort beginnt
+    func preload(_ sounds: [SleepSound]) {
+        for s in sounds where Self.cache[s] == nil && !loading.contains(s) {
+            loading.insert(s)
+            Task {
+                let buf = await Task.detached(priority: .userInitiated) { Self.decode(s) }.value
+                loading.remove(s)
+                if let buf { Self.cache[s] = buf }
+                if isPlaying, (volumes[s] ?? 0) > 0.01 { attach(s) }
+            }
+        }
+    }
+
+    nonisolated private static func decode(_ s: SleepSound) -> AVAudioPCMBuffer? {
+        guard let url = Bundle.main.url(forResource: s.rawValue, withExtension: "m4a"),
+              let file = try? AVAudioFile(forReading: url),
+              let buf = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)),
+              (try? file.read(into: buf)) != nil else { return nil }
+        return buf
     }
 
     /// App geht in den Hintergrund: Probehören endet
@@ -189,18 +223,24 @@ final class SleepSoundPlayer: ObservableObject {
         self.preview = preview
         do {
             let session = AVAudioSession.sharedInstance()
-            // gleiche Einstellung wie die Aufnahme, damit beide ohne Unterbrechung zusammen laufen
-            try session.setCategory(.playAndRecord, mode: .measurement, options: [.mixWithOthers, .defaultToSpeaker])
+            // gleiche Einstellung wie die Aufnahme; nur umstellen, wenn nötig (jede Umstellung knackt)
+            if session.category != .playAndRecord || session.mode != .measurement {
+                try session.setCategory(.playAndRecord, mode: .measurement, options: [.mixWithOthers, .defaultToSpeaker])
+            }
             try session.setActive(true)
             let engine = AVAudioEngine()
             self.engine = engine
+            engine.mainMixerNode.outputVolume = 0   // stumm starten, dann einblenden → kein Knacken
+            fadeGain = 0
             for s in active { attach(s) }
+            preload(active)
             // Referenz für das Herausrechnen aus dem Mikrofon
             let mixer = engine.mainMixerNode
             EchoCanceller.shared.reset()
             mixer.installTap(onBus: 0, bufferSize: 2048, format: mixer.outputFormat(forBus: 0)) { buffer, when in
                 EchoCanceller.shared.pushReference(buffer, hostTime: when.isHostTimeValid ? when.hostTime : mach_absolute_time())
             }
+            engine.prepare()
             try engine.start()
             nodes.values.forEach { $0.play() }
             // startet die Aufnahme, ändert sich die Audio-Konfiguration: Wiedergabe neu aufbauen
@@ -208,11 +248,10 @@ final class SleepSoundPlayer: ObservableObject {
                 forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
                 Task { @MainActor in self?.restartAfterChange() }
             }
-            fadeGain = 0
             isPlaying = true
             fading = false
             applyVolumes()
-            fade(to: 1, seconds: 3)
+            fade(to: 1, seconds: 1.5)
             scheduleTimer()
             PassiveNightEngine.shared.note(tr("Klänge an: %@", activeNames))
             PassiveNightEngine.shared.updateActivity()
@@ -266,11 +305,8 @@ final class SleepSoundPlayer: ObservableObject {
 
     /// Klang laden und an den Mischer hängen (beim Start oder wenn er während der Wiedergabe dazukommt)
     @discardableResult private func attach(_ s: SleepSound) -> AVAudioPlayerNode? {
-        guard let engine, nodes[s] == nil,
-              let url = Bundle.main.url(forResource: s.rawValue, withExtension: "m4a"),
-              let file = try? AVAudioFile(forReading: url),
-              let buf = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)),
-              (try? file.read(into: buf)) != nil else { return nil }
+        guard let engine, nodes[s] == nil else { return nil }
+        guard let buf = Self.cache[s] else { preload([s]); return nil }   // kommt nach dem Dekodieren
         let node = AVAudioPlayerNode()
         engine.attach(node)
         engine.connect(node, to: engine.mainMixerNode, format: buf.format)
@@ -282,7 +318,7 @@ final class SleepSoundPlayer: ObservableObject {
     }
 
     private func applyVolumes() {
-        if isPlaying { for s in active where nodes[s] == nil { attach(s) } }
+        if isPlaying { for s in active where nodes[s] == nil { attach(s) } } else { preload(active) }
         for (s, node) in nodes { node.volume = Float(volumes[s] ?? 0) }
         engine?.mainMixerNode.outputVolume = Float(master * fadeGain)
     }

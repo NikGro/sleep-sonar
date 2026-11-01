@@ -76,7 +76,7 @@ struct NightView: View {
             .nightBackground()
             .navigationTitle(tr("Nächte"))
             .toolbarTitleDisplayMode(.inlineLarge)
-            .toolbarBackground(Theme.ink, for: .navigationBar)
+            .suyaTopEdge()
             .onAppear(perform: refresh)
             .onChange(of: rec.isRunning) { refresh() }
             .refreshable { refresh() }

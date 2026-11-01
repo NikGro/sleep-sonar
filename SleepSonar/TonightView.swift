@@ -21,7 +21,7 @@ struct TonightView: View {
             .nightBackground()
             .navigationTitle(tr("Heute Nacht"))
             .toolbarTitleDisplayMode(.inlineLarge)   // großer Titel in einer Zeile mit den Knöpfen
-            .toolbarBackground(Theme.ink, for: .navigationBar)
+            .suyaTopEdge()
         }
     }
 

@@ -113,3 +113,15 @@ struct ListHeader: View {
         Text(text).font(Theme.display(17, weight: .medium)).foregroundStyle(Theme.accent).textCase(nil)
     }
 }
+
+extension View {
+    /// Kopfleiste: ab iOS 26 blendet der Inhalt beim Scrollen weich unter dem Titel aus (Verlauf statt
+    /// harter Kante); davor eine deckende Leiste in Nachttinte.
+    @ViewBuilder func suyaTopEdge() -> some View {
+        if #available(iOS 26.0, *) {
+            self.scrollEdgeEffectStyle(.soft, for: .top)
+        } else {
+            self.toolbarBackground(Theme.ink, for: .navigationBar)
+        }
+    }
+}

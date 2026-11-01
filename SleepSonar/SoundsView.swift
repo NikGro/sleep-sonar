@@ -1,13 +1,11 @@
 import SwiftUI
 
 /// Schlafklänge – eigenes Suya-Mischpult statt Standardliste:
-/// oben der runde Probehören-Knopf (das eine auffällige Element), darunter Klang-Kacheln zum Antippen,
-/// Regler nur für die gewählten Klänge, eigene Mischungen als Chips, Einstellungen für die Nacht.
+/// oben der runde Probehören-Knopf (das eine auffällige Element), darunter Klang-Kacheln:
+/// antippen = an/aus, seitlich ziehen = Lautstärke (die Kachel füllt sich). Darunter die Nacht-Einstellungen.
 struct SoundsView: View {
     @ObservedObject private var player = SleepSoundPlayer.shared
     @ObservedObject private var rec = PassiveNightEngine.shared
-    @State private var naming = false
-    @State private var mixName = ""
     private let timers = [0, 15, 30, 45, 60, 90, 120]
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12),
                            GridItem(.flexible(), spacing: 12)]
@@ -19,12 +17,12 @@ struct SoundsView: View {
                     hero
                     VStack(alignment: .leading, spacing: 14) {
                         SectionTitle(tr("Klänge"))
+                        Text(tr("Antippen zum Mischen, zur Seite ziehen für die Lautstärke."))
+                            .font(.caption).foregroundStyle(Theme.mist)
                         LazyVGrid(columns: columns, spacing: 12) {
                             ForEach(SleepSound.allCases) { SoundTile(sound: $0, player: player) }
                         }
                     }
-                    if !player.active.isEmpty { volumes }
-                    mixesSection
                     nightSection
                     Text(tr("Während der Nachtaufnahme rechnet Suya die Klänge aus dem Mikrofon heraus, damit sie die Messung kaum stören. Ganz verschwinden sie nicht, deshalb ist Ausblenden beim Einschlafen voreingestellt."))
                         .font(.caption).foregroundStyle(Theme.mist)
@@ -35,12 +33,8 @@ struct SoundsView: View {
             .nightBackground()
             .navigationTitle(tr("Klänge"))
             .toolbarTitleDisplayMode(.inlineLarge)
-            .toolbarBackground(Theme.ink, for: .navigationBar)
-            .alert(tr("Mischung sichern"), isPresented: $naming) {
-                TextField(tr("Name"), text: $mixName)
-                Button(tr("Abbrechen"), role: .cancel) {}
-                Button(tr("Sichern")) { player.saveMix(named: mixName); Haptics.success() }
-            }
+            .suyaTopEdge()
+            .onAppear { player.preload(player.active) }
         }
     }
 
@@ -81,84 +75,6 @@ struct SoundsView: View {
         .padding(.top, 8)
     }
 
-    // Regler nur für gewählte Klänge
-    private var volumes: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            SectionTitle(tr("Lautstärke"))
-            VStack(spacing: 16) {
-                ForEach(player.active) { s in
-                    HStack(spacing: 12) {
-                        Image(systemName: s.symbol).frame(width: 24).foregroundStyle(Theme.accent)
-                        Slider(value: Binding(get: { player.volumes[s] ?? 0 }, set: { player.volumes[s] = $0 }), in: 0...1)
-                            .tint(Theme.accent)
-                            .accessibilityLabel(tr("Lautstärke %@", s.name))
-                    }
-                }
-                Divider().overlay(Theme.hairline)
-                HStack(spacing: 12) {
-                    Image(systemName: "speaker.wave.2.fill").frame(width: 24).foregroundStyle(Theme.mist)
-                    Slider(value: $player.master, in: 0...1).tint(Theme.moon)
-                        .accessibilityLabel(tr("Gesamtlautstärke"))
-                }
-            }
-            .padding(16)
-            .background(RoundedRectangle(cornerRadius: 20).fill(Theme.raised))
-        }
-    }
-
-    // Eigene Mischungen als Chips; gedrückt halten zum Löschen
-    private var mixesSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            SectionTitle(tr("Eigene Mischungen"))
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(player.mixes) { mix in
-                        let current = player.volumes == mix.volumes
-                        Button {
-                            Haptics.select()
-                            player.load(mix)
-                        } label: {
-                            HStack(spacing: 6) {
-                                if current { Image(systemName: "checkmark").font(.caption.weight(.bold)) }
-                                Text(mix.name).lineLimit(1)
-                            }
-                            .font(.callout)
-                            .padding(.horizontal, 16).padding(.vertical, 10)
-                            .background(Capsule().fill(current ? Theme.accent.opacity(0.2) : Theme.raised))
-                            .overlay(Capsule().strokeBorder(current ? Theme.accent : Theme.hairline))
-                            .foregroundStyle(current ? Theme.accent : Theme.moon)
-                        }
-                        .buttonStyle(.plain)
-                        .contextMenu {
-                            Button(tr("Löschen"), role: .destructive) {
-                                if let i = player.mixes.firstIndex(of: mix) { player.deleteMixes(at: [i]) }
-                            }
-                        }
-                        .accessibilityAddTraits(current ? .isSelected : [])
-                    }
-                    Button {
-                        Haptics.tap()
-                        mixName = ""
-                        naming = true
-                    } label: {
-                        Label(tr("Sichern"), systemImage: "plus")
-                            .font(.callout)
-                            .padding(.horizontal, 16).padding(.vertical, 10)
-                            .overlay(Capsule().strokeBorder(Theme.hairline, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
-                            .foregroundStyle(Theme.mist)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(player.active.isEmpty)
-                    .accessibilityLabel(tr("Aktuelle Mischung sichern …"))
-                }
-                .padding(.vertical, 2)
-            }
-            if !player.mixes.isEmpty {
-                Text(tr("Gedrückt halten zum Löschen.")).font(.caption).foregroundStyle(Theme.mist)
-            }
-        }
-    }
-
     private var nightSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             SectionTitle(tr("In der Nacht"))
@@ -185,7 +101,7 @@ struct SoundsView: View {
             .font(.callout)
             .padding(.horizontal, 16)
             .background(RoundedRectangle(cornerRadius: 20).fill(Theme.raised))
-            Text(tr("Was zuerst eintritt, blendet die Klänge über 15 Sekunden aus. Spätestens mit dem Ende der Aufnahme sind sie aus."))
+            Text(tr("Was zuerst eintritt, blendet die Klänge über 30 Sekunden aus. Spätestens mit dem Ende der Aufnahme sind sie aus."))
                 .font(.caption).foregroundStyle(Theme.mist)
         }
         .onChange(of: player.autoStart) { Haptics.select() }
@@ -193,47 +109,72 @@ struct SoundsView: View {
     }
 }
 
-/// Kachel: antippen = Klang dazunehmen/entfernen; gewählt = violett mit Lautstärke-Strich.
+/// Kachel: antippen = Klang an/aus; seitlich ziehen = Lautstärke. Die Füllung von links zeigt die Lautstärke.
 private struct SoundTile: View {
     let sound: SleepSound
     @ObservedObject var player: SleepSoundPlayer
+    @State private var dragStart: Double?
+    @State private var horizontal: Bool?
 
     var body: some View {
         let v = player.volumes[sound] ?? 0
         let on = v > 0.01
-        Button {
-            Haptics.select()
-            player.volumes[sound] = on ? 0 : 0.6
-        } label: {
-            VStack(spacing: 8) {
-                Image(systemName: sound.symbol)
-                    .font(.system(size: 22, weight: .regular))
-                    .frame(height: 26)
-                    .foregroundStyle(on ? Theme.accent : Theme.moon)
-                Text(sound.name)
-                    .font(.caption)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-                    .minimumScaleFactor(0.85)
-                    .foregroundStyle(on ? Theme.moon : Theme.mist)
-                    .frame(height: 30, alignment: .top)
-                Capsule().fill(Theme.hairline).frame(height: 3)
-                    .overlay(alignment: .leading) {
-                        GeometryReader { g in
-                            Capsule().fill(Theme.accent).frame(width: g.size.width * v)
-                        }
-                    }
-                    .opacity(on ? 1 : 0)
+        GeometryReader { g in
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 18).fill(Theme.raised)
+                // Lautstärke als Füllung
+                Rectangle().fill(Theme.accent.opacity(0.22))
+                    .frame(width: g.size.width * v)
+                VStack(spacing: 8) {
+                    Image(systemName: sound.symbol)
+                        .font(.system(size: 22))
+                        .frame(height: 26)
+                        .foregroundStyle(on ? Theme.accent : Theme.moon)
+                    Text(sound.name)
+                        .font(.caption)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                        .minimumScaleFactor(0.85)
+                        .foregroundStyle(on ? Theme.moon : Theme.mist)
+                        .frame(height: 30, alignment: .top)
+                    Text(on ? "\(Int((v * 100).rounded())) %" : " ")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(Theme.accent)
+                }
+                .frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, 10).padding(.top, 14).padding(.bottom, 12)
-            .frame(maxWidth: .infinity)
-            .background(RoundedRectangle(cornerRadius: 18).fill(on ? Theme.accent.opacity(0.14) : Theme.raised))
+            .clipShape(RoundedRectangle(cornerRadius: 18))
             .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(on ? Theme.accent.opacity(0.7) : .clear))
-            .animation(.snappy, value: on)
+            .contentShape(RoundedRectangle(cornerRadius: 18))
+            .onTapGesture {
+                Haptics.select()
+                player.volumes[sound] = on ? 0 : 0.6
+            }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 6)
+                    .onChanged { d in
+                        // nur waagerechtes Ziehen ändert die Lautstärke, senkrecht scrollt weiter
+                        if horizontal == nil { horizontal = abs(d.translation.width) > abs(d.translation.height) }
+                        guard horizontal == true else { return }
+                        if dragStart == nil { dragStart = v; Haptics.select() }
+                        let nv = min(1, max(0, (dragStart ?? v) + d.translation.width / g.size.width))
+                        player.volumes[sound] = nv < 0.02 ? 0 : nv
+                    }
+                    .onEnded { _ in
+                        if horizontal == true { Haptics.select() }
+                        dragStart = nil; horizontal = nil
+                    })
         }
-        .buttonStyle(.plain)
+        .frame(height: 108)
+        .accessibilityElement()
         .accessibilityLabel(sound.name)
-        .accessibilityAddTraits(on ? .isSelected : [])
+        .accessibilityValue(on ? "\(Int((v * 100).rounded())) %" : tr("aus"))
+        .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction { player.volumes[sound] = on ? 0 : 0.6 }
+        .accessibilityAdjustableAction { dir in
+            let step = dir == .increment ? 0.1 : -0.1
+            player.volumes[sound] = min(1, max(0, v + step))
+        }
     }
 }
 
@@ -263,11 +204,11 @@ struct SoundsCard: View {
                     Text(tr("Klänge")).font(.callout.weight(.medium))
                     Text(player.isPlaying ? SoundStatus.text(player) : player.activeNames)
                         .font(.caption).foregroundStyle(Theme.mist)
-                        .lineLimit(2)
+                        .lineLimit(2, reservesSpace: true)   // feste Höhe: nichts springt beim Umschalten
                 }
                 Spacer()
                 Button { Haptics.tap(); player.toggle() } label: {
-                    Image(systemName: player.isPlaying && !player.fading ? "pause.fill" : "play.fill")
+                    Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
                         .frame(width: 36, height: 36)
                         .background(FadeRing(start: player.fadeStart, end: player.fadeEnd))
                 }
@@ -276,6 +217,7 @@ struct SoundsCard: View {
             }
             .padding(14)
             .background(RoundedRectangle(cornerRadius: 16).fill(Theme.raised))
+            .transaction { $0.animation = nil }
         }
     }
 }

@@ -48,7 +48,7 @@ struct AlarmView: View {
             .nightBackground()
             .navigationTitle(tr("Wecker"))
             .toolbarTitleDisplayMode(.inlineLarge)   // großer Titel in einer Zeile mit den Knöpfen
-            .toolbarBackground(Theme.ink, for: .navigationBar)
+            .suyaTopEdge()
             .toolbar {
                 if SmartAlarm.isAvailable {
                     ToolbarItem(placement: .topBarTrailing) {

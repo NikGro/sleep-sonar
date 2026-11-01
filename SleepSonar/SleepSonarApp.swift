@@ -22,8 +22,12 @@ struct SleepSonarApp: App {
         }
         // Große Titel in New York
         let nav = UINavigationBarAppearance()
-        nav.configureWithOpaqueBackground()
-        nav.backgroundColor = UIColor(Theme.ink)
+        if #available(iOS 26, *) {
+            nav.configureWithTransparentBackground()   // weicher Übergang kommt vom Scroll-Rand
+        } else {
+            nav.configureWithOpaqueBackground()
+            nav.backgroundColor = UIColor(Theme.ink)
+        }
         nav.shadowColor = .clear
         let serif = UIFont.systemFont(ofSize: 34, weight: .regular).fontDescriptor.withDesign(.serif)
         if let serif {

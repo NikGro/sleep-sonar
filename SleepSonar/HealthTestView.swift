@@ -44,7 +44,7 @@ struct HealthTestView: View {
         .nightBackground()
         .navigationTitle(tr("Health-Schreibtest"))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Theme.ink, for: .navigationBar)
+        .suyaTopEdge()
         .disabled(busy)
         .overlay { if busy { ProgressView().tint(Theme.moon) } }
     }
