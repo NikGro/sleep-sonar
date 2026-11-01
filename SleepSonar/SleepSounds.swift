@@ -231,50 +231,77 @@ final class SleepSoundPlayer: ObservableObject {
         // Oberfläche sofort umschalten, Ton im nächsten Durchlauf (dann sanft eingeblendet)
         isPlaying = true
         fading = false
-        Task { @MainActor in
-            await Task.yield()
-            self.startEngine()
+        startEngine()
+    }
+
+    /// Audio-Sitzung und Engine auf einem eigenen Thread starten: `setActive` und `engine.start`
+    /// blockieren je nach Gerät 100–300 ms. Auf dem Hauptthread hielt das Ring, Leuchten und
+    /// Vibration auf – jetzt reagiert die Oberfläche sofort, nur der Ton kommt einen Moment später.
+    private static let audioQueue = DispatchQueue(label: "suya.sounds", qos: .userInitiated)
+    private var starting = false
+
+    private func startEngine() {
+        guard isPlaying, engine == nil, !starting else { return }
+        starting = true
+        let engine = AVAudioEngine()
+        engine.mainMixerNode.outputVolume = 0   // stumm starten, dann einblenden → kein Knacken
+        fadeGain = 0
+        self.engine = engine
+        for s in active { attach(s) }
+        preload(active)
+        // Referenz für das Herausrechnen aus dem Mikrofon
+        let mixer = engine.mainMixerNode
+        EchoCanceller.shared.reset()
+        mixer.installTap(onBus: 0, bufferSize: 2048, format: mixer.outputFormat(forBus: 0)) { buffer, when in
+            EchoCanceller.shared.pushReference(buffer, hostTime: when.isHostTimeValid ? when.hostTime : mach_absolute_time())
+        }
+        let players = Array(nodes.values)
+        nonisolated(unsafe) let e = engine
+        nonisolated(unsafe) let p = players
+        Self.audioQueue.async {
+            var ok = true
+            do {
+                let session = AVAudioSession.sharedInstance()
+                // gleiche Einstellung wie die Aufnahme; nur umstellen, wenn nötig (jede Umstellung knackt)
+                if session.category != .playAndRecord || session.mode != .measurement {
+                    try session.setCategory(.playAndRecord, mode: .measurement, options: [.mixWithOthers, .defaultToSpeaker])
+                }
+                // Vibration auch bei aktiver Audio-Sitzung zulassen
+                try? session.setAllowHapticsAndSystemSoundsDuringRecording(true)
+                try session.setActive(true)
+                e.prepare()
+                try e.start()
+                p.forEach { $0.play() }
+            } catch {
+                ok = false
+            }
+            DispatchQueue.main.async { [weak self] in
+                MainActor.assumeIsolated { self?.engineStarted(e, ok: ok) }
+            }
         }
     }
 
-    private func startEngine() {
-        guard isPlaying, engine == nil else { return }
-        do {
-            let session = AVAudioSession.sharedInstance()
-            // gleiche Einstellung wie die Aufnahme; nur umstellen, wenn nötig (jede Umstellung knackt)
-            if session.category != .playAndRecord || session.mode != .measurement {
-                try session.setCategory(.playAndRecord, mode: .measurement, options: [.mixWithOthers, .defaultToSpeaker])
-            }
-            try session.setActive(true)
-            let engine = AVAudioEngine()
-            self.engine = engine
-            engine.mainMixerNode.outputVolume = 0   // stumm starten, dann einblenden → kein Knacken
-            fadeGain = 0
-            for s in active { attach(s) }
-            preload(active)
-            // Referenz für das Herausrechnen aus dem Mikrofon
-            let mixer = engine.mainMixerNode
-            EchoCanceller.shared.reset()
-            mixer.installTap(onBus: 0, bufferSize: 2048, format: mixer.outputFormat(forBus: 0)) { buffer, when in
-                EchoCanceller.shared.pushReference(buffer, hostTime: when.isHostTimeValid ? when.hostTime : mach_absolute_time())
-            }
-            engine.prepare()
-            try engine.start()
-            nodes.values.forEach { $0.play() }
-            // startet die Aufnahme, ändert sich die Audio-Konfiguration: Wiedergabe neu aufbauen
-            configObserver = NotificationCenter.default.addObserver(
-                forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
-                Task { @MainActor in self?.restartAfterChange() }
-            }
-            applyVolumes()
-            fade(to: 1, seconds: preview ? 0.25 : 1.5)
-            scheduleTimer()
-            PassiveNightEngine.shared.note(tr("Klänge an: %@", activeNames))
-            PassiveNightEngine.shared.updateActivity()
-        } catch {
-            stopNow()
+    private func engineStarted(_ engine: AVAudioEngine, ok: Bool) {
+        starting = false
+        guard self.engine === engine else {                   // inzwischen gestoppt/neu gestartet
+            engine.mainMixerNode.removeTap(onBus: 0)
+            engine.stop()
+            return
         }
+        guard ok, isPlaying else { stopNow(); return }
+        nodes.values.forEach { if !$0.isPlaying { $0.play() } }   // in der Zwischenzeit dazugekommene Klänge
+        // startet die Aufnahme, ändert sich die Audio-Konfiguration: Wiedergabe neu aufbauen
+        configObserver = NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.restartAfterChange() }
+        }
+        applyVolumes()
+        fade(to: 1, seconds: preview ? 0.25 : 1.5)
+        scheduleTimer()
+        PassiveNightEngine.shared.note(tr("Klänge an: %@", activeNames))
+        PassiveNightEngine.shared.updateActivity()
     }
+
 
     private func restartAfterChange() {
         guard isPlaying, !fading else { return }
@@ -302,12 +329,15 @@ final class SleepSoundPlayer: ObservableObject {
         configObserver = nil
         timer?.invalidate(); timer = nil
         fadeTimer?.invalidate(); fadeTimer = nil
-        engine?.mainMixerNode.removeTap(onBus: 0)
-        engine?.stop()
+        // startet die Engine gerade im Hintergrund, stoppt engineStarted sie danach
+        if !starting {
+            engine?.mainMixerNode.removeTap(onBus: 0)
+            engine?.stop()
+        }
         engine = nil
         nodes = [:]
         if isPlaying && !quiet { PassiveNightEngine.shared.note(tr("Klänge aus")) }
-        if !PassiveNightEngine.shared.isRunning && !quiet {
+        if !PassiveNightEngine.shared.isRunning && !quiet && !starting {
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
         isPlaying = false
@@ -329,7 +359,7 @@ final class SleepSoundPlayer: ObservableObject {
         node.scheduleBuffer(buf, at: nil, options: .loops)
         node.volume = Float(volumes[s] ?? 0)
         nodes[s] = node
-        if engine.isRunning { node.play() }
+        if engine.isRunning && !starting { node.play() }
         return node
     }
 

@@ -56,6 +56,7 @@ final class PassiveNightEngine: ObservableObject {
             // .measurement: keine automatische Pegelregelung / Rauschunterdrückung.
             try session.setCategory(.playAndRecord, mode: .measurement,
                                     options: [.mixWithOthers, .defaultToSpeaker])
+            try? session.setAllowHapticsAndSystemSoundsDuringRecording(true)
             try session.setActive(true)
             if let mic = session.availableInputs?.first(where: { $0.portType == .builtInMic }) {
                 try? session.setPreferredInput(mic)
