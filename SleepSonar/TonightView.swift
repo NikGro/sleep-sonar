@@ -85,9 +85,9 @@ struct TonightView: View {
             VStack(alignment: .leading, spacing: 10) {
                 BreathLine(values: rec.recentBreath)
                     .frame(height: 120)
-                    .accessibilityLabel("Atemlinie der letzten zwei Minuten")
+                    .accessibilityLabel("Atemlinie der letzten 30 Sekunden")
                 HStack {
-                    Text("Letzte 2 Minuten")
+                    Text("Letzte 30 Sekunden")
                     Spacer()
                     Text(Self.statusText(rec))
                 }
@@ -180,8 +180,9 @@ struct MoonDisc: View {
     }
 }
 
-/// Atemlinie: Hochton-Pegel (Atemrauschen) der letzten 2 Minuten als weiche Linie.
+/// Atemlinie: Hochton-Pegel (Atemrauschen) der letzten 30 Sekunden als weiche Linie (10 Werte/s).
 struct BreathLine: View {
+    static let capacity = 300
     let values: [Double]
 
     var body: some View {
@@ -193,9 +194,14 @@ struct BreathLine: View {
             ctx.stroke(base, with: .color(Theme.hairline), lineWidth: 1)
 
             guard values.count > 1 else { return }
+            // leicht geglättet (±0,2 s), damit die Linie fließt statt zittert
+            let values = values.indices.map { i in
+                let a = max(0, i - 2), b = min(values.count - 1, i + 2)
+                return values[a...b].reduce(0, +) / Double(b - a + 1)
+            }
             let lo = values.min() ?? 0, hi = values.max() ?? 1
             let span = max(hi - lo, 6)  // mind. 6 dB, damit Stille nicht wie Sturm aussieht
-            let step = size.width / CGFloat(119)
+            let step = size.width / CGFloat(Self.capacity - 1)
             let x0 = size.width - CGFloat(values.count - 1) * step
             func point(_ i: Int) -> CGPoint {
                 let v = (values[i] - lo) / span

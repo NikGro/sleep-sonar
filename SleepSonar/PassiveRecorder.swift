@@ -43,6 +43,10 @@ final class PassiveRecorder: @unchecked Sendable {
     private var peak: Float = 0
     private var count = 0
     private let onSecond: @Sendable (_ db: Double, _ bands: [Double]) -> Void
+    /// Nur für die Anzeige: Hochton-Pegel alle 0,1 s (Atemlinie), fließt nicht in die Auswertung
+    var onTick: (@Sendable (_ highDB: Double) -> Void)?
+    private var tickHigh = 0.0
+    private var tickCount = 0
 
     private var levels: FileHandle?
     private var audioIndex: FileHandle?
@@ -154,8 +158,14 @@ final class PassiveRecorder: @unchecked Sendable {
             for b in 0..<3 {
                 let y = bands[b].process(xd)
                 sumBand[b] += y * y
+                if b == 2 { tickHigh += y * y }
             }
             count += 1
+            tickCount += 1
+            if tickCount >= Int(Self.sampleRate / 10) {
+                onTick?(10 * log10(tickHigh / Double(tickCount) + 1e-14))
+                tickHigh = 0; tickCount = 0
+            }
             if count >= Int(Self.sampleRate) {
                 func db(_ s: Double) -> Double { 10 * log10(s / Double(count) + 1e-14) }
                 let rms = db(sumAll)

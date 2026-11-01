@@ -15,7 +15,7 @@ final class PassiveNightEngine: ObservableObject {
     @Published private(set) var startDate: Date?
     @Published private(set) var levelDB: Double = -120
     @Published private(set) var bandDB: [Double] = [-120, -120, -120]
-    /// Hochton-Pegel (Atemrauschen) der letzten 2 Minuten, je Sekunde – für die Atemlinie
+    /// Hochton-Pegel (Atemrauschen) der letzten 30 s, alle 0,1 s – für die Atemlinie
     @Published private(set) var recentBreath: [Double] = []
     @Published private(set) var motionActivity: Double = 0
     @Published private(set) var restarts = 0
@@ -61,8 +61,14 @@ final class PassiveNightEngine: ObservableObject {
                     guard let self else { return }
                     self.levelDB = db
                     self.bandDB = bands
-                    self.recentBreath.append(bands[2])
-                    if self.recentBreath.count > 120 { self.recentBreath.removeFirst(self.recentBreath.count - 120) }
+                }
+            }
+            rec.onTick = { [weak self] high in
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.recentBreath.append(high)
+                    let keep = BreathLine.capacity
+                    if self.recentBreath.count > keep { self.recentBreath.removeFirst(self.recentBreath.count - keep) }
                 }
             }
             recorder = rec
