@@ -16,6 +16,8 @@ struct TonightView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 40)
             }
+            // vor dem Start passt alles auf den Bildschirm: nicht federn (Titel bleibt groß)
+            .scrollDisabled(!rec.isRunning)
             .nightBackground()
             .navigationTitle("Heute Nacht")
             .navigationBarTitleDisplayMode(.large)
@@ -176,11 +178,13 @@ struct MoonDisc: View {
                 .fill(RadialGradient(colors: [Theme.moon, Theme.moon.opacity(0.82)],
                                      center: UnitPoint(x: 0.38, y: 0.35), startRadius: 4, endRadius: 120))
                 .shadow(color: Theme.moon.opacity(lit ? 0.35 : 0), radius: 40)
-            // Schatten macht daraus eine Sichel
-            Circle()
-                .fill(Theme.ink)
-                .scaleEffect(0.92)
-                .offset(x: 38, y: -22)
+            // Schatten macht daraus eine Sichel (Versatz relativ zur Größe, passt bei jeder Größe)
+            GeometryReader { g in
+                Circle()
+                    .fill(Theme.ink)
+                    .scaleEffect(0.92)
+                    .offset(x: g.size.width * 0.21, y: -g.size.height * 0.122)
+            }
         }
         .compositingGroup()
     }
