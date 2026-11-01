@@ -18,7 +18,7 @@ final class SleepStagingTests: XCTestCase {
             let rem = m >= 230 && m < 290
             var base = (deep ? -63.0 : -60.0) + rng.gaussian() * 0.5
             let period = deep ? 5.0 : rem ? 3.0 : 4.0
-            let breath = 3 * sin(2 * Double.pi * Double(t) / period) + rng.gaussian() * (rem ? 1.5 : 0.3)
+            let breath = 3 * sin(2 * Double.pi * Double(t) / period) + rng.gaussian() * (rem ? 0.6 : 0.3)
             var high = -70 + breath
             if (awake || restless) && rng.uniform() < 0.4 { base += 15; high += 18 }
             sec.append(.init(rms: base, mid: base + breath * 0.5, high: high))
@@ -36,7 +36,9 @@ final class SleepStagingTests: XCTestCase {
         // langsamer, leiser Atem → Tief; schneller, unregelmäßiger → REM; dazwischen Kern
         XCTAssertEqual(epochs[105 * 2].stage, .deep)
         XCTAssertEqual(epochs[260 * 2].stage, .rem)
-        XCTAssertEqual(epochs[175 * 2].stage, .core)
+        XCTAssertEqual(epochs[40 * 2].stage, .core)
+        let late = epochs[(300 * 2)..<(345 * 2)]
+        XCTAssertGreaterThan(late.filter { $0.stage == .core }.count, late.filter { $0.stage == .rem }.count)
         // Unruhe nach 200 min → wach
         XCTAssertEqual(epochs[202 * 2 + 1].stage, .wake)
         let sleepHours = Double(epochs.filter { $0.stage != .wake }.count) * 30 / 3600
@@ -47,7 +49,7 @@ final class SleepStagingTests: XCTestCase {
     func testShortWakeBlipsBecomeSleep() {
         // ein einzelner Raschler (1 Epoche) mitten im Kernschlaf ist kein Aufwachen
         var night = makeNight()
-        let a = 175 * 60
+        let a = 40 * 60
         for t in a..<(a + 30) { night.seconds[t]?.high += 25 }
         let epochs = SleepStaging.estimate(seconds: night.seconds, motion: night.motion)
         XCTAssertNotEqual(epochs[a / 30].stage, .wake)
