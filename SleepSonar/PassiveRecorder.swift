@@ -87,7 +87,7 @@ final class PassiveRecorder: @unchecked Sendable {
 
     // MARK: - Audio (Tap-Thread)
 
-    func handle(_ buffer: AVAudioPCMBuffer) {
+    func handle(_ buffer: AVAudioPCMBuffer, hostTime: UInt64 = mach_absolute_time()) {
         lock.lock(); defer { lock.unlock() }
         guard !finished else { return }
         do {
@@ -110,6 +110,8 @@ final class PassiveRecorder: @unchecked Sendable {
             }
             if let err { throw err }
             guard out.frameLength > 0 else { return }
+            // eigene Schlafklänge herausrechnen, bevor gespeichert und gemessen wird
+            if EchoCanceller.shared.isActive { EchoCanceller.shared.process(out, hostTime: hostTime) }
             try write(out)
             measure(out)
             live?.feed(out)

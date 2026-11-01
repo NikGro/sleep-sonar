@@ -96,6 +96,8 @@ struct TonightView: View {
                 .foregroundStyle(Theme.mist)
             }
 
+            SoundsCard()
+
             Button {
                 confirmStop = true
             } label: {

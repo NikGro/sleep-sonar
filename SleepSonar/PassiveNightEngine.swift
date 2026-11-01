@@ -117,6 +117,7 @@ final class PassiveNightEngine: ObservableObject {
                 Task { @MainActor in
                     guard let self else { return }
                     SmartAlarm.shared.tick(seconds: self.secondsHistory, motion: self.motionHistory)
+                    SleepSoundPlayer.shared.tick(seconds: self.secondsHistory, motion: self.motionHistory)
                 }
             }
         } catch {
@@ -148,8 +149,16 @@ final class PassiveNightEngine: ObservableObject {
         recorder = nil
         isRunning = false
         endActivity()
+        // laufende Schlafklänge nicht mit abschalten
         Orientation.recordingChanged(false)
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        if !SleepSoundPlayer.shared.isPlaying {
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
+    }
+
+    /// Eintrag ins Protokoll der laufenden Nacht (z. B. Klänge an/aus)
+    func note(_ text: String) {
+        if isRunning { log(text) }
     }
 
     // MARK: - Live-Aktivität (Dynamic Island, Sperrbildschirm, StandBy)
@@ -210,8 +219,8 @@ final class PassiveNightEngine: ObservableObject {
 
     nonisolated private static func installTap(on input: AVAudioInputNode, format: AVAudioFormat,
                                                recorder: PassiveRecorder) {
-        input.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, _ in
-            recorder.handle(buffer)
+        input.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, when in
+            recorder.handle(buffer, hostTime: when.isHostTimeValid ? when.hostTime : mach_absolute_time())
         }
     }
 

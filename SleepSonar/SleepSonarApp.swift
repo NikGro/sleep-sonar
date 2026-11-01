@@ -45,6 +45,8 @@ struct SleepSonarApp: App {
                     .tabItem { Label(tr("Heute Nacht"), systemImage: "moon.stars") }
                 AlarmView()
                     .tabItem { Label(tr("Wecker"), systemImage: "alarm") }
+                SoundsView()
+                    .tabItem { Label(tr("Klänge"), systemImage: "speaker.wave.2") }
                 NightView()
                     .tabItem { Label(tr("Nächte"), systemImage: "chart.bar.xaxis") }
                 MoreView()
