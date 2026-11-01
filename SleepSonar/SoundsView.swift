@@ -6,7 +6,6 @@ struct SoundsView: View {
     @ObservedObject private var rec = PassiveNightEngine.shared
     @State private var naming = false
     @State private var mixName = ""
-    @State private var loadedMix: UUID?
     private let timers = [0, 15, 30, 45, 60, 90, 120]
 
     var body: some View {
@@ -62,8 +61,8 @@ struct SoundsView: View {
                     ForEach(player.mixes) { mix in
                         let current = player.volumes == mix.volumes
                         Button {
+                            Haptics.select()
                             player.load(mix)
-                            loadedMix = mix.id
                         } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
@@ -101,7 +100,6 @@ struct SoundsView: View {
             .navigationTitle(tr("Klänge"))
             .toolbarTitleDisplayMode(.inlineLarge)
             .toolbarBackground(Theme.ink, for: .navigationBar)
-            .sensoryFeedback(.selection, trigger: loadedMix)
             .alert(tr("Mischung sichern"), isPresented: $naming) {
                 TextField(tr("Name"), text: $mixName)
                 Button(tr("Abbrechen"), role: .cancel) {}
