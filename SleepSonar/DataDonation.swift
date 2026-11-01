@@ -6,7 +6,7 @@ import SwiftUI
 final class DataDonation: ObservableObject {
     static let shared = DataDonation()
     /// erhöhen, wenn sich der Einwilligungstext inhaltlich ändert → erneut fragen
-    static let textVersion = 1
+    static let textVersion = 2
 
     enum State: String { case undecided, granted, declined }
 
@@ -57,12 +57,12 @@ struct DonationConsentView: View {
                 Text(tr("Nächte spenden?"))
                     .font(Theme.display(30))
                     .padding(.top, 28)
-                Text(tr("Somnivo lernt Schlafphasen aus Geräuschen. Mit gespendeten Nächten kann die Schätzung für alle genauer werden."))
+                Text(tr("Somnivo lernt Schlafphasen aus Geräuschen. Mit gespendeten Nächten wird ein Modell trainiert, das die Schätzung für alle genauer machen soll."))
                     .font(.body)
 
                 VStack(alignment: .leading, spacing: 14) {
                     SectionTitle(tr("Was übertragen wird"))
-                    point("waveform.slash", tr("Lautstärke und Merkmale je Sekunde. Kein Ton, keine Aufnahmen."))
+                    point("waveform.slash", tr("Ein grobes Klangbild der Nacht (Spektrogramm, 10-mal pro Sekunde) und die Lautstärke je Sekunde. Daraus lässt sich Atem, Schnarchen und Bewegung erkennen, aber keine Sprache verstehen. Kein Ton, keine Aufnahmen."))
                     point("applewatch", tr("Die Schlafphasen deiner Apple Watch für dieselbe Zeit."))
                     point("person.crop.circle.badge.questionmark", tr("iPhone-Modell, App-Version und eine zufällige Spender-Nummer. Kein Name, keine Apple-ID, kein Datum."))
                 }

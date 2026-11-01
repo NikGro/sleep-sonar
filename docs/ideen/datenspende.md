@@ -15,6 +15,7 @@ Ziel: Nutzer können freiwillig Nächte spenden, damit das Schlafphasen-Modell f
 - automatische Prüfung in der App, Upload danach automatisch
 
 ## Was übertragen wird
+- **Entscheidung 01.11.2026:** Einwilligung deckt das Training des großen Audio-Modells ab → grobes Log-Mel-Spektrogramm (64 Bänder, 10 Bilder/s, ~20–40 MB je Nacht) + Sekunden-Pegel. Einwilligungstext Version 2.
 - **kein Rohaudio**
 - Merkmale, die das Modell braucht (Stand heute: Sekunden-Pegel + 3 Bänder; für Stufe 3 ggf. grobes Spektrum oder Embeddings, siehe unten)
 - Watch-Phasen je 30 s, optional Puls/Atemfrequenz

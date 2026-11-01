@@ -36,7 +36,7 @@ struct MoreView: View {
                 } header: {
                     header(tr("Datenspende"))
                 } footer: {
-                    Text(tr("Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur Merkmale je Sekunde."))
+                    Text(tr("Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur ein grobes Klangbild, aus dem sich keine Sprache verstehen lässt."))
                         .foregroundStyle(Theme.mist)
                 }
                 .listRowBackground(Theme.raised)

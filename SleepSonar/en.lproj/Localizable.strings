@@ -49,6 +49,7 @@
 "Du spendest Nächte seit %@." = "You've been donating nights since %@.";
 "Du spendest keine Nächte." = "You're not donating nights.";
 "Eigene Einträge löschen" = "Delete own entries";
+"Ein grobes Klangbild der Nacht (Spektrogramm, 10-mal pro Sekunde) und die Lautstärke je Sekunde. Daraus lässt sich Atem, Schnarchen und Bewegung erkennen, aber keine Sprache verstehen. Kein Ton, keine Aufnahmen." = "A coarse sound picture of the night (spectrogram, 10 times per second) and the loudness per second. It shows breathing, snoring and movement, but speech can't be understood from it. No sound, no recordings.";
 "Er klingelt wie der iPhone-Wecker, auch bei Stummschaltung und im Schlaf-Fokus." = "It rings like the iPhone alarm, even in silent mode and with the Sleep Focus on.";
 "Erkannt mit Apples Geräuscherkennung direkt auf dem iPhone. Gezeigt wird nur, was während des Schlafs war. Zum Anhören wird jeder Moment automatisch lauter gemacht." = "Detected with Apple's sound recognition right on your iPhone. Only sounds during sleep are shown. Each moment is made louder automatically for listening.";
 "Erledigt. Ändern kannst du das in der Health-App unter Profil, Apps, Somnivo." = "Done. You can change this in the Health app under Profile, Apps, Somnivo.";
@@ -66,14 +67,13 @@
 "Health-Schreibtest" = "Health write test";
 "Health-Zugriff erlauben" = "Allow Health access";
 "Heute Nacht" = "Tonight";
-"Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur Merkmale je Sekunde." = "Helps make the estimate more accurate for everyone. No sound, only per-second features.";
+"Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur ein grobes Klangbild, aus dem sich keine Sprache verstehen lässt." = "Helps make the estimate more accurate for everyone. No sound, only a coarse sound picture from which speech can't be understood.";
 "Husten und Niesen" = "Coughing and sneezing";
 "Im Bett" = "In bed";
 "Ja, Nächte spenden" = "Yes, donate nights";
 "Kein Mikrofon verfügbar" = "No microphone available";
 "Kein Mikrofonzugriff. Einstellungen → Somnivo → Mikrofon erlauben." = "No microphone access. Settings → Somnivo → allow Microphone.";
 "Kern" = "Core";
-"Lautstärke und Merkmale je Sekunde. Kein Ton, keine Aufnahmen." = "Loudness and features per second. No sound, no recordings.";
 "Leg dein iPhone neben das Bett" = "Put your iPhone next to your bed";
 "Leichten Schlaf suchen" = "Look for light sleep";
 "Letzte 30 Sekunden" = "Last 30 seconds";
@@ -125,7 +125,7 @@
 "Somnivo darf keine Wecker stellen. Erlaube es unter Einstellungen → Apps → Somnivo → Wecker." = "Somnivo isn't allowed to set alarms. Allow it in Settings → Apps → Somnivo → Alarms.";
 "Somnivo hört deine Atmung und Bewegungen und schätzt daraus deine Schlafphasen. Die Aufnahme bleibt auf deinem iPhone." = "Somnivo listens to your breathing and movements and estimates your sleep stages from them. The recording stays on your iPhone.";
 "Somnivo hört zu" = "Somnivo is listening";
-"Somnivo lernt Schlafphasen aus Geräuschen. Mit gespendeten Nächten kann die Schätzung für alle genauer werden." = "Somnivo learns sleep stages from sounds. Donated nights can make the estimate more accurate for everyone.";
+"Somnivo lernt Schlafphasen aus Geräuschen. Mit gespendeten Nächten wird ein Modell trainiert, das die Schätzung für alle genauer machen soll." = "Somnivo learns sleep stages from sounds. Donated nights train a model meant to make the estimate more accurate for everyone.";
 "Somnivo liest die Schlafphasen deiner Apple Watch, um sie mit der eigenen Schätzung zu vergleichen." = "Somnivo reads your Apple Watch sleep stages to compare them with its own estimate.";
 "Somnivo sendet keinen Ton aus und stört andere Apps nicht." = "Somnivo emits no sound and doesn't interfere with other apps.";
 "Spende widerrufen" = "Withdraw donation";
