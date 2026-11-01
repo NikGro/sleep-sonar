@@ -1,12 +1,13 @@
 import AppIntents
 
 /// Kurzbefehle: Nachtaufnahme starten / beenden (Kurzbefehle-App, Siri, Automationen).
-/// `AudioRecordingIntent`: iOS erlaubt damit den Aufnahmestart im Hintergrund (ohne Entsperren),
-/// solange gleichzeitig eine Live-Aktivität läuft – die startet die Aufnahme selbst.
-struct StartNightRecordingIntent: AudioRecordingIntent {
+/// Öffnet die App zum Starten (iOS erlaubt den Mikrofonstart sonst nur mit einer Rückfrage bei jedem
+/// Ausführen – die Hintergrund-Variante als `AudioRecordingIntent` hat in Automationen jedes Mal
+/// „Erlauben / Abbrechen“ gezeigt).
+struct StartNightRecordingIntent: AppIntent {
     static var title: LocalizedStringResource = "Schlafaufnahme starten"
     static var description = IntentDescription("Startet die Nachtaufnahme von Suya (nur Mikrofon).")
-    static var openAppWhenRun: Bool = false
+    static var openAppWhenRun: Bool = true
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
