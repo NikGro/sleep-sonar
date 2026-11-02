@@ -57,10 +57,12 @@
 "Daten und Watch teilen (ZIP)" = "Share data and Watch (ZIP)";
 "Datenspende" = "Data donation";
 "Dauer" = "Duration";
+"Dein iPhone spielt für Wecker nur die eingebauten Töne in voller Lautstärke, eigene Töne werden zum Standardton. Die Lautstärke folgt der Klingellautstärke des iPhones." = "Your iPhone only plays the built-in tones at full volume for alarms; your own tones become the default tone. The volume follows the iPhone's ringer volume.";
 "Deine Entscheidung" = "Your choice";
 "Der Wecker braucht iOS 26 oder neuer." = "The alarm needs iOS 26 or later.";
 "Der iPhone-Standardton folgt der Lautstärke in den Einstellungen. iOS gibt die Töne der Uhr-App nicht für andere Apps frei." = "The iPhone default sound follows the volume in Settings. iOS doesn't make the Clock app's sounds available to other apps.";
 "Die Klänge laufen gerade für die Nacht." = "The sounds are playing for the night right now.";
+"Die Lautstärke wird in den Ton gerechnet. Die Klingellautstärke des iPhones gilt zusätzlich." = "The volume is built into the tone. The iPhone's ringer volume applies on top.";
 "Die Nacht wird gespeichert und lässt sich danach auswerten." = "The night will be saved and can be analyzed afterwards.";
 "Die Nachtaufnahme läuft bereits." = "The night recording is already running.";
 "Die Schlafphasen deiner Apple Watch für dieselbe Zeit." = "Your Apple Watch sleep stages for the same time.";
@@ -95,6 +97,7 @@
 "Gestoppt" = "Stopped";
 "Gewitter" = "Thunderstorm";
 "Gitarre" = "Guitar";
+"Gleich klingelt ein Test-Wecker. Hast du eine leise Spieluhr gehört?" = "A test alarm is about to ring. Did you hear a quiet music box?";
 "Glocke" = "Bell";
 "Guten Morgen" = "Good morning";
 "Harfe" = "Harp";
@@ -111,6 +114,7 @@
 "Im leichten Schlaf wecken geht nur, während die Nachtaufnahme läuft. Ohne Aufnahme klingelt jeder Wecker zur eingestellten Zeit." = "Waking in light sleep only works while the night recording is running. Without a recording, every alarm rings at its set time.";
 "In der Nacht" = "At night";
 "Ja, Nächte spenden" = "Yes, donate nights";
+"Ja, leise Spieluhr" = "Yes, a quiet music box";
 "Jeden %@" = "Every %@";
 "Kaminfeuer" = "Fireplace";
 "Kein Mikrofon verfügbar" = "No microphone available";
@@ -155,6 +159,7 @@
 "Nachtaufnahme läuft" = "Night recording running";
 "Name" = "Name";
 "Nein, danke" = "No, thanks";
+"Nein, normaler Weckton" = "No, the normal alarm tone";
 "Neustart fehlgeschlagen: %@" = "Restart failed: %@";
 "Neustart: %@" = "Restart: %@";
 "Neustarts" = "Restarts";
@@ -169,6 +174,7 @@
 "Nächte spenden …" = "Donate nights …";
 "Nächte spenden?" = "Donate nights?";
 "Ob du schläfst, erkennt Suya nur, während die Nachtaufnahme läuft." = "Suya can only tell that you're asleep while the night recording is running.";
+"Ob iOS eine eigene Lautstärke und eigene Töne für Wecker zulässt, hängt von der iOS-Version ab. Der Test stellt in 10 s einen Wecker mit einer leisen Spieluhr." = "Whether iOS allows a custom volume and your own tones for alarms depends on the iOS version. The test sets an alarm with a quiet music box in 10 s.";
 "Pegel" = "Level";
 "Phase gleich" = "Same stage";
 "Probe läuft" = "Previewing";
@@ -230,6 +236,8 @@
 "Tippe auf einen Klang, um ihn dazuzunehmen, und stelle seine Lautstärke ein." = "Tap a sound to add it and set its volume.";
 "Tipps" = "Tips";
 "Ton" = "Sound";
+"Ton-Test" = "Sound test";
+"Ton-Test starten" = "Start sound test";
 "Täglich" = "Every day";
 "Uhrzeit" = "Time";
 "Unterbrechung (Anruf/Wecker/Siri?)" = "Interruption (call/alarm/Siri?)";
@@ -260,6 +268,9 @@
 "Wecker konnte nicht gestellt werden: %@" = "Couldn't set the alarm: %@";
 "Wecker löschen" = "Delete alarm";
 "Wecker nach Schlafdauer" = "Alarm by sleep duration";
+"Wecker „%@“ (%@): %@" = "Alarm “%@” (%@): %@";
+"Wecker „%@“ (%@): spätestens %@, im leichten Schlaf ab %@" = "Alarm “%@” (%@): latest %@, in light sleep from %@";
+"Wecker „%@“ klingelt im leichten Schlaf, %d min vor %@" = "Alarm “%@” rings in light sleep, %d min before %@";
 "Weckt in den letzten %d min vor der spätesten Zeit, sobald du leicht schläfst. Dafür muss die Nachtaufnahme laufen." = "Wakes you in the last %d min before the latest time, as soon as you're sleeping lightly. The night recording has to be running for this.";
 "Weckt nach etwa %@ Schlaf, gerechnet ab dem Einschlafen. In den letzten %d min davor, sobald du leicht schläfst." = "Wakes you after about %@ of sleep, counted from falling asleep. In the last %d min before that, as soon as you're sleeping lightly.";
 "Weckt nach etwa %@ Schlaf: zwischen %@ und %@, sobald du leicht schläfst." = "Wakes you after about %@ of sleep: between %@ and %@, as soon as you're sleeping lightly.";

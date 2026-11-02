@@ -6,12 +6,9 @@ struct SleepSonarApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var askDonation = false
-    @StateObject private var ringer = AlarmRinger.shared
 
     init() {
         BackgroundAnalysis.register()
-        StopAlarmAction.run = { await MainActor.run { SmartAlarm.shared.stopRinging() } }
-        SnoozeAlarmAction.run = { await MainActor.run { SmartAlarm.shared.snoozeRinging() } }
         // „Ausblenden“ in der Live-Aktivität
         FadeSoundsAction.run = { await MainActor.run { SleepSoundPlayer.shared.stop(fade: true) } }
         PlaySoundsAction.run = { await MainActor.run { SleepSoundPlayer.shared.play() } }
@@ -75,9 +72,6 @@ struct SleepSonarApp: App {
             // Einmal bei der Einrichtung fragen (und wieder, wenn sich der Text ändert)
             .onAppear { askDonation = DataDonation.shared.shouldAsk }
             .sheet(isPresented: $askDonation) { DonationConsentView() }
-            .fullScreenCover(isPresented: Binding(get: { ringer.ringing != nil }, set: { _ in })) {
-                RingingView()
-            }
         }
     }
 }

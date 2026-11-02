@@ -284,7 +284,7 @@ private struct SoundList: View {
     @ObservedObject private var preview = SoundPreview.shared
     @State private var importing = false
     @State private var importError: String?
-    private let ramps = [0, 10, 30, 60, 120, 180, 300]
+    @ObservedObject private var test = AlarmSoundTest.shared
 
     var body: some View {
         List {
@@ -310,24 +310,42 @@ private struct SoundList: View {
             .listRowBackground(Theme.raised)
 
             if item.sound != AlarmSound.system.rawValue {
-                Section {
-                    HStack(spacing: 12) {
-                        Image(systemName: "speaker.fill").foregroundStyle(Theme.mist)
-                        Slider(value: $item.volume, in: 0...1, onEditingChanged: { _ in preview.stop() })
-                            .tint(Theme.accent)
-                        Image(systemName: "speaker.wave.3.fill").foregroundStyle(Theme.mist)
-                    }
-                    Picker(tr("Lauter werden"), selection: $item.rampSeconds) {
-                        ForEach(ramps, id: \.self) { r in
-                            Text(r == 0 ? tr("Sofort") : r < 60 ? tr("in %d s", r) : tr("in %d min", r / 60)).tag(r)
+                if test.ok == true {
+                    Section {
+                        HStack(spacing: 12) {
+                            Image(systemName: "speaker.fill").foregroundStyle(Theme.mist)
+                            Slider(value: $item.volume, in: 0...1, onEditingChanged: { _ in preview.stop() })
+                                .tint(Theme.accent)
+                            Image(systemName: "speaker.wave.3.fill").foregroundStyle(Theme.mist)
                         }
+                    } header: {
+                        ListHeader(tr("Lautstärke"))
+                    } footer: {
+                        Text(tr("Die Lautstärke wird in den Ton gerechnet. Die Klingellautstärke des iPhones gilt zusätzlich."))
                     }
-                } header: {
-                    ListHeader(tr("Lautstärke"))
-                } footer: {
-                    Text(tr("Lautstärke und Lauterwerden gelten, solange die Nachtaufnahme läuft: Dann spielt Suya den Ton selbst, mit der Medienlautstärke des iPhones. Zur Sicherheit klingelt 2 Minuten später der normale Wecker, falls Suya nicht mehr läuft. Ohne Aufnahme klingelt der Ton in voller Lautstärke."))
+                    .listRowBackground(Theme.raised)
+                } else {
+                    Section {
+                        if test.scheduled != nil {
+                            Text(tr("Gleich klingelt ein Test-Wecker. Hast du eine leise Spieluhr gehört?"))
+                                .foregroundStyle(Theme.moon)
+                            Button(tr("Ja, leise Spieluhr")) { test.answer(true) }
+                                .foregroundStyle(Theme.accent)
+                            Button(tr("Nein, normaler Weckton")) { test.answer(false) }
+                                .foregroundStyle(Theme.accent)
+                        } else {
+                            Button(tr("Ton-Test starten")) { Task { await test.start() } }
+                                .foregroundStyle(Theme.accent)
+                        }
+                    } header: {
+                        ListHeader(tr("Lautstärke"))
+                    } footer: {
+                        Text(test.ok == false
+                             ? tr("Dein iPhone spielt für Wecker nur die eingebauten Töne in voller Lautstärke, eigene Töne werden zum Standardton. Die Lautstärke folgt der Klingellautstärke des iPhones.")
+                             : tr("Ob iOS eine eigene Lautstärke und eigene Töne für Wecker zulässt, hängt von der iOS-Version ab. Der Test stellt in 10 s einen Wecker mit einer leisen Spieluhr."))
+                    }
+                    .listRowBackground(Theme.raised)
                 }
-                .listRowBackground(Theme.raised)
             } else {
                 Section {} footer: {
                     Text(tr("Der iPhone-Standardton folgt der Lautstärke in den Einstellungen. iOS gibt die Töne der Uhr-App nicht für andere Apps frei."))

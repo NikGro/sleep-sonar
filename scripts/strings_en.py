@@ -1,6 +1,17 @@
 # Englische Übersetzungen (Schlüssel = deutscher Text). Wird von gen_strings.py in
 # SleepSonar/en.lproj und Widgets/en.lproj geschrieben.
 EN = {
+    "Dein iPhone spielt für Wecker nur die eingebauten Töne in voller Lautstärke, eigene Töne werden zum Standardton. Die Lautstärke folgt der Klingellautstärke des iPhones.": "Your iPhone only plays the built-in tones at full volume for alarms; your own tones become the default tone. The volume follows the iPhone's ringer volume.",
+    "Die Lautstärke wird in den Ton gerechnet. Die Klingellautstärke des iPhones gilt zusätzlich.": "The volume is built into the tone. The iPhone's ringer volume applies on top.",
+    "Gleich klingelt ein Test-Wecker. Hast du eine leise Spieluhr gehört?": "A test alarm is about to ring. Did you hear a quiet music box?",
+    "Ja, leise Spieluhr": "Yes, a quiet music box",
+    "Nein, normaler Weckton": "No, the normal alarm tone",
+    "Ob iOS eine eigene Lautstärke und eigene Töne für Wecker zulässt, hängt von der iOS-Version ab. Der Test stellt in 10 s einen Wecker mit einer leisen Spieluhr.": "Whether iOS allows a custom volume and your own tones for alarms depends on the iOS version. The test sets an alarm with a quiet music box in 10 s.",
+    "Ton-Test": "Sound test",
+    "Ton-Test starten": "Start sound test",
+    "Wecker „%@“ (%@): %@": "Alarm “%@” (%@): %@",
+    "Wecker „%@“ (%@): spätestens %@, im leichten Schlaf ab %@": "Alarm “%@” (%@): latest %@, in light sleep from %@",
+    "Wecker „%@“ klingelt im leichten Schlaf, %d min vor %@": "Alarm “%@” rings in light sleep, %d min before %@",
     "Aufnahme läuft wieder": "Recording running again",
     "Schlummern bis %@": "Snoozing until %@",
     "Schlummern vorbei": "snooze over",
