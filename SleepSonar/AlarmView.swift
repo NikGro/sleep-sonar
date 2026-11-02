@@ -196,11 +196,19 @@ struct AlarmEditView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Theme.ink.ignoresSafeArea())
-            .navigationTitle(isNew ? tr("Neuer Wecker") : tr("Bearbeiten"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(tr("Abbrechen")) { dismiss() }
+                }
+                // Titel selbst mittig setzen (die Systemtitelzeile rückte ihn neben die unterschiedlich
+                // breiten Knöpfe)
+                ToolbarItem(placement: .principal) {
+                    Text(isNew ? tr("Neuer Wecker") : tr("Bearbeiten"))
+                        .font(Theme.display(17, weight: .semibold))
+                        .foregroundStyle(Theme.moon)
+                        .lineLimit(1)
+                        .accessibilityAddTraits(.isHeader)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(tr("Sichern")) {

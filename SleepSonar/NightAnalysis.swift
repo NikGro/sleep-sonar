@@ -275,8 +275,9 @@ struct NightAnalysisView: View {
                 HStack(alignment: .firstTextBaseline, spacing: 16) {
                     Figure(value: String(format: "%.0f %%", r.agreement.sleepWake * 100), label: tr("Schlaf oder wach gleich"))
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    Figure(value: String(format: "%.0f %%", r.agreement.fourClass * 100), label: tr("Phase gleich"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Figure(value: String(format: "%.0f %%", r.agreement.fourClass * 100), label: tr("Phase gleich"),
+                           alignment: .trailing)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .frame(maxWidth: .infinity)
                 Text(tr("Verglichen über %@.", Self.hm(Double(r.agreement.epochs) * r.epochSeconds)))
@@ -328,10 +329,12 @@ private struct ScorePart: View {
 private struct Figure: View {
     let value: String
     let label: String
+    var alignment: HorizontalAlignment = .leading
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: alignment, spacing: 2) {
             Text(value).font(Theme.display(30)).monospacedDigit()
             Text(label).font(.caption).foregroundStyle(Theme.mist)
+                .multilineTextAlignment(alignment == .trailing ? .trailing : .leading)
         }
     }
 }
