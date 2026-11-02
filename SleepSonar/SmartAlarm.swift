@@ -279,7 +279,8 @@ final class SmartAlarm: ObservableObject {
         for (id, until) in rang where now > until { rang[id] = nil }
         var changed = false
         for i in items.indices {
-            if let once = items[i].onceFor, once < now, items[i].repeatDays.isEmpty, items[i].mode == .time {
+            if let once = items[i].onceFor, once < now, items[i].repeatDays.isEmpty, items[i].mode == .time,
+               !isActiveNow(items[i].id) {
                 items[i].enabled = false
                 items[i].onceFor = nil
                 changed = true
@@ -291,6 +292,12 @@ final class SmartAlarm: ObservableObject {
             for a in items { AlarmBackend.cancelBackup(for: a.id) }
         }
         Task { for a in items { await apply(a) } }
+    }
+
+    /// klingelt oder schlummert gerade (dann erst danach ausschalten)
+    private func isActiveNow(_ id: UUID) -> Bool {
+        if #available(iOS 26.0, *) { return AlarmBackend.isActive(id) }
+        return false
     }
 
     /// nach geänderter Ton-Einstellung alle Systemwecker neu stellen
@@ -309,6 +316,8 @@ final class SmartAlarm: ObservableObject {
             return
         }
         problem = nil
+        // klingelt oder schlummert gerade: nicht neu stellen (das würde den Schlummer-Countdown löschen)
+        if isActiveNow(a.id) { return }
         do {
             // schon früh (im leichten Schlaf) geweckt: die späteste Zeit dieses Mal überspringen
             if let done = rang[a.id], done > Date() {
@@ -480,6 +489,12 @@ enum AlarmBackend {
 
     static func kitID(for id: UUID) -> UUID? {
         (UserDefaults.standard.dictionary(forKey: key) as? [String: String])?[id.uuidString].flatMap(UUID.init)
+    }
+
+    /// Klingelt, schlummert oder pausiert der Systemwecker dieses Weckers gerade?
+    static func isActive(_ id: UUID) -> Bool {
+        guard let kit = kitID(for: id) else { return false }
+        return ((try? AlarmManager.shared.alarms) ?? []).contains { $0.id == kit && $0.state != .scheduled }
     }
 
     /// Klingelt gerade ein Suya-Wecker (ohne Schlummern)?
