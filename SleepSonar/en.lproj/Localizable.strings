@@ -47,6 +47,7 @@
 "Ausschalten nach" = "Turn off after";
 "Auswertung" = "Analysis";
 "Bach" = "Stream";
+"Beenden" = "End";
 "Beendet die laufende Nachtaufnahme von Suya." = "Stops Suya's running night recording.";
 "Bezeichnung" = "Label";
 "Bildschirm sperren ist okay. Die App nur nicht wegwischen." = "Locking the screen is fine. Just don't swipe the app away.";
@@ -199,8 +200,10 @@
 "Schlafwert %d von 100" = "Sleep score %d out of 100";
 "Schlummerdauer" = "Snooze length";
 "Schlummern" = "Snooze";
+"Schlummern beenden" = "End snooze";
 "Schlummern bis %@" = "Snoozing until %@";
 "Schlummern vorbei" = "snooze over";
+"Schlummert bis %@" = "Snoozing until %@";
 "Schnarchen" = "Snoring";
 "Schritt für Schritt" = "Step by step";
 "Seufzen und Quengeln" = "Sighing and whimpering";

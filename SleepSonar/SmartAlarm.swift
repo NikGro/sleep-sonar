@@ -165,6 +165,31 @@ final class SmartAlarm: ObservableObject {
 
     @Published private(set) var items: [AlarmItem] = []
     @Published private(set) var problem: String?
+    /// Schlummernde Systemwecker: AlarmKit-ID → wann sie wieder klingeln
+    @Published private(set) var snoozing: [UUID: Date] = [:]
+    private var watching = false
+
+    /// Schlummer-Zustand der Systemwecker verfolgen (für „Schlummern beenden“ in der App)
+    func watchSnooze() {
+        guard #available(iOS 26.0, *), !watching else { return }
+        watching = true
+        Task {
+            for await alarms in AlarmManager.shared.alarmUpdates {
+                var now: [UUID: Date] = [:]
+                for al in alarms where al.state == .countdown {
+                    now[al.id] = snoozing[al.id]
+                        ?? Date().addingTimeInterval(al.countdownDuration?.postAlert ?? 0)
+                }
+                snoozing = now
+            }
+        }
+    }
+
+    func endSnooze(_ kit: UUID) {
+        guard #available(iOS 26.0, *) else { return }
+        try? AlarmManager.shared.stop(id: kit)
+        snoozing[kit] = nil
+    }
 
     private let store = "alarm.items"
     private var recordingStart: Date?

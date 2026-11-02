@@ -87,18 +87,21 @@ struct NightLiveActivity: Widget {
 struct SnoozeLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: AlarmAttributes<WakeMetadata>.self) { ctx in
-            HStack(spacing: 14) {
-                Image(systemName: "zzz").font(.title2).foregroundStyle(moon)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(ctx.attributes.metadata?.label ?? "Suya")
-                        .font(.system(.headline, design: .serif))
+            VStack(spacing: 12) {
+                HStack(spacing: 14) {
+                    Image(systemName: "zzz").font(.title2).foregroundStyle(moon)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(ctx.attributes.metadata?.label ?? "Suya")
+                            .font(.system(.headline, design: .serif))
+                            .foregroundStyle(moon)
+                        Text(tr("Schlummern")).font(.caption).foregroundStyle(mist)
+                    }
+                    Spacer()
+                    countdown(ctx.state)
+                        .font(.system(.title2, design: .serif).monospacedDigit())
                         .foregroundStyle(moon)
-                    Text(tr("Schlummern")).font(.caption).foregroundStyle(mist)
                 }
-                Spacer()
-                countdown(ctx.state)
-                    .font(.system(.title2, design: .serif).monospacedDigit())
-                    .foregroundStyle(moon)
+                stopButton(ctx.state)
             }
             .padding(16)
             .activityBackgroundTint(ink)
@@ -112,7 +115,11 @@ struct SnoozeLiveActivity: Widget {
                     countdown(ctx.state).monospacedDigit().foregroundStyle(moon)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text(ctx.attributes.metadata?.label ?? "Suya").font(.caption).foregroundStyle(mist)
+                    HStack {
+                        Text(ctx.attributes.metadata?.label ?? "Suya").font(.caption).foregroundStyle(mist)
+                        Spacer()
+                        stopButton(ctx.state)
+                    }
                 }
             } compactLeading: {
                 Image(systemName: "zzz").foregroundStyle(moon)
@@ -121,6 +128,15 @@ struct SnoozeLiveActivity: Widget {
             } minimal: {
                 Image(systemName: "zzz").foregroundStyle(moon)
             }
+        }
+    }
+
+    @ViewBuilder private func stopButton(_ state: AlarmPresentationState) -> some View {
+        if case .countdown = state.mode {
+            Button(intent: StopSnoozeIntent(alarmID: state.alarmID)) {
+                Label(tr("Schlummern beenden"), systemImage: "sun.max").font(.caption.weight(.semibold))
+            }
+            .tint(accent)
         }
     }
 

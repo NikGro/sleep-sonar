@@ -22,6 +22,18 @@ struct AlarmView: View {
                     .padding(.vertical, 24)
                     .listRowBackground(Theme.ink)
                 }
+                ForEach(alarms.snoozing.sorted { $0.value < $1.value }, id: \.key) { kit, until in
+                    HStack(spacing: 12) {
+                        Image(systemName: "zzz").foregroundStyle(Theme.accent)
+                        Text(tr("Schlummert bis %@", until.formatted(date: .omitted, time: .shortened)))
+                            .foregroundStyle(Theme.moon)
+                        Spacer()
+                        Button(tr("Beenden")) { Haptics.tap(); alarms.endSnooze(kit) }
+                            .buttonStyle(.bordered)
+                            .tint(Theme.accent)
+                    }
+                    .listRowBackground(Theme.raised)
+                }
                 ForEach(alarms.items) { a in
                     AlarmRow(item: a) { on in Haptics.select(); alarms.setEnabled(a.id, on) }
                         .contentShape(Rectangle())

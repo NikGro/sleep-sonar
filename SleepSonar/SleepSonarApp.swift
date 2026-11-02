@@ -9,6 +9,7 @@ struct SleepSonarApp: App {
 
     init() {
         BackgroundAnalysis.register()
+        SmartAlarm.shared.watchSnooze()
         // „Ausblenden“ in der Live-Aktivität
         FadeSoundsAction.run = { await MainActor.run { SleepSoundPlayer.shared.stop(fade: true) } }
         PlaySoundsAction.run = { await MainActor.run { SleepSoundPlayer.shared.play() } }
