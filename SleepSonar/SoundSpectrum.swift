@@ -135,15 +135,15 @@ struct SpectrumGlow: View {
                     let i0 = Int(x), i1 = min(bands.count - 1, i0 + 1)
                     let f = Float(x - Double(i0))
                     let v = CGFloat(bands[i0] * (1 - f) + bands[i1] * f)
-                    let r = inner + 6 + v * reach
+                    let r = inner + 4 + v * reach
                     let angle = Double.pi / 2 + theta
                     let p = CGPoint(x: c.x + cos(angle) * r, y: c.y + sin(angle) * r)
                     if k == 0 { path.move(to: p) } else { path.addLine(to: p) }
                 }
                 path.closeSubpath()
                 ctx.fill(path, with: .radialGradient(
-                    Gradient(colors: [Theme.accent.opacity(0.55), Theme.accent.opacity(0.18), .clear]),
-                    center: c, startRadius: inner * 0.9, endRadius: inner + reach + 8))
+                    Gradient(colors: [Theme.accent.opacity(0.42), Theme.accent.opacity(0.14), .clear]),
+                    center: c, startRadius: inner * 0.9, endRadius: inner + reach + 6))
             }
             .blur(radius: 10)
     }

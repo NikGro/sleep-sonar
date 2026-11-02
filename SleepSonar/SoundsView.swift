@@ -52,7 +52,7 @@ struct SoundsView: View {
             // Berührungen sonst kurz zurück, das wirkte verzögert. Das Leuchten blendet weich, der Rest sofort.
             ZStack {
                 // Leuchten, das mit dem Klang atmet (tief unten, hoch oben)
-                SpectrumGlow(playing: player.isPlaying, inner: 56, reach: 44)
+                SpectrumGlow(playing: player.isPlaying, inner: 56, reach: 31)
                     .frame(width: 230, height: 230)
                     .opacity(player.isPlaying ? 1 : 0)
                     .animation(.easeInOut(duration: 0.7), value: player.isPlaying)
