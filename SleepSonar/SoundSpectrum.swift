@@ -77,16 +77,15 @@ final class SoundSpectrum: @unchecked Sendable {
         lock.lock()
         if slowTotal < -150 { slowTotal = total; slow = dbs }
         slowTotal += 0.02 * (total - slowTotal)
-        // Ganzes Leuchten: kräftig, wenn es lauter wird als zuletzt üblich; in leisen Momenten fast weg
-        let whole = max(-1, min(1, (total - slowTotal) / 2.5))
+        // Ganzes Leuchten: wächst, wenn es lauter wird als zuletzt üblich, schrumpft bei leiseren Stellen
+        let whole = max(-1, min(1, (total - slowTotal) / 6))
         for b in 0..<Self.bandCount {
             slow[b] += 0.02 * (dbs[b] - slow[b])
             // Form: Band lauter als sein Mittel → an dieser Stelle weiter hinaus
-            let shape = max(-1, min(1, (dbs[b] - slow[b]) / 4))
-            // leise Momente → fast nichts, laute → ganz ausgedehnt
-            let target = max(0, min(1, 0.5 + 0.5 * whole + 0.25 * shape))
-            // sofort rauf, zügig runter
-            let k: Float = target > smoothed[b] ? 0.9 : 0.5
+            let shape = max(-1, min(1, (dbs[b] - slow[b]) / 10))
+            let target = max(0, min(1, 0.45 + 0.35 * whole + 0.2 * shape))
+            // schnell rauf, etwas langsamer runter
+            let k: Float = target > smoothed[b] ? 0.55 : 0.2
             smoothed[b] += k * (target - smoothed[b])
         }
         lock.unlock()
@@ -118,16 +117,13 @@ struct SpectrumGlow: View {
     private func eased(_ date: Date) -> [Float] {
         let target = SoundSpectrum.shared.bands
         if easing.values.count != target.count { easing.values = target }
-        for i in target.indices { easing.values[i] += 0.35 * (target[i] - easing.values[i]) }
+        for i in target.indices { easing.values[i] += 0.18 * (target[i] - easing.values[i]) }
         return easing.values
     }
 
     private func glow(bands: [Float]) -> some View {
             Canvas { ctx, size in
                 guard !bands.isEmpty else { return }
-                // Helligkeit folgt der Lautstärke: in stillen Momenten kaum zu sehen
-                let mean = CGFloat(bands.reduce(0, +) / Float(bands.count))
-                ctx.opacity = 0.2 + 0.8 * min(1, mean * 1.3)
                 let c = CGPoint(x: size.width / 2, y: size.height / 2)
                 let steps = 120
                 var path = Path()
@@ -139,16 +135,16 @@ struct SpectrumGlow: View {
                     let i0 = Int(x), i1 = min(bands.count - 1, i0 + 1)
                     let f = Float(x - Double(i0))
                     let v = CGFloat(bands[i0] * (1 - f) + bands[i1] * f)
-                    let r = inner + 2 + v * reach
+                    let r = inner + 6 + v * reach
                     let angle = Double.pi / 2 + theta
                     let p = CGPoint(x: c.x + cos(angle) * r, y: c.y + sin(angle) * r)
                     if k == 0 { path.move(to: p) } else { path.addLine(to: p) }
                 }
                 path.closeSubpath()
                 ctx.fill(path, with: .radialGradient(
-                    Gradient(colors: [Theme.accent.opacity(0.95), Theme.accent.opacity(0.55), Theme.accent.opacity(0.08)]),
-                    center: c, startRadius: inner * 0.95, endRadius: inner + reach))
+                    Gradient(colors: [Theme.accent.opacity(0.55), Theme.accent.opacity(0.18), .clear]),
+                    center: c, startRadius: inner * 0.9, endRadius: inner + reach + 8))
             }
-            .blur(radius: 7)
+            .blur(radius: 10)
     }
 }
