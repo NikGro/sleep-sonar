@@ -198,8 +198,10 @@ struct AlarmEditView: View {
             .background(Theme.ink.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                // runde Glas-Knöpfe wie in der Uhr-App (gleich breit → Titel genau mittig)
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(tr("Abbrechen")) { dismiss() }
+                    Button { dismiss() } label: { Image(systemName: "xmark") }
+                        .accessibilityLabel(tr("Abbrechen"))
                 }
                 // Titel selbst mittig setzen (die Systemtitelzeile rückte ihn neben die unterschiedlich
                 // breiten Knöpfe)
@@ -211,11 +213,12 @@ struct AlarmEditView: View {
                         .accessibilityAddTraits(.isHeader)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(tr("Sichern")) {
+                    Button {
                         SmartAlarm.shared.save(item)
                         Haptics.success()
                         dismiss()
-                    }
+                    } label: { Image(systemName: "checkmark") }
+                    .accessibilityLabel(tr("Sichern"))
                 }
             }
             .onDisappear { SoundPreview.shared.stop() }
