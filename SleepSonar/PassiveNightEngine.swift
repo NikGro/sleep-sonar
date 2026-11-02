@@ -154,6 +154,8 @@ final class PassiveNightEngine: ObservableObject {
         endActivity()
         Orientation.recordingChanged(false)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        // Nacht in Health eintragen (außer die Watch hat sie schon)
+        Task { await HealthSync.syncRecent() }
     }
 
     /// Eintrag ins Protokoll der laufenden Nacht (z. B. Klänge an/aus)

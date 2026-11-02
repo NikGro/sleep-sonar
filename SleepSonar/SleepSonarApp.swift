@@ -67,7 +67,10 @@ struct SleepSonarApp: App {
                     BackgroundAnalysis.appWentToBackground()
                     SleepSoundPlayer.shared.appBackgrounded()
                 }
-                if phase == .active { SmartAlarm.shared.refresh() }
+                if phase == .active {
+                    SmartAlarm.shared.refresh()
+                    Task { await HealthSync.syncRecent() }
+                }
             }
             // Einmal bei der Einrichtung fragen (und wieder, wenn sich der Text ändert)
             .onAppear { askDonation = DataDonation.shared.shouldAsk }

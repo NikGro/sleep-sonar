@@ -37,7 +37,9 @@ enum NightExport {
                 sortDescriptors: [SortDescriptor(\.startDate)])
             let samples = try await d.result(for: store)
             var csv = "start,end,stage,source,device\n"
-            for s in samples {
+            // Suyas eigene Einträge nicht: die Datei ist der Vergleich mit der Watch
+            let own = Bundle.main.bundleIdentifier ?? ""
+            for s in samples where s.sourceRevision.source.bundleIdentifier != own {
                 csv += "\(iso.string(from: s.startDate)),\(iso.string(from: s.endDate)),"
                     + "\(HealthManager.name(for: s.value)),\(clean(s.sourceRevision.source.name)),"
                     + "\(clean(s.device?.model ?? ""))\n"
