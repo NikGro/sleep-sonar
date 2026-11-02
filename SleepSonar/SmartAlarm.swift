@@ -561,7 +561,7 @@ enum AlarmBackend {
 
 // MARK: - Test: spielt der Systemwecker eigene Töne aus Library/Sounds?
 
-/// Stellt in 10 s einen Systemwecker mit einer leise gerechneten Spieluhr unter Library/Sounds.
+/// Stellt in 30 s einen Systemwecker mit einer leise gerechneten Spieluhr unter Library/Sounds.
 /// Hört man die leise Spieluhr, kann Suya Lautstärke und eigene Töne an den Systemwecker geben.
 @MainActor
 final class AlarmSoundTest: ObservableObject {
@@ -580,7 +580,7 @@ final class AlarmSoundTest: ObservableObject {
         let alert = AlarmPresentation.Alert(title: LocalizedStringResource(stringLiteral: tr("Ton-Test")), stopButton: stop)
         let attributes = AlarmAttributes(presentation: AlarmPresentation(alert: alert),
                                          metadata: WakeMetadata(label: tr("Ton-Test")), tintColor: Theme.accent)
-        let at = Date().addingTimeInterval(10)
+        let at = Date().addingTimeInterval(30)
         let config = AlarmManager.AlarmConfiguration<WakeMetadata>(schedule: .fixed(at), attributes: attributes,
                                                                    sound: .named(name))
         if (try? await AlarmManager.shared.schedule(id: UUID(), configuration: config)) != nil { scheduled = at }

@@ -175,6 +175,7 @@
 "Nächte spenden?" = "Donate nights?";
 "Ob du schläfst, erkennt Suya nur, während die Nachtaufnahme läuft." = "Suya can only tell that you're asleep while the night recording is running.";
 "Ob iOS eine eigene Lautstärke und eigene Töne für Wecker zulässt, hängt von der iOS-Version ab. Der Test stellt in 10 s einen Wecker mit einer leisen Spieluhr." = "Whether iOS allows a custom volume and your own tones for alarms depends on the iOS version. The test sets an alarm with a quiet music box in 10 s.";
+"Ob iOS eine eigene Lautstärke und eigene Töne für Wecker zulässt, hängt von der iOS-Version ab. Der Test stellt in 30 s einen Wecker mit einer leisen Spieluhr. Sperre dafür das iPhone: Bei eingeschaltetem Bildschirm spielt iOS Wecker anderer Apps nur kurz an." = "Whether iOS allows a custom volume and your own tones for alarms depends on the iOS version. The test sets an alarm with a quiet music box in 30 s. Lock your iPhone for it: while the screen is on, iOS only briefly plays alarms from other apps.";
 "Pegel" = "Level";
 "Phase gleich" = "Same stage";
 "Probe läuft" = "Previewing";
@@ -211,6 +212,7 @@
 "Sonnenaufgang" = "Sunrise";
 "Spende widerrufen" = "Withdraw donation";
 "Spender-Nummer" = "Donor number";
+"Sperre jetzt das iPhone: In 30 s klingelt ein Test-Wecker. Hast du eine leise Spieluhr gehört, die weiterspielt?" = "Lock your iPhone now: a test alarm rings in 30 s. Did you hear a quiet music box that keeps playing?";
 "Spieluhr" = "Music box";
 "Sprechen" = "Talking";
 "Späteste Weckzeit" = "Latest wake-up time";

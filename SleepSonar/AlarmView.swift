@@ -327,7 +327,7 @@ private struct SoundList: View {
                 } else {
                     Section {
                         if test.scheduled != nil {
-                            Text(tr("Gleich klingelt ein Test-Wecker. Hast du eine leise Spieluhr gehört?"))
+                            Text(tr("Sperre jetzt das iPhone: In 30 s klingelt ein Test-Wecker. Hast du eine leise Spieluhr gehört, die weiterspielt?"))
                                 .foregroundStyle(Theme.moon)
                             Button(tr("Ja, leise Spieluhr")) { test.answer(true) }
                                 .foregroundStyle(Theme.accent)
@@ -342,7 +342,7 @@ private struct SoundList: View {
                     } footer: {
                         Text(test.ok == false
                              ? tr("Dein iPhone spielt für Wecker nur die eingebauten Töne in voller Lautstärke, eigene Töne werden zum Standardton. Die Lautstärke folgt der Klingellautstärke des iPhones.")
-                             : tr("Ob iOS eine eigene Lautstärke und eigene Töne für Wecker zulässt, hängt von der iOS-Version ab. Der Test stellt in 10 s einen Wecker mit einer leisen Spieluhr."))
+                             : tr("Ob iOS eine eigene Lautstärke und eigene Töne für Wecker zulässt, hängt von der iOS-Version ab. Der Test stellt in 30 s einen Wecker mit einer leisen Spieluhr. Sperre dafür das iPhone: Bei eingeschaltetem Bildschirm spielt iOS Wecker anderer Apps nur kurz an."))
                     }
                     .listRowBackground(Theme.raised)
                 }
