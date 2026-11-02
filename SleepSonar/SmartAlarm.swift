@@ -356,7 +356,7 @@ final class SmartAlarm: ObservableObject {
             rang[id] = nil
             if let a = items.first(where: { $0.id == id }) { Task { await apply(a) } }
         }
-        if AlarmBackend.isAlerting { return }
+        if #available(iOS 26.0, *), AlarmBackend.isAlerting { return }
         guard !evaluating, seconds.count >= 20 * 60 else { return }
         let active = items.filter { $0.enabled && rang[$0.id] == nil }
         let needOnset = false   // Schlafdauer zählt ab Aufnahmebeginn, kein Einschlafpunkt nötig
