@@ -23,7 +23,7 @@ enum DemoScreens {
                                           of: Date().addingTimeInterval(-86400)) ?? Date()
         let folder = NightRecorder.nightsFolder
             .appendingPathComponent(DateFormatter.nightName.string(from: start) + "_demo", isDirectory: true)
-        if FileManager.default.fileExists(atPath: folder.appendingPathComponent("levels.csv").path) { return folder }
+        
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -40,7 +40,10 @@ enum DemoScreens {
             let jitter = Double.random(in: -1...1, using: &rng) * (rem ? 2.5 : 0.8)
             var high = -84 + breath + jitter
             if awake && Int.random(in: 0..<4, using: &rng) == 0 { high += 22 }
-            let rms = -78 + breath * 0.6 + jitter * 0.5 + (awake ? 4 : 0)
+            // Schnarchen/Husten der Beispiel-Geräusche hörbar machen (für die Lautstärke-Linie)
+            let loud = [(7200, 7238), (9100, 9121), (12000, 12010), (15100, 15104)]
+                .contains { t >= $0.0 && t < $0.1 } ? 12 + 8 * abs(sin(Double(t) * 0.9)) : 0
+            let rms = -78 + breath * 0.6 + jitter * 0.5 + (awake ? 4 : 0) + loud
             let line = [rms, rms + 18, rms - 2, rms - 9, high].map { String(format: "%.1f", $0) }
             csv += iso.string(from: start.addingTimeInterval(Double(t))) + "," + line.joined(separator: ",") + "\n"
         }
