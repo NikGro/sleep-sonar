@@ -364,7 +364,7 @@ final class SmartAlarm: ObservableObject {
         // Ist das iPhone sehr leise gestellt oder spielt der Ton nicht, klingelt der Systemwecker früher
         let quiet = AVAudioSession.sharedInstance().outputVolume < 0.25
         if quiet { PassiveNightEngine.shared.note(tr("iPhone-Lautstärke niedrig: Systemwecker in 30 s")) }
-        let delay: TimeInterval = !ok ? 2 : quiet ? 30 : AlarmBackend.backupDelay
+        let delay: TimeInterval = !ok ? 2 : quiet ? 30 : 180
         if #available(iOS 26.0, *) {
             Task { try? await AlarmBackend.scheduleBackup(a, at: Date().addingTimeInterval(delay)) }
         }
