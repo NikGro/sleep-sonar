@@ -26,7 +26,7 @@ struct MoreView: View {
                 } header: {
                     ListHeader("Apple Health")
                 } footer: {
-                    Text(tr("Suya liest die Schlafphasen deiner Apple Watch, um sie mit der eigenen Schätzung zu vergleichen."))
+                    Text(tr("Suya trägt jede Nacht in Health ein und liest die Schlafphasen deiner Apple Watch zum Vergleich. Hat die Watch eine Nacht eingetragen, hat sie Vorrang."))
                         .foregroundStyle(Theme.mist)
                 }
                 .listRowBackground(Theme.raised)

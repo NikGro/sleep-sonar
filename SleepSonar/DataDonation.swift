@@ -15,6 +15,8 @@ final class DataDonation: ObservableObject {
     @Published private(set) var date: Date?
     /// zufällige Spender-Nummer (nicht Apple-ID oder Gerät); bleibt für Löschanfragen erhalten
     @Published private(set) var donorID: String?
+    /// Löschung der bisher gespendeten Nächte verlangt (wird mit der Übertragung an den Server geschickt)
+    @Published private(set) var deletionRequested: Date?
 
     private init() {
         let version = d.integer(forKey: "donation.version")
@@ -23,6 +25,7 @@ final class DataDonation: ObservableObject {
         state = (s == .granted && version != Self.textVersion) ? .undecided : s
         date = d.object(forKey: "donation.date") as? Date
         donorID = d.string(forKey: "donation.id")
+        deletionRequested = d.object(forKey: "donation.deletion") as? Date
     }
 
     var shouldAsk: Bool { state == .undecided }
@@ -37,6 +40,13 @@ final class DataDonation: ObservableObject {
 
     func decline() { set(.declined) }
 
+    /// Löschung verlangen: widerruft auch die Spende (Art. 17 DSGVO)
+    func requestDeletion() {
+        deletionRequested = Date()
+        d.set(deletionRequested, forKey: "donation.deletion")
+        if state == .granted { decline() }
+    }
+
     private func set(_ s: State) {
         state = s
         date = Date()
@@ -50,6 +60,12 @@ final class DataDonation: ObservableObject {
 struct DonationConsentView: View {
     @ObservedObject private var donation = DataDonation.shared
     @Environment(\.dismiss) private var dismiss
+    /// im Onboarding: statt zu schließen weiter
+    var onDone: (() -> Void)?
+
+    init(onDone: (() -> Void)? = nil) { self.onDone = onDone }
+
+    private func done() { if let onDone { onDone() } else { dismiss() } }
 
     /// Überschriften in REM-Violett, Text in Mondweiß; Symbole je Abschnitt in einer Phasenfarbe
     private let heading = Theme.accent
@@ -85,9 +101,9 @@ struct DonationConsentView: View {
 
                 // beide Antworten gleich gewichtet (keine Vorauswahl, kein Hervorheben)
                 VStack(spacing: 12) {
-                    Button(tr("Ja, Nächte spenden")) { Haptics.select(); donation.grant(); dismiss() }
+                    Button(tr("Ja, Nächte spenden")) { Haptics.select(); donation.grant(); done() }
                         .buttonStyle(MoonButtonStyle(prominent: false))
-                    Button(tr("Nein, danke")) { Haptics.select(); donation.decline(); dismiss() }
+                    Button(tr("Nein, danke")) { Haptics.select(); donation.decline(); done() }
                         .buttonStyle(MoonButtonStyle(prominent: false))
                 }
                 .padding(.top, 4)
@@ -122,6 +138,7 @@ struct DonationConsentView: View {
 struct DonationSection: View {
     @ObservedObject private var donation = DataDonation.shared
     @State private var asking = false
+    @State private var confirmDelete = false
 
     var body: some View {
         Group {
@@ -140,8 +157,23 @@ struct DonationSection: View {
             if let id = donation.donorID {
                 LabeledContent(tr("Spender-Nummer"), value: id)
                     .font(.callout)
+                if let when = donation.deletionRequested {
+                    Text(tr("Löschung beantragt am %@. Bisher wurden keine Nächte übertragen – es gibt also nichts zu löschen. Sobald die Übertragung kommt, wird die Anfrage mitgeschickt.",
+                            when.formatted(date: .abbreviated, time: .omitted)))
+                        .font(.caption).foregroundStyle(Theme.mist)
+                } else {
+                    Button(tr("Löschung meiner Daten beantragen")) { confirmDelete = true }
+                        .foregroundStyle(Theme.alert)
+                }
             }
         }
         .sheet(isPresented: $asking) { DonationConsentView() }
+        .confirmationDialog(tr("Alle gespendeten Nächte löschen lassen?"), isPresented: $confirmDelete,
+                            titleVisibility: .visible) {
+            Button(tr("Löschung beantragen"), role: .destructive) { Haptics.warning(); donation.requestDeletion() }
+            Button(tr("Abbrechen"), role: .cancel) {}
+        } message: {
+            Text(tr("Die Spende wird damit auch widerrufen."))
+        }
     }
 }

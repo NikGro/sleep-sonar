@@ -125,3 +125,79 @@ extension View {
         }
     }
 }
+
+extension ToolbarContent {
+    /// Ab iOS 26 legt das System Knöpfe in der Kopfleiste auf Glas; Suya zeichnet sie selbst.
+    @ToolbarContentBuilder func suyaPlain() -> some ToolbarContent {
+        if #available(iOS 26.0, *) {
+            self.sharedBackgroundVisibility(.hidden)
+        } else {
+            self
+        }
+    }
+}
+
+/// Runder Knopf für die Kopfleiste (z. B. „+“): Violett gefüllt, Symbol in Nachttinte.
+struct SuyaRoundButton: View {
+    let symbol: String
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Theme.ink)
+                .frame(width: 34, height: 34)
+                .background(Circle().fill(Theme.accent))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Text-Knopf für die Kopfleiste: Bestätigen in Mondweiß fett, Abbrechen in Nebelgrau.
+struct SuyaBarButton: View {
+    let title: String
+    var confirm = false
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.body.weight(confirm ? .semibold : .regular))
+                .foregroundStyle(confirm ? Theme.ink : Theme.mist)
+                .padding(.horizontal, confirm ? 14 : 4)
+                .padding(.vertical, 6)
+                .background { if confirm { Capsule().fill(Theme.moon) } }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Umschalter im Suya-Stil statt des Glas-Segmentreglers: Kapsel in Flächenfarbe, Auswahl in Violett.
+struct SuyaSegmented<T: Hashable>: View {
+    @Binding var selection: T
+    let options: [(T, String)]
+    @Namespace private var ns
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(options, id: \.0) { value, label in
+                let on = value == selection
+                Text(label)
+                    .font(.callout.weight(on ? .semibold : .regular))
+                    .foregroundStyle(on ? Theme.ink : Theme.moon)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background {
+                        if on { Capsule().fill(Theme.accent).matchedGeometryEffect(id: "sel", in: ns) }
+                    }
+                    .contentShape(Capsule())
+                    .onTapGesture {
+                        guard !on else { return }
+                        withAnimation(.spring(duration: 0.25)) { selection = value }
+                    }
+                    .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+            }
+        }
+        .padding(4)
+        .background(Capsule().fill(Theme.raised))
+    }
+}

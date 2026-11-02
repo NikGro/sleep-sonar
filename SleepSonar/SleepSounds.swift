@@ -87,7 +87,8 @@ final class SleepSoundPlayer: ObservableObject {
     @Published var volumes: [SleepSound: Double] {
         didSet {
             applyVolumes(); persist()
-            if isPlaying && active.isEmpty { stopSoft() }
+            // in der Nacht: ohne Klang aus; beim Probehören weiterlaufen (gleich den nächsten Klang wählen)
+            if isPlaying && active.isEmpty && !preview { stopSoft() }
             // Live-Aktivität nur auffrischen, wenn sich die Auswahl ändert (nicht bei jedem Regler-Schritt)
             if Set(oldValue.filter { $0.value > 0.01 }.keys) != Set(active) { PassiveNightEngine.shared.updateActivity() }
         }
@@ -266,8 +267,10 @@ final class SleepSoundPlayer: ObservableObject {
             // Referenz für das Herausrechnen aus dem Mikrofon
             let mixer = engine.mainMixerNode
             EchoCanceller.shared.reset()
+            SoundSpectrum.shared.reset()
             mixer.installTap(onBus: 0, bufferSize: 2048, format: mixer.outputFormat(forBus: 0)) { buffer, when in
                 EchoCanceller.shared.pushReference(buffer, hostTime: when.isHostTimeValid ? when.hostTime : mach_absolute_time())
+                SoundSpectrum.shared.push(buffer)
             }
             var ok = true
             do {

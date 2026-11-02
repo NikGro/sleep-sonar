@@ -6,6 +6,7 @@ struct SleepSonarApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var askDonation = false
+    @State private var onboarding = false
 
     init() {
         BackgroundAnalysis.register()
@@ -74,7 +75,18 @@ struct SleepSonarApp: App {
                 }
             }
             // Einmal bei der Einrichtung fragen (und wieder, wenn sich der Text ändert)
-            .onAppear { askDonation = DataDonation.shared.shouldAsk }
+            // Erster Start: Onboarding mit allen Erlaubnissen und der Datenspende;
+            // später nur noch die Datenspende, wenn sich ihr Text geändert hat
+            .onAppear {
+                if !UserDefaults.standard.bool(forKey: OnboardingView.doneKey) { onboarding = true }
+                else { askDonation = DataDonation.shared.shouldAsk }
+            }
+            .fullScreenCover(isPresented: $onboarding) {
+                OnboardingView {
+                    UserDefaults.standard.set(true, forKey: OnboardingView.doneKey)
+                    onboarding = false
+                }
+            }
             .sheet(isPresented: $askDonation) { DonationConsentView() }
         }
     }

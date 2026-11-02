@@ -28,9 +28,7 @@ struct AlarmView: View {
                         Text(tr("Schlummert bis %@", until.formatted(date: .omitted, time: .shortened)))
                             .foregroundStyle(Theme.moon)
                         Spacer()
-                        Button(tr("Beenden")) { Haptics.tap(); alarms.endSnooze(kit) }
-                            .buttonStyle(.bordered)
-                            .tint(Theme.accent)
+                        SuyaBarButton(title: tr("Beenden"), confirm: true) { Haptics.tap(); alarms.endSnooze(kit) }
                     }
                     .listRowBackground(Theme.raised)
                 }
@@ -64,9 +62,10 @@ struct AlarmView: View {
             .toolbar {
                 if SmartAlarm.isAvailable {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button { Haptics.tap(); editing = AlarmItem() } label: { Image(systemName: "plus") }
+                        SuyaRoundButton(symbol: "plus") { Haptics.tap(); editing = AlarmItem() }
                             .accessibilityLabel(tr("Wecker hinzufügen"))
                     }
+                    .suyaPlain()
                 }
             }
             .sheet(item: $editing) { item in
@@ -131,11 +130,9 @@ struct AlarmEditView: View {
         NavigationStack {
             Form {
                 Section {
-                    Picker(tr("Wecken nach"), selection: $item.mode) {
-                        Text(tr("Uhrzeit")).tag(AlarmItem.Mode.time)
-                        Text(tr("Schlafdauer")).tag(AlarmItem.Mode.duration)
-                    }
-                    .pickerStyle(.segmented)
+                    SuyaSegmented(selection: $item.mode,
+                                  options: [(.time, tr("Uhrzeit")), (.duration, tr("Schlafdauer"))])
+                        .accessibilityLabel(tr("Wecken nach"))
                     .listRowBackground(Color.clear)
                     if item.mode == .time { timePicker } else { durationPicker }
                 }
@@ -199,15 +196,17 @@ struct AlarmEditView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(tr("Abbrechen")) { dismiss() }
+                    SuyaBarButton(title: tr("Abbrechen")) { dismiss() }
                 }
+                .suyaPlain()
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(tr("Sichern")) {
+                    SuyaBarButton(title: tr("Sichern"), confirm: true) {
                         SmartAlarm.shared.save(item)
                         Haptics.success()
                         dismiss()
                     }
                 }
+                .suyaPlain()
             }
             .onDisappear { SoundPreview.shared.stop() }
             .onChange(of: item.mode) {

@@ -45,9 +45,9 @@ struct SoundsView: View {
             // Reagiert schon beim Berühren (nicht erst beim Loslassen): In einer Scroll-Ansicht hält iOS
             // Berührungen sonst kurz zurück, das wirkte verzögert. Das Leuchten blendet weich, der Rest sofort.
             ZStack {
-                Circle().fill(RadialGradient(colors: [Theme.accent.opacity(0.35), .clear],
-                                             center: .center, startRadius: 50, endRadius: 86))
-                    .frame(width: 172, height: 172)
+                // Leuchten als Klangbild: je Frequenzband ein Strahl (tief unten, hoch oben)
+                SpectrumHalo(playing: player.isPlaying, inner: 84, reach: 22)
+                    .frame(width: 220, height: 220)
                     .opacity(player.isPlaying ? 1 : 0)
                     .animation(.easeInOut(duration: 0.7), value: player.isPlaying)
                 // Ring und Symbol wechseln sofort (eigene Transaktion ohne Animation). Vorher hat die
@@ -77,15 +77,16 @@ struct SoundsView: View {
             // UIKit-Berührung ohne Wartezeit: Die Scroll-Ansicht hält Berührungen sonst ~150 ms zurück,
             // um zu prüfen, ob gescrollt wird – genau diese Zeit wirkte wie Verzögerung.
             .gesture(TouchDown {
-                guard !player.active.isEmpty else { return }
+                guard !player.active.isEmpty || player.isPlaying else { return }
                 pressed = true
                 Haptics.tap()
                 player.togglePreview()
             } onUp: {
                 pressed = false
             })
-            .padding(.top, 24)
-            .opacity(player.active.isEmpty ? 0.5 : 1)
+            .padding(.top, 48)
+            .padding(.bottom, 24)
+            .opacity(player.active.isEmpty && !player.isPlaying ? 0.5 : 1)
             .accessibilityElement()
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { player.togglePreview() }
@@ -175,7 +176,6 @@ private struct SoundTile: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(on ? Theme.accent.opacity(0.7) : .clear))
         .contentShape(RoundedRectangle(cornerRadius: 18))
         .onTapGesture {
             Haptics.select()
