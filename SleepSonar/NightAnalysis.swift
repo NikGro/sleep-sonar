@@ -390,6 +390,9 @@ struct Hypnogram: View {
         let to: Date
     }
 
+    private static let names = [SleepStaging.Stage.wake, .rem, .core, .deep].map(\.displayName)
+    private static let labelWidth: CGFloat = 38
+
     private var segments: [Segment] {
         var out: [Segment] = []
         var i = 0
@@ -411,13 +414,30 @@ struct Hypnogram: View {
                 .foregroundStyle(Theme.color(seg.stage))
                 .cornerRadius(compact ? 0 : 2)
         }
-        .chartYScale(domain: [SleepStaging.Stage.wake, .rem, .core, .deep].map(\.displayName))
-        .chartYAxis {
-            AxisMarks { _ in
-                AxisValueLabel().foregroundStyle(Theme.mist)
+        .chartYScale(domain: Self.names)
+        // Phasennamen selbst zeichnen, genau auf der Mitte ihres Balkens (die Achsenbeschriftung
+        // von Charts saß leicht versetzt)
+        .chartYAxis(.hidden)
+        .chartOverlay { proxy in
+            if !compact {
+                GeometryReader { g in
+                    if let frame = proxy.plotFrame {
+                        let plot = g[frame]
+                        ForEach(Self.names, id: \.self) { name in
+                            if let y = proxy.position(forY: name) {
+                                Text(name)
+                                    .font(.caption2)
+                                    .foregroundStyle(Theme.mist)
+                                    .lineLimit(1)
+                                    .frame(width: Self.labelWidth, alignment: .leading)
+                                    .position(x: plot.minX - Self.labelWidth / 2 - 6, y: plot.minY + y)
+                            }
+                        }
+                    }
+                }
             }
         }
-        .chartYAxis(compact ? .hidden : .automatic)
+        .padding(.leading, compact ? 0 : Self.labelWidth + 6)
         .chartXAxis {
             AxisMarks(values: .stride(by: .hour)) { _ in
                 AxisGridLine().foregroundStyle(Theme.hairline)
