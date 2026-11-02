@@ -39,9 +39,11 @@ final class SoundSpectrum: @unchecked Sendable {
     }
 
     func push(_ buffer: AVAudioPCMBuffer) {
-        guard let ch = buffer.floatChannelData, Int(buffer.frameLength) >= n else { return }
+        guard let ch = buffer.floatChannelData, buffer.frameLength > 0 else { return }
+        // die jüngsten n Werte (kürzere Puffer mit Nullen auffüllen)
+        let len = Int(buffer.frameLength), take = min(n, len)
         var x = [Float](repeating: 0, count: n)
-        vDSP_vmul(ch[0], 1, window, 1, &x, 1, vDSP_Length(n))
+        for i in 0..<take { x[i] = ch[0][len - take + i] * window[i] }
         var re = [Float](repeating: 0, count: n / 2), im = [Float](repeating: 0, count: n / 2)
         var mags = [Float](repeating: 0, count: n / 2)
         re.withUnsafeMutableBufferPointer { rp in
@@ -81,7 +83,8 @@ final class SoundSpectrum: @unchecked Sendable {
             slow[b] += 0.02 * (dbs[b] - slow[b])
             // Form: Band lauter als sein Mittel → an dieser Stelle weiter hinaus
             let shape = max(-1, min(1, (dbs[b] - slow[b]) / 4))
-            let target = max(0, min(1, 0.3 + 0.55 * whole + 0.3 * shape))
+            // leise Momente → fast nichts, laute → ganz ausgedehnt
+            let target = max(0, min(1, 0.5 + 0.5 * whole + 0.25 * shape))
             // sofort rauf, zügig runter
             let k: Float = target > smoothed[b] ? 0.9 : 0.5
             smoothed[b] += k * (target - smoothed[b])
@@ -111,7 +114,7 @@ struct SpectrumGlow: View {
                 let bands = easing.values
                 // Helligkeit folgt der Lautstärke: in stillen Momenten kaum zu sehen
                 let mean = CGFloat(bands.reduce(0, +) / Float(bands.count))
-                ctx.opacity = 0.1 + 0.9 * min(1, mean * 1.4)
+                ctx.opacity = 0.2 + 0.8 * min(1, mean * 1.3)
                 let c = CGPoint(x: size.width / 2, y: size.height / 2)
                 let steps = 120
                 var path = Path()
@@ -130,10 +133,10 @@ struct SpectrumGlow: View {
                 }
                 path.closeSubpath()
                 ctx.fill(path, with: .radialGradient(
-                    Gradient(colors: [Theme.accent.opacity(0.55), Theme.accent.opacity(0.18), .clear]),
-                    center: c, startRadius: inner * 0.9, endRadius: inner + reach + 8))
+                    Gradient(colors: [Theme.accent.opacity(0.95), Theme.accent.opacity(0.55), Theme.accent.opacity(0.08)]),
+                    center: c, startRadius: inner * 0.95, endRadius: inner + reach))
             }
-            .blur(radius: 10)
+            .blur(radius: 7)
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
