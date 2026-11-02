@@ -105,13 +105,26 @@ struct SpectrumGlow: View {
     var reach: CGFloat = 30
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 60, paused: !playing)) { _ in
+        // Die Werte je Bild außerhalb der Zeichenfläche holen und hineinreichen: Nur so zeichnet SwiftUI
+        // neu – liest die Zeichenfläche sie selbst, sieht SwiftUI keine Änderung (es erneuerte sich
+        // nur zufällig, z. B. beim Bildschirmfoto).
+        TimelineView(.animation(minimumInterval: 1 / 60, paused: !playing)) { tl in
+            glow(bands: eased(tl.date))
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private func eased(_ date: Date) -> [Float] {
+        let target = SoundSpectrum.shared.bands
+        if easing.values.count != target.count { easing.values = target }
+        for i in target.indices { easing.values[i] += 0.35 * (target[i] - easing.values[i]) }
+        return easing.values
+    }
+
+    private func glow(bands: [Float]) -> some View {
             Canvas { ctx, size in
-                let target = SoundSpectrum.shared.bands
-                guard !target.isEmpty else { return }
-                if easing.values.count != target.count { easing.values = target }
-                for i in target.indices { easing.values[i] += 0.35 * (target[i] - easing.values[i]) }
-                let bands = easing.values
+                guard !bands.isEmpty else { return }
                 // Helligkeit folgt der Lautstärke: in stillen Momenten kaum zu sehen
                 let mean = CGFloat(bands.reduce(0, +) / Float(bands.count))
                 ctx.opacity = 0.2 + 0.8 * min(1, mean * 1.3)
@@ -137,8 +150,5 @@ struct SpectrumGlow: View {
                     center: c, startRadius: inner * 0.95, endRadius: inner + reach))
             }
             .blur(radius: 7)
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
     }
 }
