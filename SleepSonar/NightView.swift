@@ -10,6 +10,7 @@ struct NightView: View {
     @State private var exporting: URL?
     @State private var share: ShareItem?
     @State private var message: String?
+    @State private var demo: URL?
 
     var body: some View {
         NavigationStack {
@@ -74,6 +75,13 @@ struct NightView: View {
             }
             .listStyle(.plain)
             .nightBackground()
+            .navigationDestination(item: $demo) { NightAnalysisView(folder: $0) }
+            .onAppear {
+                if DemoScreens.screen == "night" || DemoScreens.screen == "nights", let f = DemoScreens.demoNight() {
+                    refresh()
+                    if DemoScreens.screen == "night" { demo = f }
+                }
+            }
             .navigationTitle(tr("Nächte"))
             .toolbarTitleDisplayMode(.inlineLarge)
             .suyaTopEdge()

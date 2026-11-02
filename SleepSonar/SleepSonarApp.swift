@@ -7,6 +7,7 @@ struct SleepSonarApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var askDonation = false
     @State private var onboarding = false
+    @State private var tab = DemoScreens.tab
 
     init() {
         BackgroundAnalysis.register()
@@ -50,17 +51,22 @@ struct SleepSonarApp: App {
     var body: some Scene {
         WindowGroup {
             // Sonar ist vorerst ausgesetzt (Code bleibt erhalten: SonarTestView / SonarEngine)
-            TabView {
+            TabView(selection: $tab) {
                 TonightView()
                     .tabItem { Label(tr("Heute Nacht"), systemImage: "moon.stars") }
+                    .tag(0)
                 AlarmView()
                     .tabItem { Label(tr("Wecker"), systemImage: "alarm") }
+                    .tag(1)
                 SoundsView()
                     .tabItem { Label(tr("Klänge"), systemImage: "speaker.wave.2") }
+                    .tag(2)
                 NightView()
                     .tabItem { Label(tr("Nächte"), systemImage: "chart.bar.xaxis") }
+                    .tag(3)
                 MoreView()
                     .tabItem { Label(tr("Mehr"), systemImage: "ellipsis.circle") }
+                    .tag(4)
             }
             .tint(Theme.moon)
             .preferredColorScheme(.dark)
@@ -78,6 +84,7 @@ struct SleepSonarApp: App {
             // Erster Start: Onboarding mit allen Erlaubnissen und der Datenspende;
             // später nur noch die Datenspende, wenn sich ihr Text geändert hat
             .onAppear {
+                if let s = DemoScreens.screen { onboarding = s == "onboarding"; return }
                 if !UserDefaults.standard.bool(forKey: OnboardingView.doneKey) { onboarding = true }
                 else { askDonation = DataDonation.shared.shouldAsk }
             }

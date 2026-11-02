@@ -68,6 +68,7 @@ struct AlarmView: View {
                     .suyaPlain()
                 }
             }
+            .onAppear { if DemoScreens.screen == "alarmEdit", editing == nil { editing = AlarmItem() } }
             .sheet(item: $editing) { item in
                 AlarmEditView(item: item, isNew: !alarms.items.contains { $0.id == item.id })
             }

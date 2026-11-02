@@ -72,32 +72,41 @@ final class SoundSpectrum: @unchecked Sendable {
     }
 }
 
-/// Strahlenkranz: je Band ein Strich nach außen, links und rechts gespiegelt (tief unten, hoch oben).
-struct SpectrumHalo: View {
+/// Leuchten um den Probehören-Knopf, das mit dem Klang atmet: ringsum wölbt es sich je nach
+/// Lautstärke der Frequenzbänder unterschiedlich weit hinaus (tiefe Töne unten, hohe oben).
+struct SpectrumGlow: View {
     var playing: Bool
-    var inner: CGFloat = 60
-    var reach: CGFloat = 26
+    /// Radius des Knopfs
+    var inner: CGFloat = 56
+    var reach: CGFloat = 30
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 60, paused: !playing)) { _ in
             Canvas { ctx, size in
                 let bands = SoundSpectrum.shared.bands
+                guard !bands.isEmpty else { return }
                 let c = CGPoint(x: size.width / 2, y: size.height / 2)
-                let count = bands.count
-                for side in [-1.0, 1.0] {
-                    for (i, v) in bands.enumerated() {
-                        // von unten (π/2) über die Seite nach oben (−π/2)
-                        let t = (Double(i) + 0.5) / Double(count)
-                        let angle = Double.pi / 2 - side * t * Double.pi
-                        let len = 3 + CGFloat(v) * reach
-                        let a = CGPoint(x: c.x + cos(angle) * inner, y: c.y + sin(angle) * inner)
-                        let b = CGPoint(x: c.x + cos(angle) * (inner + len), y: c.y + sin(angle) * (inner + len))
-                        var p = Path(); p.move(to: a); p.addLine(to: b)
-                        ctx.stroke(p, with: .color(Theme.accent.opacity(0.35 + 0.55 * Double(v))),
-                                   style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                    }
+                let steps = 120
+                var path = Path()
+                for k in 0...steps {
+                    let theta = Double(k) / Double(steps) * 2 * .pi       // 0 = unten, im Uhrzeigersinn
+                    // 0 (unten) … 1 (oben), links und rechts gleich
+                    let u = theta <= .pi ? theta / .pi : (2 * .pi - theta) / .pi
+                    let x = u * Double(bands.count - 1)
+                    let i0 = Int(x), i1 = min(bands.count - 1, i0 + 1)
+                    let f = Float(x - Double(i0))
+                    let v = CGFloat(bands[i0] * (1 - f) + bands[i1] * f)
+                    let r = inner + 6 + v * reach
+                    let angle = Double.pi / 2 + theta
+                    let p = CGPoint(x: c.x + cos(angle) * r, y: c.y + sin(angle) * r)
+                    if k == 0 { path.move(to: p) } else { path.addLine(to: p) }
                 }
+                path.closeSubpath()
+                ctx.fill(path, with: .radialGradient(
+                    Gradient(colors: [Theme.accent.opacity(0.55), Theme.accent.opacity(0.18), .clear]),
+                    center: c, startRadius: inner * 0.9, endRadius: inner + reach + 8))
             }
+            .blur(radius: 10)
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)

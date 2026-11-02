@@ -270,10 +270,14 @@ struct NightAnalysisView: View {
         if r.agreement.epochs > 0 {
             VStack(alignment: .leading, spacing: 10) {
                 SectionTitle(tr("Vergleich mit der Watch"))
-                HStack(alignment: .firstTextBaseline, spacing: 28) {
+                // über die volle Breite wie die übrigen Elemente
+                HStack(alignment: .firstTextBaseline, spacing: 16) {
                     Figure(value: String(format: "%.0f %%", r.agreement.sleepWake * 100), label: tr("Schlaf oder wach gleich"))
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     Figure(value: String(format: "%.0f %%", r.agreement.fourClass * 100), label: tr("Phase gleich"))
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .frame(maxWidth: .infinity)
                 Text(tr("Verglichen über %@.", Self.hm(Double(r.agreement.epochs) * r.epochSeconds)))
                     .font(.caption).foregroundStyle(Theme.mist)
             }
@@ -410,7 +414,7 @@ struct Hypnogram: View {
     var body: some View {
         Chart(segments) { seg in
             RectangleMark(xStart: .value("von", seg.from), xEnd: .value("bis", seg.to),
-                          y: .value("Phase", seg.stage.displayName), height: .ratio(compact ? 1 : 0.8))
+                          y: .value("Phase", seg.stage.displayName), height: .ratio(compact ? 1 : 0.42))
                 .foregroundStyle(Theme.color(seg.stage))
                 .cornerRadius(compact ? 0 : 2)
         }

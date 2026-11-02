@@ -162,12 +162,18 @@ struct SuyaBarButton: View {
         Button(action: action) {
             Text(title)
                 .font(.body.weight(confirm ? .semibold : .regular))
-                .foregroundStyle(confirm ? Theme.ink : Theme.mist)
-                .padding(.horizontal, confirm ? 14 : 4)
+                .foregroundStyle(confirm ? Theme.ink : Theme.moon)
+                .lineLimit(1)
+                .fixedSize()
+                .padding(.horizontal, 14)
                 .padding(.vertical, 6)
-                .background { if confirm { Capsule().fill(Theme.moon) } }
+                .background {
+                    if confirm { Capsule().fill(Theme.moon) }
+                    else { Capsule().fill(Theme.raised).overlay(Capsule().strokeBorder(Theme.hairline)) }
+                }
         }
         .buttonStyle(.plain)
+        .fixedSize()
     }
 }
 

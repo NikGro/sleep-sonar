@@ -35,7 +35,13 @@ struct SoundsView: View {
             .navigationTitle(tr("Klänge"))
             .toolbarTitleDisplayMode(.inlineLarge)
             .suyaTopEdge()
-            .onAppear { player.preload(player.active) }
+            .onAppear {
+                player.preload(player.active)
+                if DemoScreens.screen == "soundsPlaying", !player.isPlaying {
+                    player.volumes[SleepSound.allCases[0]] = 0.6
+                    player.togglePreview()
+                }
+            }
         }
     }
 
@@ -45,9 +51,9 @@ struct SoundsView: View {
             // Reagiert schon beim Berühren (nicht erst beim Loslassen): In einer Scroll-Ansicht hält iOS
             // Berührungen sonst kurz zurück, das wirkte verzögert. Das Leuchten blendet weich, der Rest sofort.
             ZStack {
-                // Leuchten als Klangbild: je Frequenzband ein Strahl (tief unten, hoch oben)
-                SpectrumHalo(playing: player.isPlaying, inner: 84, reach: 22)
-                    .frame(width: 220, height: 220)
+                // Leuchten, das mit dem Klang atmet (tief unten, hoch oben)
+                SpectrumGlow(playing: player.isPlaying, inner: 56, reach: 32)
+                    .frame(width: 210, height: 210)
                     .opacity(player.isPlaying ? 1 : 0)
                     .animation(.easeInOut(duration: 0.7), value: player.isPlaying)
                 // Ring und Symbol wechseln sofort (eigene Transaktion ohne Animation). Vorher hat die
@@ -84,8 +90,7 @@ struct SoundsView: View {
             } onUp: {
                 pressed = false
             })
-            .padding(.top, 48)
-            .padding(.bottom, 24)
+            .padding(.top, 24)
             .opacity(player.active.isEmpty && !player.isPlaying ? 0.5 : 1)
             .accessibilityElement()
             .accessibilityAddTraits(.isButton)

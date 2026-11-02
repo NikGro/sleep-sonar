@@ -1,0 +1,57 @@
+name: Screens
+
+# Bildschirmfotos im Simulator, um UI-Änderungen zu prüfen (manuell starten)
+on:
+  workflow_dispatch:
+    inputs:
+      screens:
+        description: "Ansichten (Leerzeichen-getrennt)"
+        default: "tonight alarms alarmEdit sounds soundsPlaying nights night more onboarding"
+
+jobs:
+  screens:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select newest Xcode
+        run: |
+          XC=$(ls -d /Applications/Xcode_*.app | grep -vi beta | sort -V | tail -1)
+          sudo xcode-select -s "$XC"
+      - name: Prepare
+        run: |
+          brew install xcodegen
+          python3 scripts/gen_strings.py
+          xcodegen generate
+      - name: Pick simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json,sys
+          d=json.load(sys.stdin)["devices"]
+          c=[(k,x) for k,v in d.items() if "iOS" in k for x in v if x["name"].startswith("iPhone") and "Pro" in x["name"] and "Max" not in x["name"]]
+          c.sort(key=lambda t:t[0]); print(c[-1][1]["udid"])')
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$UDID"
+          xcrun simctl status_bar "$UDID" override --time "22:41" --batteryLevel 100 --cellularBars 4 || true
+      - name: Build for simulator
+        run: |
+          set -o pipefail
+          xcodebuild -project SleepSonar.xcodeproj -scheme SleepSonar -configuration Debug \
+            -sdk iphonesimulator -destination "id=$UDID" -derivedDataPath build/dd \
+            CODE_SIGNING_ALLOWED=NO build | grep -E "error:|BUILD" || true
+          test -d build/dd/Build/Products/Debug-iphonesimulator/SleepSonar.app
+      - name: Screenshots
+        run: |
+          APP=build/dd/Build/Products/Debug-iphonesimulator/SleepSonar.app
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl privacy "$UDID" grant microphone de.nikgro.sleepsonar || true
+          mkdir -p shots
+          for S in ${{ github.event.inputs.screens }}; do
+            xcrun simctl terminate "$UDID" de.nikgro.sleepsonar 2>/dev/null || true
+            xcrun simctl launch "$UDID" de.nikgro.sleepsonar -suyaScreen "$S" -AppleLanguages "(de)"
+            sleep 9
+            xcrun simctl io "$UDID" screenshot "shots/$S.png"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screens
+          path: shots

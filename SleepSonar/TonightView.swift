@@ -8,13 +8,17 @@ struct TonightView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 28) {
-                    if rec.isRunning { running } else { ready }
+            GeometryReader { g in
+                ScrollView {
+                    VStack(spacing: 28) {
+                        if rec.isRunning { running } else { ready }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, rec.isRunning ? 12 : 16)
+                    .padding(.bottom, rec.isRunning ? 28 : 0)
+                    // vor dem Start: mittig zwischen Titel und Tab-Leiste
+                    .frame(maxWidth: .infinity, minHeight: rec.isRunning ? nil : g.size.height)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
-                .padding(.bottom, 40)
             }
             // vor dem Start passt alles auf den Bildschirm: nicht federn (Titel bleibt groß)
             .scrollDisabled(!rec.isRunning)

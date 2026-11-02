@@ -80,11 +80,14 @@ struct SoundSection: View {
                     .frame(width: 30, height: 30)
                     .background(Circle().fill(playing ? Theme.moon : Theme.hairline))
                     .foregroundStyle(playing ? Theme.ink : Theme.moon)
-                if let levels { MiniSpectrogram(levels: levels, event: e) }
                 Text(start.addingTimeInterval(e.start).formatted(date: .omitted, time: .shortened))
                     .font(.callout.monospacedDigit())
                 Text(duration(e.duration)).font(.caption).foregroundStyle(Theme.mist)
-                Spacer()
+                // Lautstärke-Linie wie bei einer Sprachnachricht
+                Group {
+                    if let levels { MiniWaveform(levels: levels, event: e, playing: playing) } else { Color.clear }
+                }
+                .frame(maxWidth: .infinity, minHeight: 22, maxHeight: 22)
                 ConfidenceDots(value: e.confidence)
             }
         }
@@ -119,51 +122,57 @@ private struct ConfidenceDots: View {
     }
 }
 
-/// Pegel je Sekunde in drei Bändern (aus levels.csv) für die kleinen Klangbilder.
+/// Gesamtpegel je Sekunde (aus levels.csv) für die Lautstärke-Linien.
 struct ClipLevels: Sendable {
-    let low: [Float], mid: [Float], high: [Float]
-    /// Grundpegel je Band (20-%-Quantil der Nacht)
-    let base: (Float, Float, Float)
+    let rms: [Float]
+    /// Grundpegel (20-%-Quantil der Nacht)
+    let base: Float
 
     static func load(_ folder: URL) -> ClipLevels? {
         guard let text = try? String(contentsOf: folder.appendingPathComponent("levels.csv"), encoding: .utf8)
         else { return nil }
-        var low: [Float] = [], mid: [Float] = [], high: [Float] = []
+        var rms: [Float] = []
         for line in text.split(separator: "\n").dropFirst() {
             let c = line.split(separator: ",", omittingEmptySubsequences: false)
-            guard c.count >= 6 else { continue }
-            low.append(Float(c[3]) ?? -120); mid.append(Float(c[4]) ?? -120); high.append(Float(c[5]) ?? -120)
+            guard c.count >= 2 else { continue }
+            rms.append(Float(c[1]) ?? -120)
         }
-        guard !low.isEmpty else { return nil }
-        func q(_ x: [Float]) -> Float { let s = x.sorted(); return s[s.count / 5] }
-        return ClipLevels(low: low, mid: mid, high: high, base: (q(low), q(mid), q(high)))
+        guard !rms.isEmpty else { return nil }
+        let sorted = rms.sorted()
+        return ClipLevels(rms: rms, base: sorted[sorted.count / 5])
     }
 }
 
-/// Kleines Klangbild des Ausschnitts, der beim Abspielen zu hören ist: oben hell, unten tief,
-/// je Sekunde eine Spalte – je lauter über dem Grundpegel der Nacht, desto kräftiger.
-private struct MiniSpectrogram: View {
+/// Lautstärke-Linie des Ausschnitts, der beim Abspielen zu hören ist (2 s Vorlauf, höchstens 30 s):
+/// senkrechte, abgerundete Striche um die Mittellinie, je lauter über dem Grundpegel, desto höher.
+private struct MiniWaveform: View {
     let levels: ClipLevels
     let event: SoundEvent
+    let playing: Bool
+    private let bars = 28
 
     var body: some View {
         Canvas { ctx, size in
             let from = max(0, Int(event.start) - 2)
-            let to = min(levels.low.count, from + min(Int(event.duration.rounded(.up)) + 4, 30))
+            let to = min(levels.rms.count, from + min(Int(event.duration.rounded(.up)) + 4, 30))
             guard to > from else { return }
-            let n = to - from
-            let w = size.width / CGFloat(n), h = size.height / 3
-            let rows: [([Float], Float)] = [(levels.high, levels.base.2), (levels.mid, levels.base.1), (levels.low, levels.base.0)]
-            for (r, (band, base)) in rows.enumerated() {
-                for i in 0..<n {
-                    let v = Double(min(1, max(0, (band[from + i] - base) / 30)))
-                    let rect = CGRect(x: CGFloat(i) * w, y: CGFloat(r) * h, width: max(1, w - 0.5), height: h - 1)
-                    ctx.fill(Path(roundedRect: rect, cornerRadius: 1),
-                             with: .color(Theme.accent.opacity(0.12 + 0.88 * v)))
-                }
+            let span = Double(to - from)
+            let step = size.width / CGFloat(bars)
+            for b in 0..<bars {
+                // Sekunde zu diesem Strich (bei kurzen Ausschnitten weich dazwischen)
+                let t = (Double(b) + 0.5) / Double(bars) * span - 0.5
+                let i0 = max(0, min(to - from - 1, Int(t.rounded(.down))))
+                let i1 = min(to - from - 1, i0 + 1)
+                let f = Float(max(0, min(1, t - Double(i0))))
+                let db = levels.rms[from + i0] * (1 - f) + levels.rms[from + i1] * f
+                let v = CGFloat(min(1, max(0, (db - levels.base) / 30)))
+                let h = max(3, v * size.height)
+                let rect = CGRect(x: CGFloat(b) * step + step * 0.2, y: (size.height - h) / 2,
+                                  width: step * 0.6, height: h)
+                ctx.fill(Path(roundedRect: rect, cornerRadius: step * 0.3),
+                         with: .color(playing ? Theme.moon : Theme.mist.opacity(0.8)))
             }
         }
-        .frame(width: 64, height: 20)
         .accessibilityHidden(true)
     }
 }
