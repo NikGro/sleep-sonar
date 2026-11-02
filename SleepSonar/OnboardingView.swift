@@ -70,7 +70,7 @@ struct OnboardingView: View {
     @ViewBuilder private var icon: some View {
         switch step {
         case .welcome:
-            MoonDisc(lit: true).frame(width: 72, height: 72)
+            MoonDisc(lit: false).frame(width: 72, height: 72)
         default:
             Image(systemName: symbol)
                 .font(.system(size: 30, weight: .medium))

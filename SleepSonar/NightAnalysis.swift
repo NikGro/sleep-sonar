@@ -157,6 +157,7 @@ struct NightAnalysisView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
         }
+        .defaultScrollAnchor(DemoScreens.screen == "nightBottom" ? .bottom : .top)
         .nightBackground()
         .navigationTitle(result.map { Self.title($0.start) } ?? tr("Auswertung"))
         .navigationBarTitleDisplayMode(.inline)

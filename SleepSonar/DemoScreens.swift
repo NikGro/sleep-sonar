@@ -11,7 +11,7 @@ enum DemoScreens {
         switch screen {
         case "alarms", "alarmEdit": 1
         case "sounds", "soundsPlaying": 2
-        case "nights", "night": 3
+        case "nights", "night", "nightBottom": 3
         case "more": 4
         default: 0
         }

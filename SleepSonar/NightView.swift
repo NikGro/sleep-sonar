@@ -77,9 +77,9 @@ struct NightView: View {
             .nightBackground()
             .navigationDestination(item: $demo) { NightAnalysisView(folder: $0) }
             .onAppear {
-                if DemoScreens.screen == "night" || DemoScreens.screen == "nights", let f = DemoScreens.demoNight() {
+                if let s = DemoScreens.screen, s.hasPrefix("night"), let f = DemoScreens.demoNight() {
                     refresh()
-                    if DemoScreens.screen == "night" { demo = f }
+                    if s != "nights" { demo = f }
                 }
             }
             .navigationTitle(tr("Nächte"))

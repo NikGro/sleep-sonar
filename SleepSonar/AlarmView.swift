@@ -193,7 +193,7 @@ struct AlarmEditView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Theme.ink.ignoresSafeArea())
-            .navigationTitle(isNew ? tr("Wecker hinzufügen") : tr("Wecker bearbeiten"))
+            .navigationTitle(isNew ? tr("Neuer Wecker") : tr("Bearbeiten"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

@@ -1,6 +1,8 @@
 # Englische Übersetzungen (Schlüssel = deutscher Text). Wird von gen_strings.py in
 # SleepSonar/en.lproj und Widgets/en.lproj geschrieben.
 EN = {
+    "Neuer Wecker": "New Alarm",
+    "Bearbeiten": "Edit",
     "Alle gespendeten Nächte löschen lassen?": "Have all donated nights deleted?",
     "Apple Health": "Apple Health",
     "Damit dich Suya wecken kann – auch im leichten Schlaf kurz vor der Weckzeit –, braucht es die Erlaubnis für Wecker.": "To wake you – even in light sleep shortly before your wake time – Suya needs permission for alarms.",
