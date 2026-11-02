@@ -58,6 +58,12 @@ public enum SleepStaging {
         public var handledG = 0.02
         /// Aktivitätsschwelle für „wach“ (gewichtete Unruhe-Sekunden)
         public var wakeScore = 11.6
+        /// Nach dem Anfassen des Handys gilt man noch ± so viele Epochen als wach
+        public var handledPadEpochs = 2
+        /// Einschlafen/Aufwachen: Fenster von so vielen Epochen …
+        public var onsetWindowEpochs = 40
+        /// … in dem mindestens so viele Epochen Schlaf sind (still wach liegen ist meist kürzer)
+        public var onsetSleepEpochs = 36
         /// Kurze Wach-Abschnitte mitten im Schlaf (kürzer als so viele Epochen) → Schlaf
         public var minWakeEpochs = 4
         /// Mittelung der Merkmale: ± so viele Epochen
@@ -132,11 +138,19 @@ public enum SleepStaging {
                                 handled: handled, hasData: valid >= ep / 2))
         }
 
+        // Handy angefasst: auch kurz davor und danach wach
+        var handled = epochs.map(\.handled)
+        if p.handledPadEpochs > 0 {
+            for e in 0..<n where epochs[e].handled {
+                for k in max(0, e - p.handledPadEpochs)...min(n - 1, e + p.handledPadEpochs) { handled[k] = true }
+            }
+        }
+
         // 3) Wach/Schlaf mit gewichteter Nachbarschaft (ähnlich Aktigraphie)
         let weights: [(Int, Double)] = [(-4, 0.15), (-3, 0.15), (-2, 0.15), (-1, 0.3), (0, 1.0), (1, 0.3), (2, 0.15)]
         var asleep = [Bool](repeating: false, count: n)
         for e in 0..<n {
-            guard epochs[e].hasData, !epochs[e].handled else { continue }
+            guard epochs[e].hasData, !handled[e] else { continue }
             var score = 0.0
             for (k, w) in weights where e + k >= 0 && e + k < n { score += w * wakeUnrest[e + k] }
             asleep[e] = score <= p.wakeScore
@@ -150,13 +164,13 @@ public enum SleepStaging {
             if j - i < 3 && i > 0 && j < n { for k in i..<j { asleep[k] = false } }
             i = j
         }
-        // Einschlafen / Aufwachen: 10-min-Fenster mit ≥ 90 % Schlaf
-        let win = 20
+        // Einschlafen / Aufwachen: 20-min-Fenster mit ≥ 90 % Schlaf
+        let win = p.onsetWindowEpochs, need = p.onsetSleepEpochs
         var onset = n, offset = -1
         if n >= win {
-            for s in 0...(n - win) where asleep[s..<(s + win)].filter({ $0 }).count >= 18 { onset = s; break }
+            for s in 0...(n - win) where asleep[s..<(s + win)].filter({ $0 }).count >= need { onset = s; break }
             for s in stride(from: n - win, through: 0, by: -1)
-            where asleep[s..<(s + win)].filter({ $0 }).count >= 18 { offset = s + win - 1; break }
+            where asleep[s..<(s + win)].filter({ $0 }).count >= need { offset = s + win - 1; break }
         }
         for e in 0..<n where e < onset || e > offset { asleep[e] = false }
         // kurze Wach-Striche mitten im Schlaf → Schlaf (Watch-ähnlich ruhiger)
@@ -165,7 +179,7 @@ public enum SleepStaging {
             if asleep[i] { i += 1; continue }
             var j = i
             while j <= offset && !asleep[j] { j += 1 }
-            let touched = (i..<j).contains { epochs[$0].handled || !epochs[$0].hasData }
+            let touched = (i..<j).contains { handled[$0] || !epochs[$0].hasData }
             if j - i < p.minWakeEpochs && !touched { for k in i..<j { asleep[k] = true } }
             i = j
         }
