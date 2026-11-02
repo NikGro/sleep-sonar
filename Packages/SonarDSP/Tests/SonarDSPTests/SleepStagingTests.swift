@@ -47,10 +47,11 @@ final class SleepStagingTests: XCTestCase {
     }
 
     func testShortWakeBlipsBecomeSleep() {
-        // ein einzelner Raschler (1 Epoche) mitten im Kernschlaf ist kein Aufwachen
+        // ein kurzer Raschler (8 s) mitten im Kernschlaf ist kein Aufwachen
+        // (30 s durchgehendes Rascheln zählt seit Regeln v6 als wach, so wie bei der Watch)
         var night = makeNight()
         let a = 40 * 60
-        for t in a..<(a + 30) { night.seconds[t]?.high += 25 }
+        for t in a..<(a + 8) { night.seconds[t]?.high += 25 }
         let epochs = SleepStaging.estimate(seconds: night.seconds, motion: night.motion)
         XCTAssertNotEqual(epochs[a / 30].stage, .wake)
     }

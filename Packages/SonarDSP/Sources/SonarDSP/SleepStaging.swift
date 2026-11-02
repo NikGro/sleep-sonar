@@ -57,9 +57,11 @@ public enum SleepStaging {
         /// Handy gilt als angefasst ab dieser mittleren Beschleunigung (g)
         public var handledG = 0.02
         /// Aktivitätsschwelle für „wach“ (gewichtete Unruhe-Sekunden)
-        public var wakeScore = 11.6
+        public var wakeScore = 14.0
         /// Nach dem Anfassen des Handys gilt man noch ± so viele Epochen als wach
         public var handledPadEpochs = 2
+        /// Nach einem Wach-Rascheln bleibt man meist noch kurz still wach: so viele Epochen danach
+        public var wakeTailEpochs = 4
         /// Einschlafen/Aufwachen: Fenster von so vielen Epochen …
         public var onsetWindowEpochs = 40
         /// … in dem mindestens so viele Epochen Schlaf sind (still wach liegen ist meist kürzer)
@@ -138,23 +140,29 @@ public enum SleepStaging {
                                 handled: handled, hasData: valid >= ep / 2))
         }
 
-        // Handy angefasst: auch kurz davor und danach wach
-        var handled = epochs.map(\.handled)
+        // 3) Wach/Schlaf mit gewichteter Nachbarschaft (ähnlich Aktigraphie)
+        let weights: [(Int, Double)] = [(-4, 0.15), (-3, 0.15), (-2, 0.15), (-1, 0.3), (0, 1.0), (1, 0.3), (2, 0.15)]
+        var burst = [Bool](repeating: false, count: n)
+        for e in 0..<n {
+            var score = 0.0
+            for (k, w) in weights where e + k >= 0 && e + k < n { score += w * wakeUnrest[e + k] }
+            burst[e] = score > p.wakeScore
+        }
+        // sicher wach: Handy angefasst oder still nach einem Wach-Rascheln – jeweils ± ein wenig Rand
+        var marked = epochs.map(\.handled)
+        if p.wakeTailEpochs > 0 {
+            for e in 0..<n where !burst[e] {
+                if (max(0, e - p.wakeTailEpochs)..<e).contains(where: { burst[$0] }) { marked[e] = true }
+            }
+        }
+        var handled = marked
         if p.handledPadEpochs > 0 {
-            for e in 0..<n where epochs[e].handled {
+            for e in 0..<n where marked[e] {
                 for k in max(0, e - p.handledPadEpochs)...min(n - 1, e + p.handledPadEpochs) { handled[k] = true }
             }
         }
-
-        // 3) Wach/Schlaf mit gewichteter Nachbarschaft (ähnlich Aktigraphie)
-        let weights: [(Int, Double)] = [(-4, 0.15), (-3, 0.15), (-2, 0.15), (-1, 0.3), (0, 1.0), (1, 0.3), (2, 0.15)]
         var asleep = [Bool](repeating: false, count: n)
-        for e in 0..<n {
-            guard epochs[e].hasData, !handled[e] else { continue }
-            var score = 0.0
-            for (k, w) in weights where e + k >= 0 && e + k < n { score += w * wakeUnrest[e + k] }
-            asleep[e] = score <= p.wakeScore
-        }
+        for e in 0..<n where epochs[e].hasData && !handled[e] { asleep[e] = !burst[e] }
         // kurze Schlafinseln (< 1,5 min) zwischen Wach → wach
         var i = 0
         while i < n {

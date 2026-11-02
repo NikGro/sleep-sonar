@@ -122,7 +122,7 @@ struct NightView: View {
 /// Wird je Nacht in summary.json gespeichert, damit die Liste sofort Grafiken zeigt.
 struct NightSummary: Codable {
     /// erhöhen, wenn sich die Regeln ändern → alte Zusammenfassungen werden neu berechnet
-    static let rulesVersion = 6
+    static let rulesVersion = 7
     var version = rulesVersion
     /// Änderungsdatum von events.json (Geräusche fließen in die Schätzung ein)
     var eventsDate: Date?
