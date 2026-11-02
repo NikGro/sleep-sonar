@@ -254,6 +254,13 @@ final class LiveSoundAnalyzer: @unchecked Sendable {
 @MainActor
 final class NightClipPlayer: ObservableObject {
     @Published private(set) var playingID: String?
+    /// laufender Ausschnitt: Beginn der Wiedergabe und Länge (für den Fortschritt in der Lautstärke-Linie)
+    private(set) var playStarted: Date?
+    private(set) var playLength: Double = 1
+    var progress: Double {
+        guard let playStarted else { return 0 }
+        return min(1, Date().timeIntervalSince(playStarted) / max(0.1, playLength))
+    }
     private let engine = AVAudioEngine()
     private let node = AVAudioPlayerNode()
 
@@ -287,12 +294,15 @@ final class NightClipPlayer: ObservableObject {
             Task { @MainActor in if self?.playingID == id { self?.stop() } }
         }
         node.play()
+        playStarted = Date()
+        playLength = Double(buf.frameLength) / buf.format.sampleRate
         playingID = id
     }
 
     func stop() {
         node.stop()
         if engine.isRunning { engine.stop() }
+        playStarted = nil
         playingID = nil
     }
 

@@ -228,7 +228,7 @@ struct NightAnalysisView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionTitle("Suya")
             Hypnogram(stages: ours, start: r.start, epochSeconds: r.epochSeconds)
-                .frame(height: 150)
+                .frame(height: 112)
             StageLegend()
         }
 
@@ -236,7 +236,7 @@ struct NightAnalysisView: View {
             SectionTitle(r.watchSource.isEmpty ? "Apple Watch" : r.watchSource)
             if hasWatch {
                 Hypnogram(stages: r.watch, start: r.start, epochSeconds: r.epochSeconds)
-                    .frame(height: 150)
+                    .frame(height: 112)
             } else {
                 Text(tr("Für diese Nacht gibt es keine Watch-Schlafphasen in Health. Ist die Watch synchronisiert und der Health-Zugriff erlaubt?"))
                     .font(.callout).foregroundStyle(Theme.mist)
@@ -415,7 +415,7 @@ struct Hypnogram: View {
     var body: some View {
         Chart(segments) { seg in
             RectangleMark(xStart: .value("von", seg.from), xEnd: .value("bis", seg.to),
-                          y: .value("Phase", seg.stage.displayName), height: .ratio(compact ? 1 : 0.42))
+                          y: .value("Phase", seg.stage.displayName), height: .ratio(compact ? 1 : 0.3))
                 .foregroundStyle(Theme.color(seg.stage))
                 .cornerRadius(compact ? 0 : 2)
         }

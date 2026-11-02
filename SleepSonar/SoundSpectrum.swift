@@ -10,6 +10,9 @@ final class SoundSpectrum: @unchecked Sendable {
 
     private let lock = NSLock()
     private var smoothed = [Float](repeating: 0, count: bandCount)
+    /// langsamer Mittelwert je Band (dB): das Leuchten zeigt, was gerade lauter oder leiser ist als üblich
+    private var slow = [Float](repeating: -200, count: bandCount)
+    private var slowTotal: Float = -200
     private let n = 2048
     private let log2n: vDSP_Length = 11
     private let setup: FFTSetup
@@ -28,7 +31,11 @@ final class SoundSpectrum: @unchecked Sendable {
     }
 
     func reset() {
-        lock.lock(); smoothed = [Float](repeating: 0, count: Self.bandCount); lock.unlock()
+        lock.lock()
+        smoothed = [Float](repeating: 0, count: Self.bandCount)
+        slow = [Float](repeating: -200, count: Self.bandCount)
+        slowTotal = -200
+        lock.unlock()
     }
 
     func push(_ buffer: AVAudioPCMBuffer) {
@@ -52,21 +59,32 @@ final class SoundSpectrum: @unchecked Sendable {
         // logarithmische Bänder von ~40 Hz bis ~12 kHz
         let sr = Float(buffer.format.sampleRate)
         let binHz = sr / Float(n)
-        var out = [Float](repeating: 0, count: Self.bandCount)
+        var dbs = [Float](repeating: 0, count: Self.bandCount)
         for b in 0..<Self.bandCount {
             let f0 = 40 * pow(300, Float(b) / Float(Self.bandCount))
             let f1 = 40 * pow(300, Float(b + 1) / Float(Self.bandCount))
             let i0 = max(1, Int(f0 / binHz)), i1 = min(n / 2 - 1, max(i0 + 1, Int(f1 / binHz)))
             var m: Float = 0
             vDSP_meanv(Array(mags[i0..<i1]), 1, &m, vDSP_Length(i1 - i0))
-            let db = 10 * log10(m + 1e-12)
-            out[b] = min(1, max(0, (db + 40) / 60))   // etwa −40 … +20 dB(FFT) → 0 … 1
+            dbs[b] = 10 * log10(m + 1e-12)
         }
+        // Gesamtlautstärke des Puffers
+        var ms: Float = 0
+        vDSP_measqv(ch[0], 1, &ms, vDSP_Length(buffer.frameLength))
+        let total = 10 * log10(ms + 1e-12)
         lock.lock()
+        if slowTotal < -150 { slowTotal = total; slow = dbs }
+        slowTotal += 0.02 * (total - slowTotal)
+        // Ganzes Leuchten: wächst, wenn es lauter wird als zuletzt üblich, schrumpft bei leiseren Stellen
+        let whole = max(-1, min(1, (total - slowTotal) / 6))
         for b in 0..<Self.bandCount {
-            // schnell rauf, langsam runter
-            let k: Float = out[b] > smoothed[b] ? 0.5 : 0.12
-            smoothed[b] += k * (out[b] - smoothed[b])
+            slow[b] += 0.02 * (dbs[b] - slow[b])
+            // Form: Band lauter als sein Mittel → an dieser Stelle weiter hinaus
+            let shape = max(-1, min(1, (dbs[b] - slow[b]) / 10))
+            let target = max(0, min(1, 0.45 + 0.35 * whole + 0.2 * shape))
+            // schnell rauf, etwas langsamer runter
+            let k: Float = target > smoothed[b] ? 0.55 : 0.2
+            smoothed[b] += k * (target - smoothed[b])
         }
         lock.unlock()
     }
@@ -75,6 +93,9 @@ final class SoundSpectrum: @unchecked Sendable {
 /// Leuchten um den Probehören-Knopf, das mit dem Klang atmet: ringsum wölbt es sich je nach
 /// Lautstärke der Frequenzbänder unterschiedlich weit hinaus (tiefe Töne unten, hohe oben).
 struct SpectrumGlow: View {
+    /// weich zwischen den Messungen (~10 je Sekunde) gleiten, damit 60 Bilder/s ruhig wirken
+    private final class Easing { var values: [Float] = [] }
+    @State private var easing = Easing()
     var playing: Bool
     /// Radius des Knopfs
     var inner: CGFloat = 56
@@ -83,8 +104,11 @@ struct SpectrumGlow: View {
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 60, paused: !playing)) { _ in
             Canvas { ctx, size in
-                let bands = SoundSpectrum.shared.bands
-                guard !bands.isEmpty else { return }
+                let target = SoundSpectrum.shared.bands
+                guard !target.isEmpty else { return }
+                if easing.values.count != target.count { easing.values = target }
+                for i in target.indices { easing.values[i] += 0.18 * (target[i] - easing.values[i]) }
+                let bands = easing.values
                 let c = CGPoint(x: size.width / 2, y: size.height / 2)
                 let steps = 120
                 var path = Path()

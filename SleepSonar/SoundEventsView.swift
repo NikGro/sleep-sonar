@@ -85,7 +85,7 @@ struct SoundSection: View {
                 Text(duration(e.duration)).font(.caption).foregroundStyle(Theme.mist)
                 // Lautstärke-Linie wie bei einer Sprachnachricht
                 Group {
-                    if let levels { MiniWaveform(levels: levels, event: e, playing: playing) } else { Color.clear }
+                    if let levels { MiniWaveform(levels: levels, event: e, player: playing ? player : nil) } else { Color.clear }
                 }
                 .frame(maxWidth: .infinity, minHeight: 22, maxHeight: 22)
                 ConfidenceDots(value: e.confidence)
@@ -148,10 +148,18 @@ struct ClipLevels: Sendable {
 private struct MiniWaveform: View {
     let levels: ClipLevels
     let event: SoundEvent
-    let playing: Bool
+    /// nur gesetzt, während dieser Ausschnitt läuft
+    let player: NightClipPlayer?
     private let bars = 28
 
     var body: some View {
+        TimelineView(.animation(minimumInterval: 1 / 30, paused: player == nil)) { _ in
+            waveform(progress: player?.progress)
+        }
+        .accessibilityHidden(true)
+    }
+
+    private func waveform(progress: Double?) -> some View {
         Canvas { ctx, size in
             let from = max(0, Int(event.start) - 2)
             let to = min(levels.rms.count, from + min(Int(event.duration.rounded(.up)) + 4, 30))
@@ -169,10 +177,11 @@ private struct MiniWaveform: View {
                 let h = max(3, v * size.height)
                 let rect = CGRect(x: CGFloat(b) * step + step * 0.2, y: (size.height - h) / 2,
                                   width: step * 0.6, height: h)
+                // schon gespielt: Mondweiß, noch nicht: Nebelgrau
+                let played = progress.map { (Double(b) + 0.5) / Double(bars) <= $0 } ?? false
                 ctx.fill(Path(roundedRect: rect, cornerRadius: step * 0.3),
-                         with: .color(playing ? Theme.moon : Theme.mist.opacity(0.8)))
+                         with: .color(played ? Theme.moon : Theme.mist.opacity(progress == nil ? 0.8 : 0.45)))
             }
         }
-        .accessibilityHidden(true)
     }
 }
