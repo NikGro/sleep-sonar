@@ -1,6 +1,7 @@
 # Englische Übersetzungen (Schlüssel = deutscher Text). Wird von gen_strings.py in
 # SleepSonar/en.lproj und Widgets/en.lproj geschrieben.
 EN = {
+    "Wecker klingelt – Aufnahme pausiert": "Alarm ringing – recording paused",
     "Sperre jetzt das iPhone: In 30 s klingelt ein Test-Wecker. Hast du eine leise Spieluhr gehört, die weiterspielt?": "Lock your iPhone now: a test alarm rings in 30 s. Did you hear a quiet music box that keeps playing?",
     "Ob iOS eine eigene Lautstärke und eigene Töne für Wecker zulässt, hängt von der iOS-Version ab. Der Test stellt in 30 s einen Wecker mit einer leisen Spieluhr. Sperre dafür das iPhone: Bei eingeschaltetem Bildschirm spielt iOS Wecker anderer Apps nur kurz an.": "Whether iOS allows a custom volume and your own tones for alarms depends on the iOS version. The test sets an alarm with a quiet music box in 30 s. Lock your iPhone for it: while the screen is on, iOS only briefly plays alarms from other apps.",
     "Dein iPhone spielt für Wecker nur die eingebauten Töne in voller Lautstärke, eigene Töne werden zum Standardton. Die Lautstärke folgt der Klingellautstärke des iPhones.": "Your iPhone only plays the built-in tones at full volume for alarms; your own tones become the default tone. The volume follows the iPhone's ringer volume.",

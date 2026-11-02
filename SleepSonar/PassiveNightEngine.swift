@@ -239,8 +239,18 @@ final class PassiveNightEngine: ObservableObject {
 
     private var failedRestarts = 0
 
+    private var pausedForAlarm = false
+
     private func restart(reason: String) {
         guard isRunning else { return }
+        // Solange ein Wecker klingelt, nicht wieder aufnehmen: das Aktivieren der Audio-Sitzung
+        // würde den Weckton abbrechen. Danach startet der Wächter die Aufnahme von selbst.
+        if #available(iOS 26.0, *), AlarmBackend.isRinging {
+            if !pausedForAlarm { log(tr("Wecker klingelt – Aufnahme pausiert")) }
+            pausedForAlarm = true
+            return
+        }
+        pausedForAlarm = false
         restarts += 1
         // nach einer Unterbrechung (z. B. Wecker) meldet iOS das Ende oft nicht: Sitzung selbst wieder aktivieren
         try? AVAudioSession.sharedInstance().setActive(true)
@@ -274,7 +284,6 @@ final class PassiveNightEngine: ObservableObject {
                 if type == .began {
                     self.log(tr("Unterbrechung (Anruf/Wecker/Siri?)"))
                 } else {
-                    try? AVAudioSession.sharedInstance().setActive(true)
                     self.restart(reason: tr("Unterbrechung beendet"))
                 }
             }

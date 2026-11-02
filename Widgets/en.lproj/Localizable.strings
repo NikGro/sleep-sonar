@@ -266,6 +266,7 @@
 "Wecker bearbeiten" = "Edit alarm";
 "Wecker hinzufügen" = "Add alarm";
 "Wecker klingelt" = "Alarm ringing";
+"Wecker klingelt – Aufnahme pausiert" = "Alarm ringing – recording paused";
 "Wecker klingelt: %@" = "Alarm ringing: %@";
 "Wecker konnte nicht gestellt werden: %@" = "Couldn't set the alarm: %@";
 "Wecker löschen" = "Delete alarm";

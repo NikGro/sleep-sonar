@@ -457,6 +457,11 @@ enum AlarmBackend {
         (UserDefaults.standard.dictionary(forKey: key) as? [String: String])?[id.uuidString].flatMap(UUID.init)
     }
 
+    /// Klingelt gerade ein Suya-Wecker (ohne Schlummern)?
+    static var isRinging: Bool {
+        ((try? AlarmManager.shared.alarms) ?? []).contains { $0.state == .alerting }
+    }
+
     /// Klingelt oder schlummert gerade ein Suya-Wecker?
     static var isAlerting: Bool {
         ((try? AlarmManager.shared.alarms) ?? []).contains { $0.state == .alerting || $0.state == .countdown }
