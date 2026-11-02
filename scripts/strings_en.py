@@ -1,6 +1,18 @@
 # Englische Übersetzungen (Schlüssel = deutscher Text). Wird von gen_strings.py in
 # SleepSonar/en.lproj und Widgets/en.lproj geschrieben.
 EN = {
+    "Aufnahme läuft wieder": "Recording running again",
+    "Schlummern bis %@": "Snoozing until %@",
+    "Schlummern vorbei": "snooze over",
+    "Wecker %@ klingelt (%@)": "Alarm %@ ringing (%@)",
+    "Wecker %@: %@": "Alarm %@: %@",
+    "Wecker %@: spätestens %@, im leichten Schlaf ab %@": "Alarm %@: latest %@, in light sleep from %@",
+    "Wecker aus": "Alarm off",
+    "Wecker klingelt": "Alarm ringing",
+    "Weckton konnte nicht abgespielt werden": "Alarm sound could not be played",
+    "Weckzeit erreicht": "wake time reached",
+    "iPhone-Lautstärke niedrig: Systemwecker in 30 s": "iPhone volume low: system alarm in 30 s",
+    "leichter Schlaf, %d min vor %@": "light sleep, %d min before %@",
 "%@ bis %@": "%@ to %@",
 "%@ geschlafen, %@": "%@ asleep, %@",
 "%@ um %@, abspielen": "%@ at %@, play",

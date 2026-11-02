@@ -14,6 +14,11 @@ struct NightActivityAttributes: ActivityAttributes {
         /// Ausblenden läuft von … bis …
         var fadeStart: Date? = nil
         var fadeEnd: Date? = nil
+        /// Wecker klingelt gerade (Titel)
+        var alarm: String? = nil
+        var canSnooze: Bool = false
+        /// geschlummert bis
+        var snoozeUntil: Date? = nil
     }
     var start: Date
 }
@@ -57,5 +62,33 @@ struct StopSoundsIntent: LiveActivityIntent {
 }
 
 enum StopSoundsAction {
+    nonisolated(unsafe) static var run: (@Sendable () async -> Void)?
+}
+
+/// Wecker „Aus“ in der Live-Aktivität (Suya klingelt während der Aufnahme selbst).
+struct StopAlarmIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Wecker aus"
+    static var openAppWhenRun: Bool = false
+    func perform() async throws -> some IntentResult {
+        await StopAlarmAction.run?()
+        return .result()
+    }
+}
+
+enum StopAlarmAction {
+    nonisolated(unsafe) static var run: (@Sendable () async -> Void)?
+}
+
+/// Wecker „Schlummern“ in der Live-Aktivität.
+struct SnoozeAlarmIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Schlummern"
+    static var openAppWhenRun: Bool = false
+    func perform() async throws -> some IntentResult {
+        await SnoozeAlarmAction.run?()
+        return .result()
+    }
+}
+
+enum SnoozeAlarmAction {
     nonisolated(unsafe) static var run: (@Sendable () async -> Void)?
 }

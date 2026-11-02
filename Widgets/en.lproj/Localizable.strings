@@ -37,6 +37,7 @@
 "Aufnahme beenden" = "Stop recording";
 "Aufnahme beenden?" = "Stop recording?";
 "Aufnahme läuft" = "Recording";
+"Aufnahme läuft wieder" = "Recording running again";
 "Aufnahme stand still" = "Recording had stalled";
 "Aufnahme starten" = "Start recording";
 "Aus" = "Stop";
@@ -191,6 +192,8 @@
 "Schlafwert %d von 100" = "Sleep score %d out of 100";
 "Schlummerdauer" = "Snooze length";
 "Schlummern" = "Snooze";
+"Schlummern bis %@" = "Snoozing until %@";
+"Schlummern vorbei" = "snooze over";
 "Schnarchen" = "Snoring";
 "Schritt für Schritt" = "Step by step";
 "Seufzen und Quengeln" = "Sighing and whimpering";
@@ -246,8 +249,13 @@
 "Watch %d" = "Watch %d";
 "Wecken nach" = "Wake by";
 "Wecker" = "Alarm";
+"Wecker %@ klingelt (%@)" = "Alarm %@ ringing (%@)";
+"Wecker %@: %@" = "Alarm %@: %@";
+"Wecker %@: spätestens %@, im leichten Schlaf ab %@" = "Alarm %@: latest %@, in light sleep from %@";
+"Wecker aus" = "Alarm off";
 "Wecker bearbeiten" = "Edit alarm";
 "Wecker hinzufügen" = "Add alarm";
+"Wecker klingelt" = "Alarm ringing";
 "Wecker klingelt: %@" = "Alarm ringing: %@";
 "Wecker konnte nicht gestellt werden: %@" = "Couldn't set the alarm: %@";
 "Wecker löschen" = "Delete alarm";
@@ -256,6 +264,8 @@
 "Weckt nach etwa %@ Schlaf, gerechnet ab dem Einschlafen. In den letzten %d min davor, sobald du leicht schläfst." = "Wakes you after about %@ of sleep, counted from falling asleep. In the last %d min before that, as soon as you're sleeping lightly.";
 "Weckt nach etwa %@ Schlaf: zwischen %@ und %@, sobald du leicht schläfst." = "Wakes you after about %@ of sleep: between %@ and %@, as soon as you're sleeping lightly.";
 "Weckt zwischen %@ und %@, sobald du leicht schläfst. Spätestens um %@." = "Wakes you between %@ and %@ as soon as you're sleeping lightly. At %@ at the latest.";
+"Weckton konnte nicht abgespielt werden" = "Alarm sound could not be played";
+"Weckzeit erreicht" = "wake time reached";
 "Weißes Rauschen" = "White noise";
 "Welche Nächte" = "Which nights";
 "Wellen" = "Waves";
@@ -282,11 +292,13 @@
 "hört zu, %d× neu gestartet" = "listening, restarted %d×";
 "iPhone bewegt" = "iPhone movement";
 "iPhone wird bewegt" = "iPhone is being moved";
+"iPhone-Lautstärke niedrig: Systemwecker in 30 s" = "iPhone volume low: system alarm in 30 s";
 "iPhone-Modell, App-Version und eine zufällige Spender-Nummer. Kein Name, keine Apple-ID, kein Datum." = "iPhone model, app version and a random donor number. No name, no Apple ID, no date.";
 "iPhone-Standard" = "iPhone default";
 "in %d min" = "in %d min";
 "in %d s" = "in %d s";
 "leicht ab %d min vorher" = "light sleep from %d min before";
+"leichter Schlaf, %d min vor %@" = "light sleep, %d min before %@";
 "lädt" = "charging";
 "oder wenn du schläfst" = "or when you're asleep";
 "seit %@ Uhr" = "since %@";

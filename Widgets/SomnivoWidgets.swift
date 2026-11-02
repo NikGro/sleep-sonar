@@ -41,6 +41,7 @@ struct NightLiveActivity: Widget {
                     .multilineTextAlignment(.trailing)
                     .frame(maxWidth: 110, alignment: .trailing)
             }
+            if ctx.state.alarm != nil { AlarmRow(state: ctx.state) }
             if ctx.state.sounds != nil { SoundsRow(state: ctx.state) }
             }
             .padding(16)
@@ -59,7 +60,9 @@ struct NightLiveActivity: Widget {
                         .frame(maxWidth: 90, alignment: .trailing)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    if ctx.state.sounds != nil {
+                    if ctx.state.alarm != nil {
+                        AlarmRow(state: ctx.state)
+                    } else if ctx.state.sounds != nil {
                         SoundsRow(state: ctx.state)
                     } else {
                         Text(tr("Nachtaufnahme läuft"))
@@ -68,14 +71,16 @@ struct NightLiveActivity: Widget {
                     }
                 }
             } compactLeading: {
-                Image(systemName: "moon.zzz.fill").foregroundStyle(moon)
+                Image(systemName: ctx.state.alarm != nil ? "alarm.fill" : "moon.zzz.fill")
+                    .foregroundStyle(ctx.state.alarm != nil ? accent : moon)
             } compactTrailing: {
                 Text(ctx.attributes.start, style: .timer)
                     .monospacedDigit()
                     .foregroundStyle(moon)
                     .frame(maxWidth: 44)
             } minimal: {
-                Image(systemName: "moon.zzz.fill").foregroundStyle(moon)
+                Image(systemName: ctx.state.alarm != nil ? "alarm.fill" : "moon.zzz.fill")
+                    .foregroundStyle(ctx.state.alarm != nil ? accent : moon)
             }
             .keylineTint(moon)
         }
@@ -171,6 +176,38 @@ struct SoundsRow: View {
                 }
                 .tint(accent)
             }
+        }
+    }
+}
+
+/// Wecker klingelt oder schlummert (Suya klingelt während der Aufnahme selbst).
+struct AlarmRow: View {
+    let state: NightActivityAttributes.ContentState
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: state.snoozeUntil == nil ? "alarm.fill" : "zzz")
+                .font(.title3)
+                .foregroundStyle(accent)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(state.alarm ?? "").font(.headline).foregroundStyle(moon).lineLimit(1)
+                if let until = state.snoozeUntil {
+                    Text(timerInterval: Date()...max(Date(), until), countsDown: true)
+                        .font(.caption.monospacedDigit()).foregroundStyle(mist)
+                } else {
+                    Text(tr("Wecker klingelt")).font(.caption).foregroundStyle(mist)
+                }
+            }
+            Spacer(minLength: 8)
+            if state.snoozeUntil == nil && state.canSnooze {
+                Button(intent: SnoozeAlarmIntent()) {
+                    Label(tr("Schlummern"), systemImage: "zzz").font(.caption.weight(.semibold))
+                }
+                .tint(accent)
+            }
+            Button(intent: StopAlarmIntent()) {
+                Label(tr("Aus"), systemImage: "sun.max").font(.caption.weight(.semibold))
+            }
+            .tint(moon)
         }
     }
 }

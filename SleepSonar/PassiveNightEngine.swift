@@ -185,13 +185,25 @@ final class PassiveNightEngine: ObservableObject {
     }
 
     /// Klänge in der Live-Aktivität aktuell halten
-    func updateActivity() {
+    /// `alert`: Bildschirm aufwecken und die Live-Aktivität hervorheben (Wecker klingelt)
+    func updateActivity(alert: Bool = false) {
         guard let activity else { return }
         let p = SleepSoundPlayer.shared
+        let r = AlarmRinger.shared
         let state = NightActivityAttributes.ContentState(
             handled: false, sounds: p.active.isEmpty ? nil : p.activeNames, playing: p.isPlaying,
-            fadeStart: p.isPlaying ? p.fadeStart : nil, fadeEnd: p.isPlaying ? p.fadeEnd : nil)
-        Task { await activity.update(.init(state: state, staleDate: nil)) }
+            fadeStart: p.isPlaying ? p.fadeStart : nil, fadeEnd: p.isPlaying ? p.fadeEnd : nil,
+            alarm: r.ringing != nil ? r.title : (r.snoozeUntil != nil ? r.snoozeTitle : nil),
+            canSnooze: r.canSnooze, snoozeUntil: r.ringing == nil ? r.snoozeUntil : nil)
+        let content = ActivityContent(state: state, staleDate: nil, relevanceScore: r.ringing != nil ? 100 : 50)
+        if alert {
+            let config = AlertConfiguration(title: LocalizedStringResource(stringLiteral: r.title),
+                                            body: LocalizedStringResource(stringLiteral: tr("Wecker klingelt")),
+                                            sound: .default)
+            Task { await activity.update(content, alertConfiguration: config) }
+        } else {
+            Task { await activity.update(content) }
+        }
     }
 
     private func endActivity() {
@@ -235,14 +247,24 @@ final class PassiveNightEngine: ObservableObject {
         }
     }
 
+    private var failedRestarts = 0
+
     private func restart(reason: String) {
         guard isRunning else { return }
         restarts += 1
-        log(tr("Neustart: %@", reason))
+        // nach einer Unterbrechung (z. B. Wecker) meldet iOS das Ende oft nicht: Sitzung selbst wieder aktivieren
+        try? AVAudioSession.sharedInstance().setActive(true)
         do {
             try buildAndStart()
+            if failedRestarts > 0 { log(tr("Aufnahme läuft wieder")) }
+            else { log(tr("Neustart: %@", reason)) }
+            failedRestarts = 0
         } catch {
-            log(tr("Neustart fehlgeschlagen: %@", error.localizedDescription))
+            // nicht alle 2 s ins Protokoll schreiben
+            if failedRestarts == 0 || failedRestarts % 30 == 0 {
+                log(tr("Neustart fehlgeschlagen: %@", error.localizedDescription))
+            }
+            failedRestarts += 1
         }
     }
 

@@ -168,8 +168,12 @@ final class SmartAlarm: ObservableObject {
     private let store = "alarm.items"
     private var recordingStart: Date?
     private var onset: Date?
-    /// Wecker, die in dieser Nacht schon früh geklingelt haben → nach der spätesten Zeit wieder stellen
-    private var rang: [UUID: Date] = [:]
+    /// Weckzeit, für die in dieser Nacht schon geklingelt wurde (je Wecker)
+    private var fired: [UUID: Date] = [:]
+    /// geschlummerter Wecker und wann er wieder klingelt
+    private var snoozed: (id: UUID, until: Date)?
+    /// prüft während der Aufnahme alle 5 s, ob ein Wecker fällig ist
+    private var checker: Timer?
     private var evaluating = false
 
     private init() {
@@ -241,7 +245,6 @@ final class SmartAlarm: ObservableObject {
     /// Beim App-Start/Vordergrund: abgelaufene einmalige Wecker ausschalten, früh geweckte wiederherstellen
     func refresh() {
         let now = Date()
-        for (id, until) in rang where now > until { rang[id] = nil }
         var changed = false
         for i in items.indices {
             if let once = items[i].onceFor, once < now, items[i].repeatDays.isEmpty, items[i].mode == .time {
@@ -266,29 +269,29 @@ final class SmartAlarm: ObservableObject {
             return
         }
         problem = nil
-        if rang[a.id] != nil { return }   // in dieser Nacht schon geweckt
         do {
-            // Während der Aufnahme spielt Suya den Ton selbst (Lautstärke, langes Lauterwerden):
-            // der Systemwecker klingelt dann stumm und zeigt nur „Aus“/„Schlummern“, 2 min später
-            // klingelt zur Sicherheit ein hörbarer Ersatz (falls die App nicht mehr läuft).
-            let silent = recordingStart != nil
+            if recordingStart != nil {
+                // Während der Aufnahme klingelt Suya selbst (ein Systemwecker würde die Aufnahme
+                // unterbrechen). Nur ein hörbarer Ersatz steht bereit, falls die App nicht mehr läuft.
+                AlarmBackend.cancel(for: a.id)
+                guard fired[a.id] == nil, AlarmRinger.shared.ringing != a.id, snoozed?.id != a.id,
+                      let at = latest(a, after: recordingStart ?? Date()) else { return }
+                try await AlarmBackend.scheduleBackup(a, at: at.addingTimeInterval(AlarmBackend.backupDelay))
+                if a.mode == .time, a.repeatDays.isEmpty, let i = items.firstIndex(where: { $0.id == a.id }) {
+                    items[i].onceFor = at
+                    persist()
+                }
+                return
+            }
             switch a.mode {
             case .time:
-                try await AlarmBackend.schedule(a, at: nil, silent: silent)
-                if silent, let at = latest(a, after: recordingStart ?? Date()) {
-                    try await AlarmBackend.scheduleBackup(a, at: at.addingTimeInterval(AlarmBackend.backupDelay))
-                }
+                try await AlarmBackend.schedule(a, at: nil)
                 if a.repeatDays.isEmpty, let at = latest(a), let i = items.firstIndex(where: { $0.id == a.id }) {
                     items[i].onceFor = at
                     persist()
                 }
             case .duration:
-                if let at = latest(a) {
-                    try await AlarmBackend.schedule(a, at: at, silent: silent)
-                    if silent { try await AlarmBackend.scheduleBackup(a, at: at.addingTimeInterval(AlarmBackend.backupDelay)) }
-                } else {
-                    AlarmBackend.cancel(for: a.id)   // wird mit der Aufnahme gestellt
-                }
+                AlarmBackend.cancel(for: a.id)   // wird mit der Aufnahme gestellt
             }
         } catch {
             problem = tr("Wecker konnte nicht gestellt werden: %@", error.localizedDescription)
@@ -300,55 +303,99 @@ final class SmartAlarm: ObservableObject {
     func recordingStarted(at start: Date) {
         recordingStart = start
         onset = nil
-        rang = [:]
+        fired = [:]
+        snoozed = nil
+        let f = Date.FormatStyle(date: .omitted, time: .shortened)
+        for a in items where a.enabled {
+            guard let at = latest(a, after: start) else { continue }
+            let from = a.smart ? at.addingTimeInterval(-Double(a.windowMinutes) * 60) : at
+            PassiveNightEngine.shared.note(a.smart
+                ? tr("Wecker %@: spätestens %@, im leichten Schlaf ab %@", a.title, at.formatted(f), from.formatted(f))
+                : tr("Wecker %@: %@", a.title, at.formatted(f)))
+        }
         Task { for a in items { await apply(a) } }
+        checker?.invalidate()
+        checker = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { _ in
+            Task { @MainActor in SmartAlarm.shared.checkDue() }
+        }
     }
 
     func recordingStopped() {
+        checker?.invalidate()
+        checker = nil
+        // Nacht beendet: wer die Aufnahme stoppt, ist wach
+        if AlarmRinger.shared.ringing != nil || snoozed != nil { stopRinging() }
         recordingStart = nil
         onset = nil
         guard #available(iOS 26.0, *) else { return }
         // ohne Aufnahme wieder hörbare Systemwecker, keine Ersatzwecker
         for a in items {
             AlarmBackend.cancelBackup(for: a.id)
-            if AlarmRinger.shared.ringing == a.id { continue }   // klingelt gerade: nicht anfassen
-            if a.mode == .duration { AlarmBackend.cancel(for: a.id) } else { Task { await apply(a) } }
+            Task { await apply(a) }
         }
     }
 
     // MARK: Klingeln durch Suya selbst (während der Aufnahme)
 
-    private var watching = false
-
-    /// Zustände der Systemwecker verfolgen: klingelt ein stummer Wecker, spielt Suya den Ton
-    func watchAlarms() {
-        guard #available(iOS 26.0, *), !watching else { return }
-        watching = true
-        Task {
-            for await alarms in AlarmManager.shared.alarmUpdates {
-                handle(alarms)
+    /// Alle 5 s: feste Weckzeit erreicht oder Schlummern vorbei?
+    func checkDue() {
+        guard let start = recordingStart else { return }
+        let now = Date()
+        if let s = snoozed {
+            if now >= s.until, let a = items.first(where: { $0.id == s.id }) {
+                snoozed = nil
+                ring(a, at: nil, reason: tr("Schlummern vorbei"))
             }
+            return
+        }
+        guard AlarmRinger.shared.ringing == nil else { return }
+        for a in items where a.enabled {
+            guard let at = latest(a, after: start), fired[a.id] != at,
+                  now >= at, now < at.addingTimeInterval(3600) else { continue }
+            ring(a, at: at, reason: tr("Weckzeit erreicht"))
+            return
         }
     }
 
-    @available(iOS 26.0, *)
-    private func handle(_ alarms: [Alarm]) {
-        let alerting = Set(alarms.filter { $0.state == .alerting }.map(\.id))
-        for a in items {
-            guard let kit = AlarmBackend.kitID(for: a.id) else { continue }
-            let isAlerting = alerting.contains(kit)
-            if isAlerting && AlarmBackend.isSilent(kit) {
-                if AlarmRinger.shared.ringing != a.id {
-                    AlarmRinger.shared.start(a)
-                    // Ersatz neu stellen: 2 min ab jetzt (auch nach dem Schlummern)
-                    Task { try? await AlarmBackend.scheduleBackup(a, at: Date().addingTimeInterval(AlarmBackend.backupDelay)) }
-                }
-            } else if AlarmRinger.shared.ringing == a.id {
-                // „Aus“ oder „Schlummern“ gedrückt
-                AlarmRinger.shared.stop()
-                AlarmBackend.cancelBackup(for: a.id)
-            }
+    private func ring(_ a: AlarmItem, at: Date?, reason: String) {
+        if let at { fired[a.id] = at }
+        PassiveNightEngine.shared.note(tr("Wecker %@ klingelt (%@)", a.title, reason))
+        let ok = AlarmRinger.shared.start(a)
+        // Ist das iPhone sehr leise gestellt oder spielt der Ton nicht, klingelt der Systemwecker früher
+        let quiet = AVAudioSession.sharedInstance().outputVolume < 0.25
+        if quiet { PassiveNightEngine.shared.note(tr("iPhone-Lautstärke niedrig: Systemwecker in 30 s")) }
+        let delay: TimeInterval = !ok ? 2 : quiet ? 30 : AlarmBackend.backupDelay
+        if #available(iOS 26.0, *) {
+            Task { try? await AlarmBackend.scheduleBackup(a, at: Date().addingTimeInterval(delay)) }
         }
+        PassiveNightEngine.shared.updateActivity(alert: true)
+    }
+
+    /// „Aus“ (in der App oder in der Live-Aktivität)
+    func stopRinging() {
+        guard let id = AlarmRinger.shared.ringing ?? snoozed?.id else { return }
+        AlarmRinger.shared.stop()
+        snoozed = nil
+        AlarmRinger.shared.snoozeUntil = nil
+        if #available(iOS 26.0, *) { AlarmBackend.cancelBackup(for: id) }
+        PassiveNightEngine.shared.note(tr("Wecker aus"))
+        PassiveNightEngine.shared.updateActivity()
+    }
+
+    /// „Schlummern“: Ton aus, nach der Schlummerdauer wieder klingeln
+    func snoozeRinging() {
+        guard let id = AlarmRinger.shared.ringing, let a = items.first(where: { $0.id == id }) else { return }
+        guard a.snooze else { stopRinging(); return }
+        AlarmRinger.shared.stop()
+        let until = Date().addingTimeInterval(Double(a.snoozeMinutes) * 60)
+        snoozed = (id, until)
+        AlarmRinger.shared.snoozeUntil = until
+        AlarmRinger.shared.snoozeTitle = a.title
+        if #available(iOS 26.0, *) {
+            Task { try? await AlarmBackend.scheduleBackup(a, at: until.addingTimeInterval(AlarmBackend.backupDelay)) }
+        }
+        PassiveNightEngine.shared.note(tr("Schlummern bis %@", until.formatted(date: .omitted, time: .shortened)))
+        PassiveNightEngine.shared.updateActivity()
     }
 
     /// Späteste Weckzeit eines Weckers in der laufenden Nacht (für die Anzeige)
@@ -360,12 +407,9 @@ final class SmartAlarm: ObservableObject {
     func tick(seconds: [SleepStaging.Second?], motion: [Double?]) {
         guard Self.isAvailable, let start = recordingStart else { return }
         let now = Date()
-        for (id, until) in rang where now > until {
-            rang[id] = nil
-            if let a = items.first(where: { $0.id == id }) { Task { await apply(a) } }
-        }
-        guard !evaluating, seconds.count >= 20 * 60 else { return }
-        let active = items.filter { $0.enabled && rang[$0.id] == nil }
+        guard !evaluating, seconds.count >= 20 * 60,
+              AlarmRinger.shared.ringing == nil, snoozed == nil else { return }
+        let active = items.filter { $0.enabled && fired[$0.id] == nil }
         let needOnset = false   // Schlafdauer zählt ab Aufnahmebeginn, kein Einschlafpunkt nötig
         let due = active.filter { a in
             guard a.smart, let latest = latest(a, after: start) else { return false }
@@ -384,23 +428,12 @@ final class SmartAlarm: ObservableObject {
                 for a in items where a.mode == .duration && a.enabled { await apply(a) }
             }
             guard result.light else { return }
-            for a in due where rang[a.id] == nil {
+            for a in due where fired[a.id] == nil && AlarmRinger.shared.ringing == nil {
                 guard let latest = latest(a, after: start) else { continue }
-                await ringNow(a, latest: latest)
+                let left = Int(latest.timeIntervalSinceNow / 60)
+                ring(a, at: latest, reason: tr("leichter Schlaf, %d min vor %@", left,
+                                               latest.formatted(date: .omitted, time: .shortened)))
             }
-        }
-    }
-
-    private func ringNow(_ a: AlarmItem, latest: Date) async {
-        guard #available(iOS 26.0, *) else { return }
-        rang[a.id] = latest.addingTimeInterval(60)
-        do {
-            let now = Date()
-            try await AlarmBackend.schedule(a, at: now.addingTimeInterval(3), silent: true)
-            try await AlarmBackend.scheduleBackup(a, at: now.addingTimeInterval(3 + AlarmBackend.backupDelay))
-        } catch {
-            rang[a.id] = nil
-            problem = tr("Wecker konnte nicht gestellt werden: %@", error.localizedDescription)
         }
     }
 
@@ -458,16 +491,11 @@ final class SoundPreview: ObservableObject {
 enum AlarmBackend {
     private static let key = "alarm.kitIDs"   // Wecker-ID → AlarmKit-ID
     private static let backupKey = "alarm.backupIDs"
-    private static let silentKey = "alarm.silentKits"
-    /// so lange nach dem stummen Wecker klingelt der hörbare Ersatz
-    static let backupDelay: TimeInterval = 120
+    /// so lange nach Suyas eigenem Klingeln klingelt der hörbare Systemwecker, falls niemand reagiert
+    static let backupDelay: TimeInterval = 180
 
     static func kitID(for id: UUID) -> UUID? {
         (UserDefaults.standard.dictionary(forKey: key) as? [String: String])?[id.uuidString].flatMap(UUID.init)
-    }
-
-    static func isSilent(_ kit: UUID) -> Bool {
-        (UserDefaults.standard.stringArray(forKey: silentKey) ?? []).contains(kit.uuidString)
     }
 
     static func authorize() async -> Bool {
@@ -480,7 +508,7 @@ enum AlarmBackend {
     }
 
     /// Stellt den Wecker neu: `at` = einmalig zu diesem Zeitpunkt, sonst nach Uhrzeit/Wiederholung.
-    static func schedule(_ a: AlarmItem, at: Date?, silent: Bool = false) async throws {
+    static func schedule(_ a: AlarmItem, at: Date?) async throws {
         cancel(for: a.id)
         let rule: Alarm.Schedule
         if let at {
@@ -506,7 +534,7 @@ enum AlarmBackend {
             countdown: AlarmPresentation.Countdown(title: LocalizedStringResource("Schlummern")))
         let attributes = AlarmAttributes(presentation: presentation, metadata: WakeMetadata(label: a.title),
                                          tintColor: Theme.accent)
-        let file = silent ? "wecker_stille.m4a" : AlarmSound(rawValue: a.sound)?.bundleFile
+        let file = AlarmSound(rawValue: a.sound)?.bundleFile
         let sound: AlertConfiguration.AlertSound = file.map { .named($0) } ?? .default
         let config = AlarmManager.AlarmConfiguration<WakeMetadata>(
             countdownDuration: a.snooze ? Alarm.CountdownDuration(preAlert: nil, postAlert: Double(a.snoozeMinutes) * 60) : nil,
@@ -518,9 +546,6 @@ enum AlarmBackend {
         var map = UserDefaults.standard.dictionary(forKey: key) as? [String: String] ?? [:]
         map[a.id.uuidString] = kitID.uuidString
         UserDefaults.standard.set(map, forKey: key)
-        var silentKits = UserDefaults.standard.stringArray(forKey: silentKey) ?? []
-        if silent { silentKits.append(kitID.uuidString) }
-        UserDefaults.standard.set(Array(silentKits.suffix(50)), forKey: silentKey)
     }
 
     /// Hörbarer Ersatzwecker (einmalig, Ton des Weckers in voller Lautstärke)
@@ -581,33 +606,48 @@ enum AlarmBackend {
 /// Spielt den Weckton in Schleife mit eigener Lautstärke und langsamem Lauterwerden (bis 5 min).
 /// Läuft nur während der Nachtaufnahme (die Audio-Sitzung ist dann aktiv).
 @MainActor
-final class AlarmRinger {
+final class AlarmRinger: ObservableObject {
     static let shared = AlarmRinger()
-    private(set) var ringing: UUID?
+    @Published private(set) var ringing: UUID?
+    @Published private(set) var title = ""
+    @Published private(set) var canSnooze = false
+    @Published var snoozeUntil: Date?
+    @Published var snoozeTitle = ""
     private var player: AVAudioPlayer?
     private var timer: Timer?
     private var started = Date()
     private var target: Float = 1
     private var ramp: Double = 0
 
-    func start(_ a: AlarmItem) {
+    /// false, wenn der Ton nicht gestartet werden konnte
+    @discardableResult
+    func start(_ a: AlarmItem) -> Bool {
         stop()
+        snoozeUntil = nil
+        title = a.title
+        canSnooze = a.snooze
+        ringing = a.id
         guard let src = AlarmSoundRenderer.source(a) ?? Bundle.main.url(forResource: "wecker_morgenlicht", withExtension: "m4a"),
-              let p = try? AVAudioPlayer(contentsOf: src) else { return }
+              let p = try? AVAudioPlayer(contentsOf: src) else {
+            PassiveNightEngine.shared.note(tr("Weckton konnte nicht abgespielt werden"))
+            return false
+        }
         try? AVAudioSession.sharedInstance().setActive(true)
         p.numberOfLoops = -1
         target = Float(pow(10, (-30 + 30 * min(1, max(0, a.volume))) / 20))
         ramp = Double(a.rampSeconds)
         p.volume = ramp > 0 ? target * 0.04 : target
-        p.play()
+        guard p.play() else {
+            PassiveNightEngine.shared.note(tr("Weckton konnte nicht abgespielt werden"))
+            return false
+        }
         player = p
-        ringing = a.id
         started = Date()
-        PassiveNightEngine.shared.note(tr("Wecker klingelt: %@", a.title))
-        guard ramp > 0 else { return }
+        guard ramp > 0 else { return true }
         timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.step() }
         }
+        return true
     }
 
     private func step() {
