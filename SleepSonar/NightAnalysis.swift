@@ -500,7 +500,7 @@ struct Hypnogram: View {
             // nur die Stunde („3“ statt „03 Uhr“), bei langen Nächten jede zweite – sonst überlappen sie
             AxisMarks(values: .stride(by: .hour, count: hourStep)) { v in
                 AxisGridLine().foregroundStyle(Theme.hairline)
-                AxisValueLabel {
+                AxisValueLabel(centered: false, anchor: .top) {
                     if let d = v.as(Date.self) { Text("\(Calendar.current.component(.hour, from: d))") }
                 }
                 .foregroundStyle(Theme.mist)
