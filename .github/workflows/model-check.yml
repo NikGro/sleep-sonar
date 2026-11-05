@@ -14,9 +14,12 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Core ML gegen PyTorch
         run: |
-          python3 -m venv /tmp/v && /tmp/v/bin/pip install -q coremltools numpy
+          python -m venv /tmp/v && /tmp/v/bin/pip install -q coremltools numpy
           /tmp/v/bin/python - <<'PY'
           import numpy as np, coremltools as ct
           r = np.load("training/model/reference.npz")
