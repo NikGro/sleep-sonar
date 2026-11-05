@@ -132,9 +132,13 @@ private struct AudioStream {
                     ? nil : AVAudioConverter(from: f.processingFormat, to: target)
             }
             guard let f = file else { break }
-            let want = AVAudioFrameCount(min(count - out.count, 1 << 18))
+            // Lesen am Dateiende wirft bei AVAudioFile einen Fehler statt 0 Samples zu liefern; eine
+            // abgebrochene Datei (z. B. Akku leer) endet ebenso vorzeitig → dann einfach die nächste
+            let left = f.length - f.framePosition
+            if left <= 0 { file = nil; continue }
+            let want = AVAudioFrameCount(min(Int64(count - out.count), min(left, 1 << 18)))
             guard let buf = AVAudioPCMBuffer(pcmFormat: f.processingFormat, frameCapacity: want) else { break }
-            try f.read(into: buf, frameCount: want)
+            do { try f.read(into: buf, frameCount: want) } catch { file = nil; continue }
             if buf.frameLength == 0 { file = nil; continue }
             if let converter {
                 let ratio = target.sampleRate / f.processingFormat.sampleRate

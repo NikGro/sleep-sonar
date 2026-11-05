@@ -447,6 +447,8 @@ struct Hypnogram: View {
     }
 
     private static let names = [SleepStaging.Stage.wake, .rem, .core, .deep].map(\.displayName)
+
+    private var hourStep: Int { Double(stages.count) * epochSeconds > 9 * 3600 ? 2 : 1 }
     private static let labelWidth: CGFloat = 38
 
     private var segments: [Segment] {
@@ -495,9 +497,13 @@ struct Hypnogram: View {
         }
         .padding(.leading, compact ? 0 : Self.labelWidth + 6)
         .chartXAxis {
-            AxisMarks(values: .stride(by: .hour)) { _ in
+            // nur die Stunde („3“ statt „03 Uhr“), bei langen Nächten jede zweite – sonst überlappen sie
+            AxisMarks(values: .stride(by: .hour, count: hourStep)) { v in
                 AxisGridLine().foregroundStyle(Theme.hairline)
-                AxisValueLabel(format: .dateTime.hour()).foregroundStyle(Theme.mist)
+                AxisValueLabel {
+                    if let d = v.as(Date.self) { Text("\(Calendar.current.component(.hour, from: d))") }
+                }
+                .foregroundStyle(Theme.mist)
             }
         }
         .chartXAxis(compact ? .hidden : .automatic)
