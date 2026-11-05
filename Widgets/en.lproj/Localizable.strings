@@ -58,6 +58,7 @@
 "Braunes Rauschen" = "Brown noise";
 "Café" = "Café";
 "Damit dich Suya wecken kann – auch im leichten Schlaf kurz vor der Weckzeit –, braucht es die Erlaubnis für Wecker." = "To wake you – even in light sleep shortly before your wake time – Suya needs permission for alarms.";
+"Das Mikrofon hört die Klänge mit. Damit sie die Messung im Schlaf nicht stören, ist Ausblenden beim Einschlafen voreingestellt." = "The microphone hears the sounds too. So they don't disturb the measurement while you sleep, fading out when you fall asleep is on by default.";
 "Das Modell hört die Nacht nach (%d %%). Das passiert einmal je Nacht auf dem iPhone." = "The model is listening back through the night (%d %%). This happens once per night on the iPhone.";
 "Das passiert einmal je Nacht und bleibt auf dem iPhone. Du kannst die App verlassen: Was fehlt, erledigt das iPhone später am Ladekabel." = "This happens once per night and stays on your iPhone. You can leave the app: whatever is left, your iPhone finishes later while charging.";
 "Daten und Watch teilen (ZIP)" = "Share data and Watch (ZIP)";

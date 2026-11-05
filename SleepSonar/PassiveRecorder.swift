@@ -110,8 +110,9 @@ final class PassiveRecorder: @unchecked Sendable {
             }
             if let err { throw err }
             guard out.frameLength > 0 else { return }
-            // eigene Schlafklänge herausrechnen, bevor gespeichert und gemessen wird
-            if EchoCanceller.shared.isActive { EchoCanceller.shared.process(out, hostTime: hostTime) }
+            // Das Herausrechnen der eigenen Schlafklänge (EchoCanceller) ist abgeschaltet: Es hat die Klänge
+            // kaum entfernt, aber Sprache und Atem verhallt und leiser gemacht. Aufgenommen wird der Ton,
+            // wie er ist; die Klänge blenden beim Einschlafen ohnehin aus.
             try write(out)
             measure(out)
             live?.feed(out)

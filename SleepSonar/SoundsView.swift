@@ -25,7 +25,7 @@ struct SoundsView: View {
                         }
                     }
                     nightSection
-                    Text(tr("Während der Nachtaufnahme rechnet Suya die Klänge aus dem Mikrofon heraus, damit sie die Messung kaum stören. Ganz verschwinden sie nicht, deshalb ist Ausblenden beim Einschlafen voreingestellt."))
+                    Text(tr("Das Mikrofon hört die Klänge mit. Damit sie die Messung im Schlaf nicht stören, ist Ausblenden beim Einschlafen voreingestellt."))
                         .font(.caption).foregroundStyle(Theme.mist)
                 }
                 .padding(.horizontal, 20)

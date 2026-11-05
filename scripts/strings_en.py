@@ -1,6 +1,7 @@
 # Englische Übersetzungen (Schlüssel = deutscher Text). Wird von gen_strings.py in
 # SleepSonar/en.lproj und Widgets/en.lproj geschrieben.
 EN = {
+    "Das Mikrofon hört die Klänge mit. Damit sie die Messung im Schlaf nicht stören, ist Ausblenden beim Einschlafen voreingestellt.": "The microphone hears the sounds too. So they don't disturb the measurement while you sleep, fading out when you fall asleep is on by default.",
     "Suya-Modell (neu)": "Suya model (new)",
     "Suya (Regeln)": "Suya (rules)",
     "Das Modell hört die Nacht nach (%d %%). Das passiert einmal je Nacht auf dem iPhone.": "The model is listening back through the night (%d %%). This happens once per night on the iPhone.",
