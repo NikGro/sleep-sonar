@@ -44,8 +44,8 @@ struct SoundSection: View {
 
     @ViewBuilder private func kindBlock(_ kind: SoundEvent.Kind) -> some View {
         let list = events.filter { $0.kind == kind }
-        // Die deutlichsten Momente zuerst anbieten
-        let best = list.sorted { $0.confidence * min($0.duration, 60) > $1.confidence * min($1.duration, 60) }
+        // Die sichersten zuerst (bei gleicher Sicherheit die längeren)
+        let best = list.sorted { ($0.confidence, $0.duration) > ($1.confidence, $1.duration) }
         let shown = expanded.contains(kind) ? best : Array(best.prefix(3))
         let minutes = Int((list.reduce(0) { $0 + $1.duration } / 60).rounded())
 
