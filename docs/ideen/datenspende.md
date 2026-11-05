@@ -36,3 +36,11 @@ Ziel: Nutzer können freiwillig Nächte spenden, damit das Schlafphasen-Modell f
 - Stufe 3 (Audio-Modell): mit Sekunden-Pegeln **nicht** gleich gut. Optionen:
   - grobes Log-Mel-Spektrum (z. B. 32–64 Bänder, ~10 Bilder/s): fast alles, was Atem/Schnarchen/Bewegung ausmacht; Sprache praktisch nicht verständlich, aber nicht beweisbar unmöglich
   - Embeddings vom Audio-Modell auf dem iPhone: Kopf trainierbar wie mit Audio, aber das „Ohr“ selbst nicht mehr nachtrainierbar
+
+## Speicher: Audio nach der Übertragung löschen (für später)
+
+- Heute: Lang drücken auf eine Nacht → „Aufnahme löschen, Geräusche behalten“. Vorher werden
+  Geräusche (events.json) und Modell-Schlafphasen (model.json) berechnet, die Ausschnitte der
+  Geräusche landen in `clips/`, danach werden die `audio_*.m4a` gelöscht.
+- Später (mit echter Übertragung): Bei aktiver Einwilligung nach erfolgreichem Upload derselbe
+  Ablauf automatisch (`NightAudioTrim.trim`). Ohne Einwilligung optional nach X Tagen.

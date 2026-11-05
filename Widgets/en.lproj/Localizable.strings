@@ -1,5 +1,6 @@
 /* Erzeugt von scripts/gen_strings.py – nicht von Hand ändern. */
 "%@ bis %@" = "%@ to %@";
+"%@ frei. Schlafphasen, Geräusche und Watch-Daten bleiben erhalten." = "%@ freed. Sleep stages, sounds and Watch data are kept.";
 "%@ geschlafen, %@" = "%@ asleep, %@";
 "%@ um %@, abspielen" = "%@ at %@, play";
 "%@ um %@, stoppen" = "%@ at %@, stop";
@@ -40,6 +41,8 @@
 "Aufnahme beenden?" = "Stop recording?";
 "Aufnahme läuft" = "Recording";
 "Aufnahme läuft wieder" = "Recording running again";
+"Aufnahme löschen" = "Delete recording";
+"Aufnahme löschen, Geräusche behalten" = "Delete recording, keep sounds";
 "Aufnahme stand still" = "Recording had stalled";
 "Aufnahme starten" = "Start recording";
 "Aus" = "Stop";
@@ -152,6 +155,7 @@
 "Los geht's" = "Let's go";
 "Luftschnappen" = "Gasping";
 "Löschen" = "Delete";
+"Löschen fehlgeschlagen: %@" = "Deleting failed: %@";
 "Löschung beantragen" = "Request deletion";
 "Löschung beantragt am %@. Bisher wurden keine Nächte übertragen – es gibt also nichts zu löschen. Sobald die Übertragung kommt, wird die Anfrage mitgeschickt." = "Deletion requested on %@. No nights have been transferred so far – so there is nothing to delete. Once transfers start, the request will be sent along.";
 "Löschung meiner Daten beantragen" = "Request deletion of my data";
@@ -267,6 +271,7 @@
 "Ton" = "Sound";
 "Ton-Test" = "Sound test";
 "Ton-Test starten" = "Start sound test";
+"Tonaufnahme löschen (%@)?" = "Delete audio recording (%@)?";
 "Täglich" = "Every day";
 "Uhrzeit" = "Time";
 "Unterbrechung (Anruf/Wecker/Siri?)" = "Interruption (call/alarm/Siri?)";
@@ -277,6 +282,7 @@
 "Verglichen über %@." = "Compared over %@.";
 "Version" = "Version";
 "Verstanden" = "Got it";
+"Vorher werden Geräusche und Modell-Schlafphasen fertig berechnet. Die Ausschnitte der erkannten Geräusche bleiben zum Anhören erhalten. Fürs Training teilen geht danach nur noch ohne Audio." = "Sounds and model sleep stages are finished first. The clips of detected sounds are kept for listening. Afterwards, sharing for training only works without audio.";
 "Vögel" = "Birds";
 "Wach" = "Awake";
 "Was zuerst eintritt, blendet die Klänge über 30 Sekunden aus." = "Whichever comes first fades the sounds out over 30 seconds.";

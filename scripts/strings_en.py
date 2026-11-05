@@ -1,6 +1,12 @@
 # Englische Übersetzungen (Schlüssel = deutscher Text). Wird von gen_strings.py in
 # SleepSonar/en.lproj und Widgets/en.lproj geschrieben.
 EN = {
+    "Aufnahme löschen, Geräusche behalten": "Delete recording, keep sounds",
+    "Tonaufnahme löschen (%@)?": "Delete audio recording (%@)?",
+    "Aufnahme löschen": "Delete recording",
+    "%@ frei. Schlafphasen, Geräusche und Watch-Daten bleiben erhalten.": "%@ freed. Sleep stages, sounds and Watch data are kept.",
+    "Löschen fehlgeschlagen: %@": "Deleting failed: %@",
+    "Vorher werden Geräusche und Modell-Schlafphasen fertig berechnet. Die Ausschnitte der erkannten Geräusche bleiben zum Anhören erhalten. Fürs Training teilen geht danach nur noch ohne Audio.": "Sounds and model sleep stages are finished first. The clips of detected sounds are kept for listening. Afterwards, sharing for training only works without audio.",
     "Das Mikrofon hört die Klänge mit. Damit sie die Messung im Schlaf nicht stören, ist Ausblenden beim Einschlafen voreingestellt.": "The microphone hears the sounds too. So they don't disturb the measurement while you sleep, fading out when you fall asleep is on by default.",
     "Suya-Modell (neu)": "Suya model (new)",
     "Suya (Regeln)": "Suya (rules)",

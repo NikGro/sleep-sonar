@@ -178,8 +178,9 @@ struct NightAnalysisView: View {
                              eventsDate: NightSummary.eventsDate(folder)).save(folder)
             } catch { self.error = error.localizedDescription }
             // danach das Modell (braucht die Audioaufnahme, etwa eine Minute)
-            guard NightModel.isAvailable, !NightExport.audioFiles(in: folder).isEmpty else { return }
+            guard NightModel.isAvailable else { return }
             if let c = NightModel.cached(folder) { model = c; return }
+            guard !NightExport.audioFiles(in: folder).isEmpty else { return }
             modelProgress = 0
             let f = folder
             do {

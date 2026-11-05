@@ -266,21 +266,39 @@ final class NightClipPlayer: ObservableObject {
 
     init() { engine.attach(node) }
 
-    func toggle(_ event: SoundEvent, folder: URL) {
-        if playingID == event.id { stop(); return }
-        stop()
+    /// Ordner mit den aufbewahrten Ausschnitten, wenn die ganze Aufnahme gelöscht wurde
+    nonisolated static func clipURL(_ event: SoundEvent, folder: URL) -> URL {
+        folder.appendingPathComponent("clips", isDirectory: true).appendingPathComponent(event.id + ".m4a")
+    }
+
+    /// Der Ausschnitt eines Geräuschs im Original: 2 s Vorlauf, Geräusch, 2 s Nachlauf, höchstens 30 s.
+    /// Gibt es die ganze Aufnahme nicht mehr, kommt er aus dem aufbewahrten Ausschnitt.
+    nonisolated static func clip(_ event: SoundEvent, folder: URL) -> AVAudioPCMBuffer? {
+        let kept = clipURL(event, folder: folder)
+        if FileManager.default.fileExists(atPath: kept.path), let file = try? AVAudioFile(forReading: kept),
+           let buf = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)) {
+            try? file.read(into: buf)
+            return buf.frameLength > 0 ? buf : nil
+        }
         let fileIndex = Int(event.start / PassiveRecorder.secondsPerFile)
         let url = folder.appendingPathComponent(String(format: "audio_%03d.m4a", fileIndex))
-        guard let file = try? AVAudioFile(forReading: url) else { return }
+        guard let file = try? AVAudioFile(forReading: url) else { return nil }
         let sr = file.processingFormat.sampleRate
         let local = event.start - Double(fileIndex) * PassiveRecorder.secondsPerFile
         let startFrame = AVAudioFramePosition(max(0, local - 2) * sr)
-        guard startFrame < file.length else { return }
-        let want = AVAudioFrameCount(min(event.duration + 4, 30) * sr)   // 2 s Vorlauf, Geräusch, 2 s Nachlauf, max. 30 s
+        guard startFrame < file.length else { return nil }
+        let want = AVAudioFrameCount(min(event.duration + 4, 30) * sr)
         let count = min(want, AVAudioFrameCount(file.length - startFrame))
-        guard let buf = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: count) else { return }
+        guard let buf = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: count) else { return nil }
         file.framePosition = startFrame
-        guard (try? file.read(into: buf, frameCount: count)) != nil, buf.frameLength > 0 else { return }
+        guard (try? file.read(into: buf, frameCount: count)) != nil, buf.frameLength > 0 else { return nil }
+        return buf
+    }
+
+    func toggle(_ event: SoundEvent, folder: URL) {
+        if playingID == event.id { stop(); return }
+        stop()
+        guard let buf = Self.clip(event, folder: folder) else { return }
         Self.makeAudible(buf)
 
         if !PassiveNightEngine.shared.isRunning {

@@ -11,6 +11,7 @@ struct NightView: View {
     @State private var share: ShareItem?
     @State private var message: String?
     @State private var demo: URL?
+    @State private var trimming: URL?
 
     var body: some View {
         NavigationStack {
@@ -59,6 +60,11 @@ struct NightView: View {
                                 } label: {
                                     Label(tr("Audio teilen"), systemImage: "waveform")
                                 }
+                                Button(role: .destructive) {
+                                    trimming = url
+                                } label: {
+                                    Label(tr("Aufnahme löschen, Geräusche behalten"), systemImage: "waveform.slash")
+                                }
                             }
                         }
                     }
@@ -89,6 +95,29 @@ struct NightView: View {
             .onChange(of: rec.isRunning) { refresh() }
             .refreshable { refresh() }
             .sheet(item: $share) { item in ShareSheet(items: item.urls) }
+            .confirmationDialog(trimming.map { tr("Tonaufnahme löschen (%@)?", ByteCountFormatter.string(
+                                    fromByteCount: NightAudioTrim.audioBytes($0), countStyle: .file)) } ?? "",
+                                isPresented: Binding(get: { trimming != nil }, set: { if !$0 { trimming = nil } }),
+                                titleVisibility: .visible) {
+                Button(tr("Aufnahme löschen"), role: .destructive) {
+                    guard let url = trimming else { return }
+                    trimming = nil
+                    Task {
+                        exporting = url
+                        defer { exporting = nil }
+                        do {
+                            let freed = try await NightAudioTrim.trim(url)
+                            message = tr("%@ frei. Schlafphasen, Geräusche und Watch-Daten bleiben erhalten.",
+                                         ByteCountFormatter.string(fromByteCount: freed, countStyle: .file))
+                        } catch {
+                            message = tr("Löschen fehlgeschlagen: %@", error.localizedDescription)
+                        }
+                    }
+                }
+                Button(tr("Abbrechen"), role: .cancel) { trimming = nil }
+            } message: {
+                Text(tr("Vorher werden Geräusche und Modell-Schlafphasen fertig berechnet. Die Ausschnitte der erkannten Geräusche bleiben zum Anhören erhalten. Fürs Training teilen geht danach nur noch ohne Audio."))
+            }
         }
     }
 
