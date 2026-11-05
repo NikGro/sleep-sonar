@@ -128,6 +128,10 @@ struct NightAnalysisView: View {
     @State private var result: NightAnalysisResult?
     @State private var error: String?
     @State private var soundProgress: Double?
+    /// Schlafphasen aus dem gelernten Modell (nil = noch nicht gerechnet)
+    @State private var model: [SleepStaging.Stage]?
+    @State private var modelProgress: Double?
+    @State private var modelError: String?
     @StateObject private var player = NightClipPlayer()
 
     var body: some View {
@@ -173,6 +177,17 @@ struct NightAnalysisView: View {
                 NightSummary(start: r.start, stages: r.ours, epochSeconds: r.epochSeconds,
                              eventsDate: NightSummary.eventsDate(folder)).save(folder)
             } catch { self.error = error.localizedDescription }
+            // danach das Modell (braucht die Audioaufnahme, etwa eine Minute)
+            guard NightModel.isAvailable, !NightExport.audioFiles(in: folder).isEmpty else { return }
+            if let c = NightModel.cached(folder) { model = c; return }
+            modelProgress = 0
+            let f = folder
+            do {
+                model = try await Task.detached(priority: .userInitiated) {
+                    try NightModel.stages(folder: f) { p in Task { @MainActor in modelProgress = p } }
+                }.value
+            } catch { modelError = tr("Modell konnte nicht rechnen: %@", error.localizedDescription) }
+            modelProgress = nil
         }
         .onDisappear { player.stop() }
     }
@@ -226,10 +241,26 @@ struct NightAnalysisView: View {
         }
 
         VStack(alignment: .leading, spacing: 12) {
-            SectionTitle("Suya")
+            SectionTitle(model != nil ? tr("Suya (Regeln)") : "Suya")
             Hypnogram(stages: ours, start: r.start, epochSeconds: r.epochSeconds)
                 .frame(height: 112)
             StageLegend()
+        }
+
+        if NightModel.isAvailable && (model != nil || modelProgress != nil || modelError != nil) {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle(tr("Suya-Modell (neu)"))
+                if let model {
+                    Hypnogram(stages: model.map { Optional($0) }, start: r.start, epochSeconds: r.epochSeconds)
+                        .frame(height: 112)
+                } else if let p = modelProgress {
+                    ProgressView(value: p).tint(Theme.moon)
+                    Text(tr("Das Modell hört die Nacht nach (%d %%). Das passiert einmal je Nacht auf dem iPhone.", Int(p * 100)))
+                        .font(.caption).foregroundStyle(Theme.mist)
+                } else if let modelError {
+                    Text(modelError).font(.caption).foregroundStyle(Theme.mist)
+                }
+            }
         }
 
         VStack(alignment: .leading, spacing: 12) {
@@ -271,6 +302,9 @@ struct NightAnalysisView: View {
         if r.agreement.epochs > 0 {
             VStack(alignment: .leading, spacing: 10) {
                 SectionTitle(tr("Vergleich mit der Watch"))
+                if model != nil {
+                    Text(tr("Suya (Regeln)")).font(.caption.weight(.semibold)).foregroundStyle(Theme.mist)
+                }
                 // über die volle Breite wie die übrigen Elemente
                 HStack(alignment: .firstTextBaseline, spacing: 16) {
                     Figure(value: String(format: "%.0f %%", r.agreement.sleepWake * 100), label: tr("Schlaf oder wach gleich"))
@@ -279,6 +313,20 @@ struct NightAnalysisView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxWidth: .infinity)
+                if let model {
+                    let m = SleepStaging.agreement(Array(model.map { Optional($0) }.prefix(r.watch.count)),
+                                                   Array(r.watch.prefix(model.count)))
+                    if m.epochs > 0 {
+                        Text(tr("Suya-Modell (neu)")).font(.caption.weight(.semibold)).foregroundStyle(Theme.mist)
+                            .padding(.top, 6)
+                        HStack(alignment: .firstTextBaseline, spacing: 16) {
+                            Figure(value: String(format: "%.0f %%", m.sleepWake * 100), label: tr("Schlaf oder wach gleich"))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Figure(value: String(format: "%.0f %%", m.fourClass * 100), label: tr("Phase gleich"))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                }
                 Text(tr("Verglichen über %@.", Self.hm(Double(r.agreement.epochs) * r.epochSeconds)))
                     .font(.caption).foregroundStyle(Theme.mist)
             }

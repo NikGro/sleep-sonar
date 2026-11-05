@@ -1,6 +1,10 @@
 # Englische Übersetzungen (Schlüssel = deutscher Text). Wird von gen_strings.py in
 # SleepSonar/en.lproj und Widgets/en.lproj geschrieben.
 EN = {
+    "Suya-Modell (neu)": "Suya model (new)",
+    "Suya (Regeln)": "Suya (rules)",
+    "Das Modell hört die Nacht nach (%d %%). Das passiert einmal je Nacht auf dem iPhone.": "The model is listening back through the night (%d %%). This happens once per night on the iPhone.",
+    "Modell konnte nicht rechnen: %@": "The model couldn't run: %@",
     "Neuer Wecker": "New Alarm",
     "Bearbeiten": "Edit",
     "Alle gespendeten Nächte löschen lassen?": "Have all donated nights deleted?",

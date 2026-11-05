@@ -229,7 +229,7 @@ final class SmartAlarm: ObservableObject {
         if let i = items.firstIndex(where: { $0.id == item.id }) { items[i] = item } else { items.append(item) }
         items.sort { sortKey($0) < sortKey($1) }
         persist()
-        Task { await apply(item) }
+        enqueue([item.id])
     }
 
     func setEnabled(_ id: UUID, _ on: Bool) {
@@ -242,6 +242,7 @@ final class SmartAlarm: ObservableObject {
         items.removeAll { $0.id == id }
         persist()
         if #available(iOS 26.0, *) { AlarmBackend.cancel(for: id) }
+        enqueue([])
     }
 
     private func persist() {
@@ -291,7 +292,7 @@ final class SmartAlarm: ObservableObject {
             AlarmBackend.cancelLegacy()
             for a in items { AlarmBackend.cancelBackup(for: a.id) }
         }
-        Task { for a in items { await apply(a) } }
+        enqueue(items.map(\.id))
     }
 
     /// klingelt oder schlummert gerade (dann erst danach ausschalten)
@@ -302,13 +303,28 @@ final class SmartAlarm: ObservableObject {
 
     /// nach geänderter Ton-Einstellung alle Systemwecker neu stellen
     func reapplyAll() async {
-        for a in items { await apply(a) }
+        enqueue(items.map(\.id))
+        await queue?.value
     }
 
-    private func apply(_ a: AlarmItem) async {
+    /// Wecker nacheinander stellen (nie zwei gleichzeitig): Liefen zwei Stell-Vorgänge desselben
+    /// Weckers parallel, blieb einer als verwaister Systemwecker übrig – und klingelte, obwohl der
+    /// Wecker ausgeschaltet war. Danach werden Systemwecker ohne Suya-Wecker aufgeräumt.
+    private var queue: Task<Void, Never>?
+    private func enqueue(_ ids: [UUID]) {
+        let prev = queue
+        queue = Task {
+            await prev?.value
+            for id in ids { await apply(id: id) }
+            if #available(iOS 26.0, *) { AlarmBackend.reconcile() }
+        }
+    }
+
+    private func apply(id: UUID) async {
         guard #available(iOS 26.0, *) else { return }
-        guard a.enabled, items.contains(where: { $0.id == a.id }) else {
-            AlarmBackend.cancel(for: a.id)
+        // immer den aktuellen Stand nehmen, nicht den beim Einreihen
+        guard let a = items.first(where: { $0.id == id }), a.enabled else {
+            AlarmBackend.cancel(for: id)
             return
         }
         guard await AlarmBackend.authorize() else {
@@ -316,6 +332,8 @@ final class SmartAlarm: ObservableObject {
             return
         }
         problem = nil
+        // gerade im leichten Schlaf ausgelöst (klingelt in wenigen Sekunden): nicht anfassen
+        if let at = smartRing[id], Date() < at.addingTimeInterval(600) { return }
         // klingelt oder schlummert gerade: nicht neu stellen (das würde den Schlummer-Countdown löschen)
         if isActiveNow(a.id) { return }
         do {
@@ -368,13 +386,13 @@ final class SmartAlarm: ObservableObject {
                 PassiveNightEngine.shared.note(tr("Wecker „%@“ (%@): %@", a.title, kind, at.formatted(f)))
             }
         }
-        Task { for a in items { await apply(a) } }
+        enqueue(items.map(\.id))
     }
 
     func recordingStopped() {
         recordingStart = nil
         onset = nil
-        Task { for a in items { await apply(a) } }   // Schlafdauer-Wecker fallen weg
+        enqueue(items.map(\.id))   // Schlafdauer-Wecker fallen weg
     }
 
     /// Späteste Weckzeit eines Weckers in der laufenden Nacht (für die Anzeige)
@@ -388,7 +406,7 @@ final class SmartAlarm: ObservableObject {
         let now = Date()
         for (id, until) in rang where now > until {
             rang[id] = nil
-            if let a = items.first(where: { $0.id == id }) { Task { await apply(a) } }
+            enqueue([id])
         }
         if #available(iOS 26.0, *), AlarmBackend.isAlerting { return }
         guard !evaluating, seconds.count >= 20 * 60 else { return }
@@ -408,7 +426,7 @@ final class SmartAlarm: ObservableObject {
             evaluating = false
             if needOnset, let first = result.onsetEpoch {
                 onset = start.addingTimeInterval(Double(first) * 30)
-                for a in items where a.mode == .duration && a.enabled { await apply(a) }
+                enqueue(items.filter { $0.mode == .duration && $0.enabled }.map(\.id))
             }
             guard result.light else { return }
             for a in due where rang[a.id] == nil {
@@ -418,9 +436,16 @@ final class SmartAlarm: ObservableObject {
         }
     }
 
+    /// Wecker → Zeitpunkt des Weckens im leichten Schlaf
+    private var smartRing: [UUID: Date] = [:]
+
     private func ringNow(_ a: AlarmItem, latest: Date) async {
         guard #available(iOS 26.0, *) else { return }
+        // nach laufenden Stell-Vorgängen, damit keiner diesen Wecker gleich wieder überschreibt
+        await queue?.value
+        guard let a = items.first(where: { $0.id == a.id }), a.enabled else { return }
         rang[a.id] = latest.addingTimeInterval(60)
+        smartRing[a.id] = Date()
         let f = Date.FormatStyle(date: .omitted, time: .shortened)
         PassiveNightEngine.shared.note(tr("Wecker „%@“ klingelt im leichten Schlaf, %d min vor %@",
                                           a.title, max(0, Int(latest.timeIntervalSinceNow / 60)), latest.formatted(f)))
@@ -582,6 +607,17 @@ enum AlarmBackend {
         UserDefaults.standard.removeObject(forKey: "alarm.ids")
     }
 
+    /// Systemwecker, die zu keinem Suya-Wecker (mehr) gehören, abbestellen
+    static func reconcile() {
+        let mapped = ((UserDefaults.standard.dictionary(forKey: key) as? [String: String]) ?? [:]).values
+            .compactMap(UUID.init)
+        var keep = Set(mapped)
+        if let t = UserDefaults.standard.string(forKey: AlarmSoundTest.kitKey).flatMap(UUID.init) { keep.insert(t) }
+        for al in (try? AlarmManager.shared.alarms) ?? [] where !keep.contains(al.id) && al.state == .scheduled {
+            try? AlarmManager.shared.cancel(id: al.id)
+        }
+    }
+
     static func cancel(for id: UUID) {
         cancelBackup(for: id)
         var map = UserDefaults.standard.dictionary(forKey: key) as? [String: String] ?? [:]
@@ -612,6 +648,7 @@ enum AlarmBackend {
 final class AlarmSoundTest: ObservableObject {
     static let shared = AlarmSoundTest()
     static let okKey = "alarm.librarySoundsOK"
+    static let kitKey = "alarm.testKit"
     @Published private(set) var scheduled: Date?
     @Published var ok: Bool? = UserDefaults.standard.object(forKey: okKey) as? Bool
 
@@ -628,7 +665,9 @@ final class AlarmSoundTest: ObservableObject {
         let at = Date().addingTimeInterval(30)
         let config = AlarmManager.AlarmConfiguration<WakeMetadata>(schedule: .fixed(at), attributes: attributes,
                                                                    sound: .named(name))
-        if (try? await AlarmManager.shared.schedule(id: UUID(), configuration: config)) != nil { scheduled = at }
+        let kit = UUID()
+        UserDefaults.standard.set(kit.uuidString, forKey: Self.kitKey)
+        if (try? await AlarmManager.shared.schedule(id: kit, configuration: config)) != nil { scheduled = at }
     }
 
     func answer(_ heard: Bool) {

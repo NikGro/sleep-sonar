@@ -58,6 +58,7 @@
 "Braunes Rauschen" = "Brown noise";
 "Café" = "Café";
 "Damit dich Suya wecken kann – auch im leichten Schlaf kurz vor der Weckzeit –, braucht es die Erlaubnis für Wecker." = "To wake you – even in light sleep shortly before your wake time – Suya needs permission for alarms.";
+"Das Modell hört die Nacht nach (%d %%). Das passiert einmal je Nacht auf dem iPhone." = "The model is listening back through the night (%d %%). This happens once per night on the iPhone.";
 "Das passiert einmal je Nacht und bleibt auf dem iPhone. Du kannst die App verlassen: Was fehlt, erledigt das iPhone später am Ladekabel." = "This happens once per night and stays on your iPhone. You can leave the app: whatever is left, your iPhone finishes later while charging.";
 "Daten und Watch teilen (ZIP)" = "Share data and Watch (ZIP)";
 "Datenspende" = "Data donation";
@@ -163,6 +164,7 @@
 "Mischung sichern" = "Save mix";
 "Mit Apple Watch kannst du die Schätzung morgens vergleichen." = "With an Apple Watch you can compare the estimate in the morning.";
 "Mit der Nachtaufnahme starten" = "Start with the night recording";
+"Modell konnte nicht rechnen: %@" = "The model couldn't run: %@";
 "Morgenlicht" = "Morning light";
 "NICHT am Strom" = "NOT charging";
 "Nacht wird ausgewertet" = "Analyzing the night";
@@ -241,6 +243,7 @@
 "Startet die Nachtaufnahme von Suya (nur Mikrofon)." = "Starts Suya's night recording (microphone only).";
 "Std." = "hours";
 "Stunden" = "Hours";
+"Suya (Regeln)" = "Suya (rules)";
 "Suya darf keine Wecker stellen. Erlaube es unter Einstellungen → Apps → Suya → Wecker." = "Suya isn't allowed to set alarms. Allow it in Settings → Apps → Suya → Alarms.";
 "Suya hört deine Atmung und Bewegungen und schätzt daraus deine Schlafphasen. Die Aufnahme bleibt auf deinem iPhone." = "Suya listens to your breathing and movements and estimates your sleep stages from them. The recording stays on your iPhone.";
 "Suya hört nachts deinem Atem und deinen Bewegungen zu und schätzt daraus deine Schlafphasen – ganz ohne Uhr am Handgelenk." = "At night, Suya listens to your breathing and movements and estimates your sleep stages from them – no watch on your wrist needed.";
@@ -251,6 +254,7 @@
 "Suya trägt deine Nächte in Apple Health ein. Hast du eine Apple Watch, liest Suya ihre Schlafphasen zum Vergleich – die Watch hat dann Vorrang." = "Suya adds your nights to Apple Health. If you have an Apple Watch, Suya reads its sleep stages for comparison – the Watch then takes precedence.";
 "Suya trägt jede Nacht in Health ein und liest die Schlafphasen deiner Apple Watch zum Vergleich. Hat die Watch eine Nacht eingetragen, hat sie Vorrang." = "Suya adds every night to Health and reads your Apple Watch's sleep stages for comparison. If the Watch recorded a night, it takes precedence.";
 "Suya verwendet höchstens die ersten 30 Sekunden eines Tons. Deshalb wird er höchstens 30 Sekunden lang lauter." = "Suya uses at most the first 30 seconds of a sound, so it gets louder for at most 30 seconds.";
+"Suya-Modell (neu)" = "Suya model (new)";
 "Technische Details" = "Technical details";
 "Tief" = "Deep";
 "Tief / Mitte / Hoch" = "Low / Mid / High";

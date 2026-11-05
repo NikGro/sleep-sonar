@@ -1,0 +1,31 @@
+name: Model check
+
+# Prüft die Core-ML-Modelle (SleepSonar/Model) gegen die PyTorch-Ausgaben (training/model/reference.npz)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "SleepSonar/Model/**"
+      - "training/model/**"
+
+jobs:
+  check:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Core ML gegen PyTorch
+        run: |
+          python3 -m venv /tmp/v && /tmp/v/bin/pip install -q coremltools numpy
+          /tmp/v/bin/python - <<'PY'
+          import numpy as np, coremltools as ct
+          r = np.load("training/model/reference.npz")
+          enc = ct.models.MLModel("SleepSonar/Model/SuyaEpochEncoder.mlpackage")
+          seq = ct.models.MLModel("SleepSonar/Model/SuyaNightSequence.mlpackage")
+          a = enc.predict({"mel": r["x"]})["embedding"]
+          b = seq.predict({"embeddings": r["e"]})["probabilities"]
+          ea = float(np.abs(a - r["enc"]).max()); eb = float(np.abs(b - r["seq"]).max())
+          print("Encoder max. Abweichung", ea, "| Sequenz max. Abweichung", eb)
+          print("Sequenz-Argmax gleich:", float((b.argmax(-1) == r["seq"].argmax(-1)).mean()))
+          assert ea < 1e-2 and eb < 1e-2
+          PY
