@@ -44,3 +44,10 @@ Ziel: Nutzer können freiwillig Nächte spenden, damit das Schlafphasen-Modell f
   Geräusche landen in `clips/`, danach werden die `audio_*.m4a` gelöscht.
 - Später (mit echter Übertragung): Bei aktiver Einwilligung nach erfolgreichem Upload derselbe
   Ablauf automatisch (`NightAudioTrim.trim`). Ohne Einwilligung optional nach X Tagen.
+
+## Modell v2 (vorbereitet: training/train_e2e_v2.py)
+
+- Robuste Normierung (Median je Band, Skala = 1,4826 × MAD über alle Werte, bei > 4 Mio. Werten jeder
+  k-te in Band-Reihenfolge) und künstlich eingemischte Schlafklänge (training/model/sleep_sounds_logmel.npz).
+- Beim Einbau: LogMel.normalize in der App auf dieselbe robuste Normierung umstellen, NightModel.version
+  erhöhen, das Ausblenden der Klang-Zeiten testweise abschalten und vergleichen.
