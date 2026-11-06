@@ -101,6 +101,28 @@ public struct LogMel: Sendable {
         return (n, Self.normalize(frames, epochs: n))
     }
 
+    /// Wie `normalize`, aber Bilder in `masked` (z. B. während eigener Schlafklänge) werden vorher
+    /// durch den Band-Median der übrigen Bilder ersetzt – laute Klänge verzerren sonst die Normierung
+    /// der ganzen Nacht, und das Modell sieht sie als Ruhe statt als Fremdgeräusch.
+    public static func normalize(_ frames: [[Float]], epochs n: Int, masked: [Range<Int>]) -> [Float] {
+        guard !masked.isEmpty else { return normalize(frames, epochs: n) }
+        let T = frames.count
+        var keep = [Bool](repeating: true, count: T)
+        for r in masked { for t in max(0, r.lowerBound)..<min(T, max(0, r.upperBound)) { keep[t] = false } }
+        let rest = (0..<T).filter { keep[$0] }
+        guard rest.count > T / 4 else { return normalize(frames, epochs: n) }
+        var med = [Float](repeating: 0, count: bands)
+        var col = [Float](repeating: 0, count: rest.count)
+        for b in 0..<bands {
+            for (i, t) in rest.enumerated() { col[i] = frames[t][b] }
+            col.sort()
+            med[b] = col[(rest.count - 1) / 2]
+        }
+        var f = frames
+        for t in 0..<T where !keep[t] { f[t] = med }
+        return normalize(f, epochs: n)
+    }
+
     /// Je Band den Median abziehen (bei gerader Anzahl der untere, wie torch.median), dann durch
     /// die Standardabweichung aller Werte (mit n−1) teilen.
     public static func normalize(_ frames: [[Float]], epochs n: Int) -> [Float] {

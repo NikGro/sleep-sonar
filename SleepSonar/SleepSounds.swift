@@ -318,6 +318,7 @@ final class SleepSoundPlayer: ObservableObject {
         fade(to: 1, seconds: preview ? 0.25 : 1.5)
         scheduleTimer()
         PassiveNightEngine.shared.note(tr("Klänge an: %@", activeNames))
+        PassiveNightEngine.shared.soundMark(on: true)
         PassiveNightEngine.shared.updateActivity()
     }
 
@@ -354,6 +355,7 @@ final class SleepSoundPlayer: ObservableObject {
         engine = nil
         nodes = [:]
         if isPlaying && !quiet { PassiveNightEngine.shared.note(tr("Klänge aus")) }
+        if isPlaying { PassiveNightEngine.shared.soundMark(on: false) }
         if !PassiveNightEngine.shared.isRunning && !quiet && !starting {
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }

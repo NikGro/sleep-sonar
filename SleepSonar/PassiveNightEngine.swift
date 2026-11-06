@@ -163,6 +163,19 @@ final class PassiveNightEngine: ObservableObject {
         if isRunning { log(text) }
     }
 
+    /// Klänge an/aus maschinenlesbar festhalten (sounds.csv: Sekunden seit Aufnahmebeginn),
+    /// damit das Modell diese Zeit ausblenden kann
+    func soundMark(on: Bool) {
+        guard isRunning, let folder, let startDate else { return }
+        let url = folder.appendingPathComponent("sounds.csv")
+        let line = String(format: "%.1f,%@\n", Date().timeIntervalSince(startDate), on ? "an" : "aus")
+        if let h = try? FileHandle(forWritingTo: url) {
+            h.seekToEndOfFile(); h.write(Data(line.utf8)); try? h.close()
+        } else {
+            try? ("seconds,state\n" + line).write(to: url, atomically: true, encoding: .utf8)
+        }
+    }
+
     // MARK: - Live-Aktivität (Dynamic Island, Sperrbildschirm, StandBy)
 
     private func startActivity() {

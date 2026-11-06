@@ -10,7 +10,7 @@ import SonarDSP
 /// (SuyaNightSequence) → Wach/REM/Kern/Tief. Das Ergebnis wird je Nacht in model.json gespeichert.
 enum NightModel {
     /// erhöhen, wenn ein neues Modell eingebaut wird → Nächte werden neu berechnet
-    static let version = 1
+    static let version = 2   // 2: Zeiten mit eigenen Schlafklängen ausgeblendet
 
     private struct Cache: Codable { var version: Int; var stages: String }
 
@@ -63,7 +63,7 @@ enum NightModel {
         let n = min(epochs, frames.count / LogMel.framesPerEpoch)
         guard n >= 20 else { throw Failure.noAudio }
         frames = Array(frames.prefix(n * LogMel.framesPerEpoch))
-        let values = LogMel.normalize(frames, epochs: n)
+        let values = LogMel.normalize(frames, epochs: n, masked: soundFrames(folder))
         frames = []
 
         // 2) Merkmale je Epoche, in Paketen
@@ -105,6 +105,42 @@ enum NightModel {
         }
         progress(1)
         return stages
+    }
+}
+
+extension NightModel {
+    /// Bild-Bereiche (10 je Sekunde), in denen eigene Schlafklänge liefen – aus sounds.csv, für
+    /// ältere Nächte aus dem Protokoll. Etwas Rand davor, Ausblenden (30 s) und Nachhall danach.
+    static func soundFrames(_ folder: URL) -> [Range<Int>] {
+        var marks: [(Double, Bool)] = []
+        if let text = try? String(contentsOf: folder.appendingPathComponent("sounds.csv"), encoding: .utf8) {
+            for line in text.split(separator: "\n").dropFirst() {
+                let c = line.split(separator: ",")
+                if c.count == 2, let s = Double(c[0]) { marks.append((s, c[1] == "an")) }
+            }
+        } else if let log = try? String(contentsOf: folder.appendingPathComponent("events.log"), encoding: .utf8),
+                  let meta = try? Data(contentsOf: folder.appendingPathComponent("meta.json")),
+                  let obj = try? JSONSerialization.jsonObject(with: meta) as? [String: Any],
+                  let startText = obj["start"] as? String {
+            let iso = ISO8601DateFormatter()
+            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            guard let start = iso.date(from: startText) else { return [] }
+            for line in log.split(separator: "\n") {
+                let parts = line.split(separator: " ", maxSplits: 1)
+                guard parts.count == 2, let t = iso.date(from: String(parts[0])) else { continue }
+                let text = parts[1].trimmingCharacters(in: .whitespaces)
+                if text.hasPrefix("Klänge an") || text.hasPrefix("Sounds on") { marks.append((t.timeIntervalSince(start), true)) }
+                if text.hasPrefix("Klänge aus") || text.hasPrefix("Sounds off") { marks.append((t.timeIntervalSince(start), false)) }
+            }
+        }
+        var out: [Range<Int>] = []
+        var on: Double?
+        for (s, isOn) in marks.sorted(by: { $0.0 < $1.0 }) {
+            if isOn { if on == nil { on = s } }
+            else if let o = on { out.append(Int((o - 2) * 10)..<Int((s + 35) * 10)); on = nil }
+        }
+        if let o = on { out.append(Int((o - 2) * 10)..<Int((o + 3 * 3600) * 10)) }   // „aus“ fehlt: höchstens 3 h
+        return out
     }
 }
 
