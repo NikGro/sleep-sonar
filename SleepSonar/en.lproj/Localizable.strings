@@ -45,6 +45,7 @@
 "Aufnahme löschen, Geräusche behalten" = "Delete recording, keep sounds";
 "Aufnahme stand still" = "Recording had stalled";
 "Aufnahme starten" = "Start recording";
+"Aufnahme, Auswertung und Geräusche dieser Nacht werden vom iPhone gelöscht. Einträge in Health bleiben." = "The recording, analysis and sounds of this night are deleted from the iPhone. Health entries remain.";
 "Aus" = "Stop";
 "Ausblenden" = "Fade out";
 "Ausblenden, wenn du schläfst" = "Fade out when you're asleep";
@@ -172,6 +173,7 @@
 "Modell konnte nicht rechnen: %@" = "The model couldn't run: %@";
 "Morgenlicht" = "Morning light";
 "NICHT am Strom" = "NOT charging";
+"Nacht löschen" = "Delete night";
 "Nacht wird ausgewertet" = "Analyzing the night";
 "Nacht zum %@" = "Night ending %@";
 "Nachtaufnahme beendet (%@)." = "Night recording stopped (%@).";
@@ -323,6 +325,7 @@
 "Wichtig" = "Important";
 "Wiederholen" = "Repeat";
 "Willkommen bei Suya" = "Welcome to Suya";
+"Willst du diese Nacht löschen?" = "Do you want to delete this night?";
 "Wind" = "Wind";
 "Wirklich beenden?" = "Really stop?";
 "Wähle unten einen Klang" = "Pick a sound below";

@@ -132,6 +132,12 @@ struct NightAnalysisView: View {
     @State private var model: [SleepStaging.Stage]?
     @State private var modelProgress: Double?
     @State private var modelError: String?
+
+    /// ein Zeitraum für alle Zeitstrahlen der Nacht (Regeln, Modell, Watch)
+    private func span(_ r: NightAnalysisResult) -> ClosedRange<Date> {
+        let n = max(r.ours.count, r.watch.count, model?.count ?? 0, 1)
+        return r.start...r.start.addingTimeInterval(Double(n) * r.epochSeconds)
+    }
     @StateObject private var player = NightClipPlayer()
 
     var body: some View {
@@ -243,7 +249,7 @@ struct NightAnalysisView: View {
 
         VStack(alignment: .leading, spacing: 12) {
             SectionTitle(model != nil ? tr("Suya (Regeln)") : "Suya")
-            Hypnogram(stages: ours, start: r.start, epochSeconds: r.epochSeconds)
+            Hypnogram(stages: ours, start: r.start, epochSeconds: r.epochSeconds, domain: span(r))
                 .frame(height: 112)
             StageLegend()
         }
@@ -252,7 +258,8 @@ struct NightAnalysisView: View {
             VStack(alignment: .leading, spacing: 12) {
                 SectionTitle(tr("Suya-Modell (neu)"))
                 if let model {
-                    Hypnogram(stages: model.map { Optional($0) }, start: r.start, epochSeconds: r.epochSeconds)
+                    Hypnogram(stages: model.map { Optional($0) }, start: r.start, epochSeconds: r.epochSeconds,
+                              domain: span(r))
                         .frame(height: 112)
                 } else if let p = modelProgress {
                     ProgressView(value: p).tint(Theme.moon)
@@ -267,7 +274,7 @@ struct NightAnalysisView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionTitle(r.watchSource.isEmpty ? "Apple Watch" : r.watchSource)
             if hasWatch {
-                Hypnogram(stages: r.watch, start: r.start, epochSeconds: r.epochSeconds)
+                Hypnogram(stages: r.watch, start: r.start, epochSeconds: r.epochSeconds, domain: span(r))
                     .frame(height: 112)
             } else {
                 Text(tr("Für diese Nacht gibt es keine Watch-Schlafphasen in Health. Ist die Watch synchronisiert und der Health-Zugriff erlaubt?"))
@@ -438,6 +445,8 @@ struct Hypnogram: View {
     let start: Date
     let epochSeconds: Double
     var compact = false
+    /// gemeinsamer Zeitraum, damit Regeln, Modell und Watch genau übereinander liegen
+    var domain: ClosedRange<Date>? = nil
 
     private struct Segment: Identifiable {
         let id: Int
@@ -448,7 +457,10 @@ struct Hypnogram: View {
 
     private static let names = [SleepStaging.Stage.wake, .rem, .core, .deep].map(\.displayName)
 
-    private var hourStep: Int { Double(stages.count) * epochSeconds > 9 * 3600 ? 2 : 1 }
+    private var hourStep: Int {
+        let d = domain.map { $0.upperBound.timeIntervalSince($0.lowerBound) } ?? Double(stages.count) * epochSeconds
+        return d > 9 * 3600 ? 2 : 1
+    }
     private static let labelWidth: CGFloat = 38
 
     private var segments: [Segment] {
@@ -507,6 +519,7 @@ struct Hypnogram: View {
             }
         }
         .chartXAxis(compact ? .hidden : .automatic)
+        .chartXScale(domain: domain ?? start...start.addingTimeInterval(max(1, Double(stages.count)) * epochSeconds))
         .chartLegend(.hidden)
     }
 }

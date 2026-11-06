@@ -1,6 +1,9 @@
 # Englische Übersetzungen (Schlüssel = deutscher Text). Wird von gen_strings.py in
 # SleepSonar/en.lproj und Widgets/en.lproj geschrieben.
 EN = {
+    "Willst du diese Nacht löschen?": "Do you want to delete this night?",
+    "Nacht löschen": "Delete night",
+    "Aufnahme, Auswertung und Geräusche dieser Nacht werden vom iPhone gelöscht. Einträge in Health bleiben.": "The recording, analysis and sounds of this night are deleted from the iPhone. Health entries remain.",
     "Aufnahme löschen, Geräusche behalten": "Delete recording, keep sounds",
     "Tonaufnahme löschen (%@)?": "Delete audio recording (%@)?",
     "Aufnahme löschen": "Delete recording",

@@ -168,8 +168,7 @@ struct DonationSection: View {
             }
         }
         .sheet(isPresented: $asking) { DonationConsentView() }
-        .confirmationDialog(tr("Alle gespendeten Nächte löschen lassen?"), isPresented: $confirmDelete,
-                            titleVisibility: .visible) {
+        .alert(tr("Alle gespendeten Nächte löschen lassen?"), isPresented: $confirmDelete) {
             Button(tr("Löschung beantragen"), role: .destructive) { Haptics.warning(); donation.requestDeletion() }
             Button(tr("Abbrechen"), role: .cancel) {}
         } message: {

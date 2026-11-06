@@ -12,6 +12,7 @@ struct NightView: View {
     @State private var message: String?
     @State private var demo: URL?
     @State private var trimming: URL?
+    @State private var deleting: [URL] = []
 
     var body: some View {
         NavigationStack {
@@ -69,12 +70,7 @@ struct NightView: View {
                         }
                     }
                 }
-                .onDelete { idx in
-                    for i in idx where !(rec.isRunning && rec.folder == nights[i]) {
-                        try? FileManager.default.removeItem(at: nights[i])
-                    }
-                    refresh()
-                }
+                .onDelete { idx in deleting = idx.map { nights[$0] } }
                 if let message {
                     Text(message).font(.caption).foregroundStyle(Theme.mist).listRowBackground(Theme.ink)
                 }
@@ -95,10 +91,23 @@ struct NightView: View {
             .onChange(of: rec.isRunning) { refresh() }
             .refreshable { refresh() }
             .sheet(item: $share) { item in ShareSheet(items: item.urls) }
-            .confirmationDialog(trimming.map { tr("Tonaufnahme löschen (%@)?", ByteCountFormatter.string(
-                                    fromByteCount: NightAudioTrim.audioBytes($0), countStyle: .file)) } ?? "",
-                                isPresented: Binding(get: { trimming != nil }, set: { if !$0 { trimming = nil } }),
-                                titleVisibility: .visible) {
+            .alert(tr("Willst du diese Nacht löschen?"),
+                   isPresented: Binding(get: { !deleting.isEmpty }, set: { if !$0 { deleting = [] } })) {
+                Button(tr("Nacht löschen"), role: .destructive) {
+                    for url in deleting where !(rec.isRunning && rec.folder == url) {
+                        try? FileManager.default.removeItem(at: url)
+                    }
+                    deleting = []
+                    Haptics.warning()
+                    refresh()
+                }
+                Button(tr("Abbrechen"), role: .cancel) { deleting = [] }
+            } message: {
+                Text(tr("Aufnahme, Auswertung und Geräusche dieser Nacht werden vom iPhone gelöscht. Einträge in Health bleiben."))
+            }
+            .alert(trimming.map { tr("Tonaufnahme löschen (%@)?", ByteCountFormatter.string(
+                       fromByteCount: NightAudioTrim.audioBytes($0), countStyle: .file)) } ?? "",
+                   isPresented: Binding(get: { trimming != nil }, set: { if !$0 { trimming = nil } })) {
                 Button(tr("Aufnahme löschen"), role: .destructive) {
                     guard let url = trimming else { return }
                     trimming = nil
