@@ -18,6 +18,13 @@ import glob, json, os, sys, time
 import numpy as np, soundfile as sf, torch, torch.nn as nn, torchaudio
 
 dev = "cuda" if torch.cuda.is_available() else "cpu"; torch.manual_seed(0); np.random.seed(0)
+if os.name == "nt":   # niedrige Priorität, damit der PC bedienbar bleibt
+    import ctypes; ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), 0x4000)
+if dev == "cuda":
+    # nie mehr als ~85 % des Grafikspeichers: sonst lagert Windows in den Arbeitsspeicher aus
+    # (vielfach langsamer, PC laggt) - lieber nimmt cuDNN dann einen sparsameren Rechenweg
+    torch.cuda.set_per_process_memory_fraction(float(os.environ.get("GPU_FRACTION", "0.85")))
+    torch.backends.cudnn.benchmark = False
 psgdir, homedir, out, soundfile = sys.argv[1:5]
 W_NIGHT = int(os.environ.get("W_NIGHT", "20"))
 P_SOUND = float(os.environ.get("P_SOUND", "0.5"))
@@ -136,6 +143,9 @@ def train(own, iters=ITERS, crop=120):
         if m.any(): xb[m] = lab_look(xb[m])
         loss = lossf(net(xb).reshape(-1, 4), yb.reshape(-1))
         opt.zero_grad(); loss.backward(); nn.utils.clip_grad_norm_(net.parameters(), 1.0); opt.step(); sched.step()
+        if it % 250 == 0 or it == iters - 1:
+            mem = torch.cuda.max_memory_allocated() / 2**30 if dev == "cuda" else 0
+            print(f"  Schritt {it}/{iters}  Verlust {loss.item():.3f}  GPU max {mem:.1f} GB  %.0f s" % (time.time() - t0), flush=True)
     return net
 
 @torch.no_grad()
