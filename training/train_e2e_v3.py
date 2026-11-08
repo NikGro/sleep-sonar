@@ -31,6 +31,7 @@ P_SOUND = float(os.environ.get("P_SOUND", "0.5"))
 ITERS = int(os.environ.get("ITERS", "3500"))
 GATE_DB = float(os.environ.get("GATE_DB", "3"))
 W_CONS = float(os.environ.get("W_CONS", "1.0"))
+EVAL_EVERY = int(os.environ.get("EVAL_EVERY", "1000"))   # Lernkurve: so oft auf den Testnächten messen
 NAMES = ["Wach", "REM", "Kern", "Tief"]; t0 = time.time()
 mel = torchaudio.transforms.MelSpectrogram(16000, n_fft=1024, hop_length=1600, n_mels=64, f_min=50, f_max=7800).to(dev)
 
@@ -137,8 +138,22 @@ def lab_look(x):   # Labor weniger nach Labor klingen lassen (normiert)
     x = torch.logaddexp(x + tilt, floor + 0.3 * torch.randn_like(x[:, :, :, :1]))
     return x + 0.05 * torch.randn_like(x)
 
-def train(own, iters=ITERS, crop=120):
-    """own: Liste von Nacht-Schlüsseln aus homes, W_NIGHT-fach gewichtet"""
+def quick_kappa(net, k, sound):
+    raw, _, y = homes[k]
+    if sound:
+        r0 = raw.to(dev).float(); med = r0.permute(1, 0, 2).reshape(64, -1).median(1).values.view(1, 64, 1)
+        X = gate(add_sound(r0, med, np.random.RandomState(1)))
+    else:
+        X = torch.cat([gate(raw[i:i + 200].to(dev)) for i in range(0, len(raw), 200)])
+    p = predict(net, X).argmax(1); ok = y >= 0
+    C = np.zeros((4, 4)); np.add.at(C, (y[ok], p[ok]), 1)
+    return float(kappa(C))
+
+curve = []
+def train(own, iters=ITERS, crop=120, watch=()):
+    """own: Liste von Nacht-Schlüsseln aus homes, W_NIGHT-fach gewichtet.
+    watch: Testnächte für die Lernkurve - zurück kommt dann der Stand mit dem besten Mittelwert."""
+    best, best_state = -9.0, None
     net = Net().to(dev); opt = torch.optim.AdamW(net.parameters(), lr=1.5e-3, weight_decay=1e-2)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=1.5e-3, total_steps=iters)
     w = torch.tensor([1.5, 1.6, 0.6, 1.6], device=dev)
@@ -167,6 +182,16 @@ def train(own, iters=ITERS, crop=120):
         if it % 250 == 0 or it == iters - 1:
             mem = torch.cuda.max_memory_allocated() / 2**30 if dev == "cuda" else 0
             print(f"  Schritt {it}/{iters}  Verlust {loss.item():.3f}  Konsistenz {cons.item():.3f}  GPU max {mem:.1f} GB  %.0f s" % (time.time() - t0), flush=True)
+        if watch and ((it + 1) % EVAL_EVERY == 0 or it == iters - 1):
+            ks = {f"{k}{'+klang' if snd else ''}": round(quick_kappa(net, k, snd), 3) for k in watch for snd in (False, True)}
+            m = float(np.mean(list(ks.values())))
+            curve.append(dict(step=it + 1, mean=round(m, 3), **ks))
+            print(f"  LERNKURVE Schritt {it + 1}: Mittel {m:.3f}  {ks}", flush=True)
+            if m > best:
+                best = m; best_state = {k: v.detach().clone().cpu() for k, v in net.state_dict().items()}
+                res["bester_schritt"] = it + 1
+            res["lernkurve"] = curve; save()
+    if best_state is not None: net.load_state_dict(best_state)
     return net
 
 @torch.no_grad()
@@ -202,9 +227,13 @@ def evaluate(tag, net, k):
 
 test = [k for k in os.environ.get("TEST", "").split(",") if k in homes]
 if test:
-    net = train([k for k in homes if k not in test])
-    for k in test: evaluate("ungesehen", net, k)
+    net = train([k for k in homes if k not in test], watch=test)
+    print("BESTER STAND bei Schritt", res.get("bester_schritt"), flush=True)
+    for k in test: evaluate("ungesehen_bester_stand", net, k)
 if os.environ.get("FINAL") == "1":
-    net = train(list(homes))
+    # Endmodell so lange lernen, wie es in der Lernkurve am besten war (auf 500 aufgerundet)
+    steps = int(-(-res.get("bester_schritt", ITERS) // 500) * 500) if test else ITERS
+    print("ENDMODELL mit", steps, "Schritten", flush=True)
+    net = train(list(homes), iters=steps)
     torch.save(net.state_dict(), os.path.join(out, "model_e2e_v3.pt"))
     for k in homes: evaluate("gelernt", net, k)
