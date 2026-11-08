@@ -73,6 +73,7 @@
 "Die Wecker klingeln wie der iPhone-Wecker, auch bei Stummschaltung und im Schlaf-Fokus." = "The alarms ring like the iPhone alarm, even in silent mode and with the Sleep Focus on.";
 "Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht." = "The time counts from the start of the night recording. This alarm only rings while a recording is running – without a recording it doesn't ring.";
 "Diese Datei lässt sich nicht als Ton verwenden." = "This file can't be used as a sound.";
+"Diese Nacht spenden" = "Donate this night";
 "Du kannst jederzeit unter „Mehr“ widerrufen und mit deiner Spender-Nummer die Löschung verlangen." = "You can withdraw at any time under “More” and request deletion with your donor number.";
 "Du spendest Nächte seit %@." = "You've been donating nights since %@.";
 "Du spendest keine Nächte." = "You're not donating nights.";
@@ -310,6 +311,7 @@
 "seit %@ Uhr" = "since %@";
 "unbekannt" = "unknown";
 "voll" = "full";
+"Ältere Nächte kannst du einzeln spenden: Nacht gedrückt halten, solange ihr Klangbild noch auf dem iPhone ist (7 Tage)." = "You can donate older nights one by one: press and hold a night while its sound picture is still on the iPhone (7 days).";
 "Über Nacht ans Ladekabel. Die Aufnahme braucht etwa so viel Strom wie Musik hören." = "Keep it charging overnight. Recording uses about as much power as listening to music.";
 "„Schlafaufnahme starten“ und „Schlafaufnahme beenden“ gibt es in der Kurzbefehle-App, zum Beispiel als Automation beim Schlaf-Fokus." = "“Start sleep recording” and “Stop sleep recording” are available in the Shortcuts app, for example as an automation with the Sleep Focus.";
 "ℹ️ Keine eigenen Schlaf-Einträge der letzten 48 h gefunden." = "ℹ️ No own sleep entries found in the last 48 h.";

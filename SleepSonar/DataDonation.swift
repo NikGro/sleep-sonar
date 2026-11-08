@@ -6,7 +6,7 @@ import SwiftUI
 final class DataDonation: ObservableObject {
     static let shared = DataDonation()
     /// erhöhen, wenn sich der Einwilligungstext inhaltlich ändert → erneut fragen
-    static let textVersion = 3   // 3: Übertragung an suya.ng-lab.de, 6 Monate, ab 18
+    static let textVersion = 4   // 3: Übertragung an suya.ng-lab.de, 6 Monate, ab 18 · 4: ältere Nächte einzeln
 
     enum State: String { case undecided, granted, declined }
 
@@ -128,6 +128,7 @@ struct DonationConsentView: View {
                 ])
                 section(tr("Welche Nächte"), color: Theme.color(.rem), points: [
                     ("moon.zzz", tr("Nur Nächte ab deiner Zustimmung, mit mindestens 5 Stunden Aufnahme und Schlafphasen der Watch.")),
+                    ("hand.tap", tr("Ältere Nächte kannst du einzeln spenden: Nacht gedrückt halten, solange ihr Klangbild noch auf dem iPhone ist (7 Tage).")),
                 ])
                 section(tr("Wohin"), color: Theme.color(.deep), points: [
                     ("lock.shield", tr("Verschlüsselt und nur im WLAN an den Suya-Server in Hamburg. Dort nur für das Training, nie weitergegeben, nach 6 Monaten gelöscht.")),

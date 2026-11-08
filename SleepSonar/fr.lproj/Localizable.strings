@@ -73,6 +73,7 @@
 "Die Wecker klingeln wie der iPhone-Wecker, auch bei Stummschaltung und im Schlaf-Fokus." = "Les alarmes sonnent comme l’alarme de l’iPhone, même en mode silencieux et avec la concentration Sommeil.";
 "Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht." = "Le temps compte à partir du début de l’enregistrement nocturne. Cette alarme ne sonne que pendant un enregistrement – sans enregistrement, elle ne sonne pas.";
 "Diese Datei lässt sich nicht als Ton verwenden." = "Ce fichier ne peut pas être utilisé comme son.";
+"Diese Nacht spenden" = "Donner cette nuit";
 "Du kannst jederzeit unter „Mehr“ widerrufen und mit deiner Spender-Nummer die Löschung verlangen." = "Tu peux retirer ton accord à tout moment sous « Plus » et demander la suppression avec ton numéro de donneur.";
 "Du spendest Nächte seit %@." = "Tu donnes des nuits depuis le %@.";
 "Du spendest keine Nächte." = "Tu ne donnes pas de nuits.";
@@ -310,6 +311,7 @@
 "seit %@ Uhr" = "depuis %@";
 "unbekannt" = "inconnu";
 "voll" = "complet";
+"Ältere Nächte kannst du einzeln spenden: Nacht gedrückt halten, solange ihr Klangbild noch auf dem iPhone ist (7 Tage)." = "Tu peux donner des nuits plus anciennes une par une : maintiens une nuit appuyée tant que son image sonore est encore sur l’iPhone (7 jours).";
 "Über Nacht ans Ladekabel. Die Aufnahme braucht etwa so viel Strom wie Musik hören." = "Laisse-le en charge la nuit. L’enregistrement consomme à peu près autant que d’écouter de la musique.";
 "„Schlafaufnahme starten“ und „Schlafaufnahme beenden“ gibt es in der Kurzbefehle-App, zum Beispiel als Automation beim Schlaf-Fokus." = "« Démarrer l’enregistrement du sommeil » et « Arrêter l’enregistrement du sommeil » sont dans l’app Raccourcis, par exemple en automatisation avec la concentration Sommeil.";
 "ℹ️ Keine eigenen Schlaf-Einträge der letzten 48 h gefunden." = "ℹ️ Aucune entrée de sommeil propre trouvée ces dernières 48 h.";

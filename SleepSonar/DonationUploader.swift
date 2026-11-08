@@ -65,8 +65,8 @@ final class DonationUploader {
             if let since = donation.date, created < since {
                 state.skipped = NightDonationState.beforeConsent; state.save(folder); continue
             }
-            if !Self.hasMel(folder) {
-                if let why = await prepare(folder: folder) { state.skipped = why; state.save(folder); continue }
+            if !Self.hasMel(folder), let why = await prepare(folder: folder) {
+                state.skipped = why; state.save(folder); continue
             }
             switch await upload(folder: folder, state: &state, donor: donor, key: key) {
             case .sent:
@@ -80,7 +80,7 @@ final class DonationUploader {
                 return
             }
         }
-        Self.cleanupMel(olderThan: 30)
+        NightFinisher.cleanupMel()
     }
 
     private enum Outcome { case sent, skip(String), later(String), stop }
@@ -111,6 +111,11 @@ final class DonationUploader {
         hasMel(folder) || !NightExport.audioFiles(in: folder).isEmpty
     }
 
+    /// Menütext beim Gedrückthalten: schon gespendet → erneut, sonst nachträglich spenden
+    nonisolated static func donateLabel(_ folder: URL) -> String {
+        NightDonationState.existing(folder)?.sent != nil ? tr("Datenspende erneut senden") : tr("Diese Nacht spenden")
+    }
+
     /// Spektrogramm-Datei der Nacht (Roh-Log-Mel, Float16, Bild für Bild je 64 Bänder)
     nonisolated static func melURL(_ folder: URL) -> URL { folder.appendingPathComponent("spende_mel.f16") }
     nonisolated static func hasMel(_ folder: URL) -> Bool { FileManager.default.fileExists(atPath: melURL(folder).path) }
@@ -122,30 +127,22 @@ final class DonationUploader {
         guard !files.isEmpty else { return NightDonationState.noAudio }
         let seconds = files.reduce(0.0) { $0 + ((try? audioSeconds($1)) ?? 0) }
         guard seconds >= Self.minSeconds else { return NightDonationState.short }
-        let ok = await Task.detached(priority: .utility) { () -> Bool in
-            guard let frames = try? NightModel.melFrames(files: files) else { return false }
-            var data = Data(capacity: frames.count * LogMel.bands * 2)
-            var half = [Float16](repeating: 0, count: LogMel.bands)
-            for f in frames {
-                for b in 0..<LogMel.bands { half[b] = Float16(f[b]) }
-                half.withUnsafeBytes { data.append(contentsOf: $0) }
-            }
-            return (try? data.write(to: Self.melURL(folder), options: .atomic)) != nil
-        }.value
+        let ok = await Task.detached(priority: .utility) { Self.writeMel(folder: folder, files: files) }.value
         guard ok else { return nil }   // später nochmal
         _ = try? await NightAudioTrim.trim(folder)   // Ton weg, Ausschnitte bleiben
         return nil
     }
 
-    /// alte Spektrogramm-Dateien gesendeter Nächte aufräumen
-    nonisolated static func cleanupMel(olderThan days: Double) {
-        let dirs = (try? FileManager.default.contentsOfDirectory(at: NightRecorder.nightsFolder,
-                                                                 includingPropertiesForKeys: nil)) ?? []
-        for folder in dirs where hasMel(folder) {
-            guard let s = NightDonationState.load(folder), let sent = s.sent,
-                  Date().timeIntervalSince(sent) > days * 86400 else { continue }
-            try? FileManager.default.removeItem(at: melURL(folder))
+    /// Spektrogramm (Roh-Log-Mel, Float16) der ganzen Nacht in die Datei schreiben
+    nonisolated static func writeMel(folder: URL, files: [URL]) -> Bool {
+        guard let frames = try? NightModel.melFrames(files: files) else { return false }
+        var data = Data(capacity: frames.count * LogMel.bands * 2)
+        var half = [Float16](repeating: 0, count: LogMel.bands)
+        for f in frames {
+            for b in 0..<LogMel.bands { half[b] = Float16(f[b]) }
+            half.withUnsafeBytes { data.append(contentsOf: $0) }
         }
+        return (try? data.write(to: melURL(folder), options: .atomic)) != nil
     }
 
     private func upload(folder: URL, state: inout NightDonationState, donor: String, key: String) async -> Outcome {
@@ -153,6 +150,7 @@ final class DonationUploader {
         guard let start = Self.audioStart(folder) else { return .skip(NightDonationState.noStart) }
         let bytes = (try? FileManager.default.attributesOfItem(atPath: Self.melURL(folder).path)[.size] as? Int) ?? 0
         let epochs = bytes / 2 / LogMel.bands / LogMel.framesPerEpoch
+        guard Double(epochs) * 30 >= Self.minSeconds else { return .skip(NightDonationState.short) }
 
         // Watch-Phasen je 30-s-Epoche ab Aufnahmebeginn
         guard let watch = await watchStages(start: start, epochs: epochs) else {

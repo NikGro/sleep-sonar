@@ -167,6 +167,34 @@ for f in sorted(glob.glob(os.path.join(homedir, "*.flac"))):
     raw, y = logmel(f, np.load(f[:-5] + ".labels.npy").astype(np.int64))
     homes[os.path.basename(f)[:-5]] = (raw, torch.tensor(y), y)
 print(len(lab_data), "Laborpersonen, eigene Naechte:", {k: len(v[2]) for k, v in homes.items()}, flush=True)
+
+@torch.no_grad()
+def night_stats(raw, keep=None):
+    """Kennwerte der Nacht-Normierung (wie night_norm), einmal je Nacht: Median der übrigen Nacht
+    (für ausgeblendete Bilder), Median je Band danach, Streuung. Dann lässt sich jeder Ausschnitt billig normieren."""
+    n = raw.shape[0]; F = raw.to(dev).float().permute(1, 0, 2).reshape(64, n * 300)
+    rest = None
+    if keep is not None and keep.sum() > F.shape[1] // 4 and not bool(keep.all()):
+        rest = F[:, keep].median(1, keepdim=True).values
+        F = F.clone(); F[:, ~keep] = rest
+    med = F.median(1, keepdim=True).values
+    sd = (F - med).std() + 1e-6
+    return (rest.cpu() if rest is not None else None), med.cpu(), float(sd)
+
+def norm_crop(r, st, keep=None):
+    """r: (L, 64, 300) roh auf dev, st aus night_stats, keep: bool (L*300,) für diesen Ausschnitt oder None"""
+    rest, med, sd = st
+    L = r.shape[0]; F = r.float().permute(1, 0, 2).reshape(64, L * 300)
+    if rest is not None and keep is not None and not bool(keep.all()):
+        F = F.clone(); F[:, ~keep] = rest.to(dev)
+    F = (F - med.to(dev)) / sd
+    return F.reshape(64, L, 300).permute(1, 0, 2).contiguous()
+
+if NORM == "night":
+    lab_stats = [night_stats(r) for r, _ in lab_data]
+    home_keep = {k: base_keep(k, len(v[0])) for k, v in homes.items()}
+    home_stats = {k: night_stats(v[0], home_keep[k]) for k, v in homes.items()}
+    print("Nacht-Kennwerte berechnet %.0f s" % (time.time() - t0), flush=True)
 g = gate(lab_data[0][0][:50].to(dev))
 print("Gating-Werte Labor 0: Mittel %.3f, Anteil 0: %.2f, max %.2f" % (g.mean(), (g == 0).float().mean(), g.max()), flush=True)
 
@@ -245,13 +273,18 @@ def train(own, iters=ITERS, crop=CROP, watch=(), noisy=True, init=None, lr_fixed
     for it in range(iters):
         net.train(); clean, aug1, aug2, yb = [], [], [], []
         for _ in range(4 if noisy else 8):
-            key = None
+            key = None; li = None
             if own and np.random.rand() < p_night:
                 key = own[np.random.randint(len(own))]; raw, Y, _ = homes[key]
             else:
-                raw, Y = lab_data[np.random.randint(len(lab_data))]
+                li = np.random.randint(len(lab_data)); raw, Y = lab_data[li]
             L = min(crop, len(Y)); s = np.random.randint(0, len(Y) - L + 1)
-            if NORM == "night":
+            if NORM == "night" and not noisy:
+                # sauber: Ausschnitt mit den Kennwerten der ganzen Nacht normieren (wie in der App)
+                st = home_stats[key] if key else lab_stats[li]
+                kb = home_keep[key][s * 300:(s + L) * 300] if key and home_keep[key] is not None else None
+                clean.append(norm_crop(raw[s:s + L].to(dev), st, kb))
+            elif NORM == "night":
                 # ganze Nacht abwandeln und normieren (wie in der App), dann denselben Ausschnitt nehmen
                 r = raw.to(dev).float(); n = len(raw); kb = base_keep(key, n) if key else None
                 def nn_(x, sp):

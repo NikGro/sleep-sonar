@@ -73,6 +73,7 @@
 "Die Wecker klingeln wie der iPhone-Wecker, auch bei Stummschaltung und im Schlaf-Fokus." = "アラームはサイレントモードや睡眠集中モードでも、iPhoneのアラームと同じように鳴ります。";
 "Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht." = "時間は夜間記録の開始から数えます。このアラームは記録中のみ鳴ります。記録していないときは鳴りません。";
 "Diese Datei lässt sich nicht als Ton verwenden." = "このファイルはサウンドとして使えません。";
+"Diese Nacht spenden" = "この夜を寄付";
 "Du kannst jederzeit unter „Mehr“ widerrufen und mit deiner Spender-Nummer die Löschung verlangen." = "「その他」でいつでも取り消し、寄付者番号で削除を求めることができます。";
 "Du spendest Nächte seit %@." = "%@から夜を寄付しています。";
 "Du spendest keine Nächte." = "夜を寄付していません。";
@@ -310,6 +311,7 @@
 "seit %@ Uhr" = "%@から";
 "unbekannt" = "不明";
 "voll" = "満充電";
+"Ältere Nächte kannst du einzeln spenden: Nacht gedrückt halten, solange ihr Klangbild noch auf dem iPhone ist (7 Tage)." = "以前の夜も1つずつ寄付できます。音の画像がiPhoneに残っている間（7日間）、その夜を長押ししてください。";
 "Über Nacht ans Ladekabel. Die Aufnahme braucht etwa so viel Strom wie Musik hören." = "夜は充電したままにしてください。記録の電力消費は音楽を聴くのと同じくらいです。";
 "„Schlafaufnahme starten“ und „Schlafaufnahme beenden“ gibt es in der Kurzbefehle-App, zum Beispiel als Automation beim Schlaf-Fokus." = "「睡眠記録を開始」と「睡眠記録を終了」はショートカットAppにあります。たとえば睡眠集中モードのオートメーションに。";
 "ℹ️ Keine eigenen Schlaf-Einträge der letzten 48 h gefunden." = "ℹ️ 過去48時間に自分の睡眠データは見つかりませんでした。";

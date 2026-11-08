@@ -22,10 +22,10 @@ enum NightAudioTrim {
         let before = audioBytes(folder)
         let events = try await SoundEventDetector.analyze(folder: folder) { _ in }
         if NightModel.isAvailable, NightModel.cached(folder) == nil {
-            _ = try? await Task.detached(priority: .userInitiated) { try NightModel.stages(folder: folder) }.value
-            // ohne Ergebnis den Ton nicht löschen – sonst bliebe von der Nacht nichts übrig
-            guard NightModel.cached(folder) != nil else { throw TrimError.modelFailed }
+            _ = try? await Task.detached(priority: .utility) { try NightModel.stages(folder: folder) }.value
         }
+        // ohne Ergebnis den Ton nicht löschen – sonst bliebe von der Nacht nichts übrig
+        guard NightModel.cached(folder) != nil else { throw TrimError.modelFailed }
         try await Task.detached(priority: .userInitiated) {
             let dir = folder.appendingPathComponent("clips", isDirectory: true)
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)

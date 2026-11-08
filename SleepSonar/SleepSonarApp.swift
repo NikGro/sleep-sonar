@@ -79,6 +79,7 @@ struct SleepSonarApp: App {
                     SmartAlarm.shared.refresh()
                     Task {
                         await HealthSync.syncRecent()
+                        await NightFinisher.run()             // fertige Nächte: Klangbild sichern, Ton löschen
                         await DonationUploader.shared.run()   // nur mit Einwilligung, nur im WLAN
                     }
                 }

@@ -73,6 +73,7 @@
 "Die Wecker klingeln wie der iPhone-Wecker, auch bei Stummschaltung und im Schlaf-Fokus." = "闹钟会像 iPhone 闹钟一样响起，即使在静音模式和“睡眠”专注模式下。";
 "Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht." = "时间从夜间记录开始计算。此闹钟只在记录进行时响起——没有记录就不响。";
 "Diese Datei lässt sich nicht als Ton verwenden." = "此文件不能用作声音。";
+"Diese Nacht spenden" = "捐赠这一夜";
 "Du kannst jederzeit unter „Mehr“ widerrufen und mit deiner Spender-Nummer die Löschung verlangen." = "你可以随时在“更多”中撤回，并凭捐赠者编号要求删除。";
 "Du spendest Nächte seit %@." = "你自 %@ 起捐赠夜晚。";
 "Du spendest keine Nächte." = "你没有捐赠夜晚。";
@@ -310,6 +311,7 @@
 "seit %@ Uhr" = "自 %@ 起";
 "unbekannt" = "未知";
 "voll" = "已充满";
+"Ältere Nächte kannst du einzeln spenden: Nacht gedrückt halten, solange ihr Klangbild noch auf dem iPhone ist (7 Tage)." = "较早的夜晚可以逐个捐赠：在其声音图仍保存在 iPhone 上时（7 天）长按该夜晚。";
 "Über Nacht ans Ladekabel. Die Aufnahme braucht etwa so viel Strom wie Musik hören." = "夜里保持充电。记录的耗电量和听音乐差不多。";
 "„Schlafaufnahme starten“ und „Schlafaufnahme beenden“ gibt es in der Kurzbefehle-App, zum Beispiel als Automation beim Schlaf-Fokus." = "“开始睡眠记录”和“结束睡眠记录”在“快捷指令”App 中，例如可与“睡眠”专注模式一起作为自动化。";
 "ℹ️ Keine eigenen Schlaf-Einträge der letzten 48 h gefunden." = "ℹ️ 最近 48 小时内未找到自己的睡眠条目。";

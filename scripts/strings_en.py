@@ -326,6 +326,8 @@ EN = {
 "Wird gesendet, sobald das iPhone im WLAN ist.": "Will be sent as soon as the iPhone is on Wi-Fi.",
 "Wird nach dem Aufwachen vorbereitet und im WLAN gesendet.": "Will be prepared after you wake up and sent over Wi-Fi.",
 "Wird vorbereitet.": "Being prepared.",
+"Diese Nacht spenden": "Donate this night",
+"Ältere Nächte kannst du einzeln spenden: Nacht gedrückt halten, solange ihr Klangbild noch auf dem iPhone ist (7 Tage).": "You can donate older nights one by one: press and hold a night while its sound picture is still on the iPhone (7 days).",
 }
 # Schlüssel, die nicht über tr("…") im Code stehen (für die Vollständigkeitsprüfung)
 DYNAMIC = ["Aus", "Schlummern", "Klänge ausblenden", "Klänge abspielen", "Klänge sofort aus", "Wach", "REM", "Kern", "Tief", "Im Bett", "Schlafend", "Schnarchen", "Sprechen",

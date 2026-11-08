@@ -56,7 +56,7 @@ struct NightView: View {
                                             : (st?.skipped ?? st?.waiting).map(NightDonationState.reasonText)
                                     }
                                 } label: {
-                                    Label(tr("Datenspende erneut senden"), systemImage: "arrow.up.heart")
+                                    Label(DonationUploader.donateLabel(url), systemImage: "arrow.up.heart")
                                 }
                             }
                             Button(role: .destructive) {

@@ -22,7 +22,7 @@ enum BackgroundAnalysis {
         }
     }
 
-    /// Nächte mit Audio, aber noch ohne Geräusch-Auswertung.
+    /// Nächte, die noch Ton haben: Geräusche auswerten, dann umwandeln (NightFinisher).
     static func pendingNights() -> [URL] {
         let dirs = (try? FileManager.default.contentsOfDirectory(at: NightRecorder.nightsFolder,
                                                                  includingPropertiesForKeys: nil)) ?? []
@@ -30,8 +30,7 @@ enum BackgroundAnalysis {
         return dirs.filter { url in
             url.hasDirectoryPath
                 && !(engine.isRunning && engine.folder == url)
-                && SoundEventDetector.cached(in: url) == nil
-                && !NightExport.audioFiles(in: url).isEmpty
+                && !NightExport.audioFiles(in: url).isEmpty   // Geräusche fehlen oder Ton noch nicht umgewandelt
         }
     }
 
@@ -72,6 +71,7 @@ enum BackgroundAnalysis {
                 if Task.isCancelled { break }
                 _ = try? await SoundEventDetector.analyze(folder: night) { _ in }
             }
+            if !Task.isCancelled { await NightFinisher.run() }
         }
         task.expirationHandler = { work.cancel() }
         Task { @MainActor in
