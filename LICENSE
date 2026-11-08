@@ -1,0 +1,36 @@
+Copyright (c) 2026 Niklas Groß. Alle Rechte vorbehalten. / All rights reserved.
+
+DEUTSCH
+
+Dieser Quellcode, die Modelle (einschließlich der Gewichte) und alle übrigen Inhalte dieses Repositorys
+sind ausschließlich zur Einsicht veröffentlicht, damit jeder nachprüfen kann, wie die App Suya mit Daten
+umgeht.
+
+Erlaubt ist nur das Ansehen und Lesen, außerdem das, was die Nutzungsbedingungen von GitHub für öffentliche
+Repositorys ohnehin vorsehen (Ansehen und Forken innerhalb von GitHub).
+
+Ohne vorherige schriftliche Erlaubnis des Rechteinhabers ist insbesondere untersagt: den Code, die Modelle
+oder Teile davon zu verwenden, auszuführen, zu kopieren, zu verändern, weiterzugeben, zu veröffentlichen,
+in andere Software einzubauen, damit eigene Modelle zu trainieren oder sie kommerziell zu nutzen.
+
+Inhalte Dritter (z. B. Schlafklänge unter CC0 oder CC BY) stehen unter ihren eigenen Lizenzen; die
+Angaben dazu stehen in der App unter „Quellen der Klänge“ und in den jeweiligen Dateien.
+
+Anfragen: Niklas.Gross@outlook.com
+
+ENGLISH
+
+The source code, the models (including weights) and all other content of this repository are published
+for viewing only, so that anyone can verify how the Suya app handles data.
+
+You may only view and read it, plus whatever GitHub's Terms of Service grant for public repositories
+(viewing and forking within GitHub).
+
+Without prior written permission of the copyright holder you may in particular not use, run, copy,
+modify, distribute, publish, incorporate into other software, use for training your own models, or
+commercially exploit the code, the models or any part of them.
+
+Third-party content (e.g. sleep sounds under CC0 or CC BY) remains under its own license; attribution is
+given in the app under "Sound credits" and in the respective files.
+
+Contact: Niklas.Gross@outlook.com
