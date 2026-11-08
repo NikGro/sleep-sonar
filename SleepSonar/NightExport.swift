@@ -41,7 +41,7 @@ enum NightExport {
             let own = Bundle.main.bundleIdentifier ?? ""
             for s in samples where s.sourceRevision.source.bundleIdentifier != own {
                 csv += "\(iso.string(from: s.startDate)),\(iso.string(from: s.endDate)),"
-                    + "\(HealthManager.name(for: s.value)),\(clean(s.sourceRevision.source.name)),"
+                    + "\(stageName(s.value)),\(clean(s.sourceRevision.source.name)),"
                     + "\(clean(s.device?.model ?? ""))\n"
             }
             try csv.write(to: folder.appendingPathComponent("watch_sleep.csv"), atomically: true, encoding: .utf8)
@@ -101,5 +101,18 @@ enum NightExport {
         }
         if let e = coordError ?? (copyError as NSError?) { throw e }
         return target
+    }
+
+    /// Name einer Schlafphase aus Health für die CSV-Datei
+    private static func stageName(_ raw: Int) -> String {
+        switch HKCategoryValueSleepAnalysis(rawValue: raw) {
+        case .inBed: return "Im Bett"
+        case .awake: return "Wach"
+        case .asleepCore: return "Kern"
+        case .asleepDeep: return "Tief"
+        case .asleepREM: return "REM"
+        case .asleepUnspecified: return "Schlafend"
+        default: return "Unbekannt (\(raw))"
+        }
     }
 }

@@ -24,7 +24,7 @@ enum HealthSync {
         defer { running = false }
         try? await store.requestAuthorization(toShare: [type], read: [type])
         let dirs = (try? FileManager.default.contentsOfDirectory(
-            at: NightRecorder.nightsFolder, includingPropertiesForKeys: [.creationDateKey])) ?? []
+            at: NightStore.nightsFolder, includingPropertiesForKeys: [.creationDateKey])) ?? []
         let cutoff = Date().addingTimeInterval(-7 * 86400)
         let engine = await MainActor.run { (PassiveNightEngine.shared.isRunning, PassiveNightEngine.shared.folder) }
         for url in dirs where url.hasDirectoryPath {

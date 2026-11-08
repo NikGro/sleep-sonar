@@ -50,7 +50,6 @@ struct SleepSonarApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // Sonar ist vorerst ausgesetzt (Code bleibt erhalten: SonarTestView / SonarEngine)
             TabView(selection: $tab) {
                 TonightView()
                     .tabItem { Label(tr("Heute Nacht"), systemImage: "moon.stars") }

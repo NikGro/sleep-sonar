@@ -7,6 +7,9 @@ on:
       screens:
         description: "Ansichten (Leerzeichen-getrennt)"
         default: "tonight alarms alarmEdit sounds soundsPlaying nights night more onboarding"
+      lang:
+        description: "Sprache (de, en, es, fr, it, pt-BR, nl, ja, ko, zh-Hans)"
+        default: "de"
 
 jobs:
   screens:
@@ -47,7 +50,7 @@ jobs:
           mkdir -p shots
           for S in ${{ github.event.inputs.screens }}; do
             xcrun simctl terminate "$UDID" de.nikgro.sleepsonar 2>/dev/null || true
-            xcrun simctl launch "$UDID" de.nikgro.sleepsonar -suyaScreen "$S" -AppleLanguages "(de)"
+            xcrun simctl launch "$UDID" de.nikgro.sleepsonar -suyaScreen "$S" -AppleLanguages "(${{ github.event.inputs.lang }})"
             sleep 9
             xcrun simctl io "$UDID" screenshot "shots/$S.png"
           done

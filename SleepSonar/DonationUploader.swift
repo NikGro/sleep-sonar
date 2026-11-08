@@ -61,7 +61,7 @@ final class DonationUploader: ObservableObject {
 
         // 2) Nächte der letzten zwei Wochen: erst umwandeln (Spektrogramm sichern, Ton löschen), dann senden
         let dirs = (try? FileManager.default.contentsOfDirectory(
-            at: NightRecorder.nightsFolder, includingPropertiesForKeys: [.creationDateKey])) ?? []
+            at: NightStore.nightsFolder, includingPropertiesForKeys: [.creationDateKey])) ?? []
         let engine = PassiveNightEngine.shared
         let cutoff = Date().addingTimeInterval(-14 * 86400)
         for folder in dirs.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) where folder.hasDirectoryPath {

@@ -264,12 +264,10 @@ final class SleepSoundPlayer: ObservableObject {
                 node.volume = vol
                 made[s] = node
             }
-            // Referenz für das Herausrechnen aus dem Mikrofon
+            // Spektrum für das Leuchten in der Klänge-Ansicht
             let mixer = engine.mainMixerNode
-            EchoCanceller.shared.reset()
             SoundSpectrum.shared.reset()
-            mixer.installTap(onBus: 0, bufferSize: 2048, format: mixer.outputFormat(forBus: 0)) { buffer, when in
-                EchoCanceller.shared.pushReference(buffer, hostTime: when.isHostTimeValid ? when.hostTime : mach_absolute_time())
+            mixer.installTap(onBus: 0, bufferSize: 2048, format: mixer.outputFormat(forBus: 0)) { buffer, _ in
                 SoundSpectrum.shared.push(buffer)
             }
             var ok = true

@@ -107,9 +107,19 @@ def cleanup_loop():
                     os.remove(p); log_event("abgelaufen", d)
         time.sleep(86400)
 
+def length(h):
+    """Content-Length sicher lesen (fehlt/kaputt/negativ → -1)"""
+    try:
+        n = int(h.headers.get("Content-Length") or 0)
+    except ValueError:
+        return -1
+    return n if n >= 0 else -1
+
 class H(BaseHTTPRequestHandler):
     server_version = "Suya"
     sys_version = ""
+    timeout = 60                 # langsame oder hängende Verbindungen nicht ewig offen halten
+    protocol_version = "HTTP/1.0"
 
     def log_message(self, *a):   # keine Zugriffsprotokolle (keine IP-Adressen auf der Platte)
         pass
@@ -121,7 +131,11 @@ class H(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(data)))
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
-        self.send_header("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:")
+        self.send_header("Content-Security-Policy",
+                         "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        self.send_header("Cache-Control", "no-store" if ctype.startswith("application/json") else "public, max-age=3600")
         self.end_headers()
         if self.command != "HEAD": self.wfile.write(data)
 
@@ -178,7 +192,7 @@ class H(BaseHTTPRequestHandler):
 
     def upload(self, d, token):
         night = self.headers.get("X-Nacht") or ""
-        n = int(self.headers.get("Content-Length") or 0)
+        n = length(self)
         if not NIGHT.match(night): return self.fail(d, 400, "Nacht-Kennung ungültig")
         if n <= 0 or n > MAX_BYTES: return self.fail(d, 413, "Paket zu groß oder leer")
         if shutil.disk_usage(ROOT).free < MIN_FREE + n: return self.fail(d, 507, "Speicher voll")
@@ -223,7 +237,7 @@ class H(BaseHTTPRequestHandler):
         except ValueError:
             return self.fail(d, 400, "Teil ungültig")
         full = (self.headers.get("X-Gesamt") or "").lower()
-        n = int(self.headers.get("Content-Length") or 0)
+        n = length(self)
         if not NIGHT.match(night): return self.fail(d, 400, "Nacht-Kennung ungültig")
         if not (0 <= i < total <= 64) or not re.fullmatch(r"[0-9a-f]{64}", full):
             return self.fail(d, 400, "Teil ungültig")
@@ -287,7 +301,7 @@ class H(BaseHTTPRequestHandler):
 
     def register(self, d, token):
         if ATTEST == "off" or not APP_ID or not appattest: return self.send(503, {"fehler": "App Attest nicht eingerichtet"})
-        n = int(self.headers.get("Content-Length") or 0)
+        n = length(self)
         if n <= 0 or n > 64 * 1024: return self.send(413, {"fehler": "zu groß"})
         try:
             j = json.loads(self.rfile.read(n))
@@ -309,6 +323,15 @@ class H(BaseHTTPRequestHandler):
             json.dump({"keyId": key_id, "key": pem, "counter": counter}, open(attest_file(d), "w"))
         log_event("appattest", d)
         self.send(201, {"ok": True})
+
+    def do_PUT(self): self.send(405, {"fehler": "nicht erlaubt"})
+    do_DELETE = do_PATCH = do_OPTIONS = do_PUT
+
+    def handle_one_request(self):
+        try:
+            super().handle_one_request()
+        except Exception as e:          # nie den ganzen Server mitreißen; ohne IP protokollieren
+            print("Fehler in Anfrage:", type(e).__name__, e, flush=True)
 
 if __name__ == "__main__":
     os.makedirs(os.path.join(ROOT, "spender"), exist_ok=True)

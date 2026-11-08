@@ -120,7 +120,7 @@ struct NightView: View {
     }
 
     private func refresh() {
-        let dirs = (try? FileManager.default.contentsOfDirectory(at: NightRecorder.nightsFolder,
+        let dirs = (try? FileManager.default.contentsOfDirectory(at: NightStore.nightsFolder,
                                                                  includingPropertiesForKeys: nil)) ?? []
         nights = dirs.filter { $0.hasDirectoryPath }.sorted { $0.lastPathComponent > $1.lastPathComponent }
         summaries.preload(nights)

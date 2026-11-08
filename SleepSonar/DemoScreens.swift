@@ -21,7 +21,7 @@ enum DemoScreens {
     static func demoNight() -> URL? {
         let start = Calendar.current.date(bySettingHour: 23, minute: 20, second: 0,
                                           of: Date().addingTimeInterval(-86400)) ?? Date()
-        let folder = NightRecorder.nightsFolder
+        let folder = NightStore.nightsFolder
             .appendingPathComponent(DateFormatter.nightName.string(from: start) + "_demo", isDirectory: true)
         
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

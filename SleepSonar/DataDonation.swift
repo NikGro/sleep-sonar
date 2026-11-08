@@ -36,10 +36,11 @@ final class DataDonation: ObservableObject {
     }
 
     /// geheimer Schlüssel dieser Installation: nur wer ihn hat, kann für die Spender-Nummer hochladen oder löschen
+    /// liegt im Schlüsselbund (früher in UserDefaults – wird beim ersten Zugriff umgezogen)
     var secretKey: String {
-        if let k = d.string(forKey: "donation.key") { return k }
-        let k = UUID().uuidString + "-" + UUID().uuidString.prefix(8)
-        d.set(k, forKey: "donation.key")
+        if let k = Keychain.get("donation.key") { return k }
+        let k = d.string(forKey: "donation.key") ?? (UUID().uuidString + "-" + UUID().uuidString.prefix(8))
+        if Keychain.set("donation.key", k) { d.removeObject(forKey: "donation.key") } else { d.set(k, forKey: "donation.key") }
         return k
     }
 

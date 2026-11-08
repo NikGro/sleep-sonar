@@ -60,7 +60,7 @@ final class PassiveRecorder: @unchecked Sendable {
 
     init(meta: [String: Any], onSecond: @escaping @Sendable (Double, [Double]) -> Void) throws {
         startDate = Date()
-        folder = NightRecorder.nightsFolder
+        folder = NightStore.nightsFolder
             .appendingPathComponent(DateFormatter.nightName.string(from: startDate) + "_audio", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         self.meta = meta
@@ -110,9 +110,7 @@ final class PassiveRecorder: @unchecked Sendable {
             }
             if let err { throw err }
             guard out.frameLength > 0 else { return }
-            // Das Herausrechnen der eigenen Schlafklänge (EchoCanceller) ist abgeschaltet: Es hat die Klänge
-            // kaum entfernt, aber Sprache und Atem verhallt und leiser gemacht. Aufgenommen wird der Ton,
-            // wie er ist; die Klänge blenden beim Einschlafen ohnehin aus.
+            // Aufgenommen wird der Ton, wie er ist (eigene Schlafklänge werden in der Auswertung ausgeblendet)
             try write(out)
             measure(out)
             live?.feed(out)

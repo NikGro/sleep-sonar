@@ -13,6 +13,8 @@ enum NightModel {
     static let version = 2   // 2: Zeiten mit eigenen Schlafklängen ausgeblendet
 
     private struct Cache: Codable { var version: Int; var stages: String }
+    /// rekursiv: stages(…) hält ihn und ruft melFrames(…), das ihn auch nimmt
+    private static let computeLock = NSRecursiveLock()
 
     static func cached(_ folder: URL) -> [SleepStaging.Stage]? {
         guard let data = try? Data(contentsOf: folder.appendingPathComponent("model.json")),
@@ -38,6 +40,11 @@ enum NightModel {
     static func stages(folder: URL, progress: @escaping @Sendable (Double) -> Void = { _ in }) throws
         -> [SleepStaging.Stage] {
         if let c = cached(folder) { return c }
+        // nie zwei Nächte gleichzeitig rechnen (Liste, Health-Abgleich, Umwandeln und Detailansicht können
+        // gleichzeitig fragen; je Lauf mehrere hundert MB Speicher)
+        computeLock.lock()
+        defer { computeLock.unlock() }
+        if let c = cached(folder) { return c }   // inzwischen von einem anderen Aufruf gerechnet
         let files = NightExport.audioFiles(in: folder)
         guard !files.isEmpty else { throw Failure.noAudio }
         guard let encURL = Bundle.main.url(forResource: "SuyaEpochEncoder", withExtension: "mlmodelc"),
@@ -100,6 +107,8 @@ extension NightModel {
     /// Roh-Log-Mel der ganzen Nacht (10 Bilder je Sekunde, 64 Bänder), auf ganze 30-s-Epochen gekürzt –
     /// genau die Eingabe des Trainings. Auch für die Datenspende.
     static func melFrames(files: [URL], progress: (Double) -> Void = { _ in }) throws -> [[Float]] {
+        computeLock.lock()
+        defer { computeLock.unlock() }
         let sr = LogMel.sampleRate
         let total = files.reduce(0) { $0 + Int((try? AVAudioFile(forReading: $1))?.length ?? 0) }
         let epochs = total / (sr * 30)

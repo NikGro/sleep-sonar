@@ -24,7 +24,7 @@ enum BackgroundAnalysis {
 
     /// Nächte, die noch Ton haben: Geräusche auswerten, dann umwandeln (NightFinisher).
     static func pendingNights() -> [URL] {
-        let dirs = (try? FileManager.default.contentsOfDirectory(at: NightRecorder.nightsFolder,
+        let dirs = (try? FileManager.default.contentsOfDirectory(at: NightStore.nightsFolder,
                                                                  includingPropertiesForKeys: nil)) ?? []
         let engine = PassiveNightEngine.shared
         return dirs.filter { url in

@@ -46,7 +46,7 @@ enum NightFinisher {
         running = true
         defer { running = false }
         let dirs = (try? FileManager.default.contentsOfDirectory(
-            at: NightRecorder.nightsFolder, includingPropertiesForKeys: [.creationDateKey])) ?? []
+            at: NightStore.nightsFolder, includingPropertiesForKeys: [.creationDateKey])) ?? []
         for folder in dirs.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) where folder.hasDirectoryPath {
             if PassiveNightEngine.shared.isRunning { break }
             let files = NightExport.audioFiles(in: folder)
@@ -65,7 +65,7 @@ enum NightFinisher {
     /// Spektrogramme älterer Nächte löschen (außer eine Spende wartet noch darauf)
     static func cleanupMel() {
         let dirs = (try? FileManager.default.contentsOfDirectory(
-            at: NightRecorder.nightsFolder, includingPropertiesForKeys: [.creationDateKey])) ?? []
+            at: NightStore.nightsFolder, includingPropertiesForKeys: [.creationDateKey])) ?? []
         for folder in dirs where DonationUploader.hasMel(folder) {
             let created = (try? folder.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
             guard Date().timeIntervalSince(created) > keepMelDays * 86400 else { continue }
