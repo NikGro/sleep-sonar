@@ -52,7 +52,7 @@ final class DonationUploader {
         guard !PassiveNightEngine.shared.isRunning else { return }   // nachts nicht rechnen
         await AppAttestClient.registerIfPossible(donor: donor, key: key)
 
-        // 2) Nächte der letzten zwei Wochen, die noch nicht gespendet wurden
+        // 2) Nächte der letzten zwei Wochen: erst umwandeln (Spektrogramm sichern, Ton löschen), dann senden
         let dirs = (try? FileManager.default.contentsOfDirectory(
             at: NightRecorder.nightsFolder, includingPropertiesForKeys: [.creationDateKey])) ?? []
         let engine = PassiveNightEngine.shared
@@ -62,47 +62,113 @@ final class DonationUploader {
             let created = (try? folder.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
             guard created > cutoff, var state = NightDonationState.load(folder), !state.done else { continue }
             // nur Nächte, die nach der Zustimmung aufgenommen wurden
-            if let since = donation.date, created < since { continue }
+            if let since = donation.date, created < since {
+                state.skipped = NightDonationState.beforeConsent; state.save(folder); continue
+            }
+            if !Self.hasMel(folder) {
+                if let why = await prepare(folder: folder) { state.skipped = why; state.save(folder); continue }
+            }
             switch await upload(folder: folder, state: &state, donor: donor, key: key) {
             case .sent:
-                state.sent = Date(); state.save(folder)
+                state.sent = Date(); state.waiting = nil; state.save(folder)
                 donation.countUpload()
             case .skip(let why):
-                state.skipped = why; state.save(folder)
-            case .later:
-                continue
+                state.skipped = why; state.waiting = nil; state.save(folder)
+            case .later(let why):
+                state.waiting = why; state.save(folder)
             case .stop:
                 return
             }
         }
+        Self.cleanupMel(olderThan: 30)
     }
 
-    private enum Outcome { case sent, skip(String), later, stop }
+    private enum Outcome { case sent, skip(String), later(String), stop }
+
+    /// „Datenspende erneut senden“ (gedrückt halten auf eine Nacht): Stand zurücksetzen und gleich senden.
+    func resend(_ folder: URL) async {
+        guard var state = NightDonationState.existing(folder) ?? NightDonationState.load(folder) else { return }
+        state.sent = nil; state.skipped = nil; state.waiting = nil
+        state.save(folder)
+        let donation = DataDonation.shared
+        guard donation.state == .granted, let donor = donation.donorID, !running else { return }
+        running = true
+        defer { running = false }
+        if !Self.hasMel(folder), let why = await prepare(folder: folder) {
+            state.skipped = why; state.save(folder); return
+        }
+        switch await upload(folder: folder, state: &state, donor: donor, key: donation.secretKey) {
+        case .sent: state.sent = Date(); state.waiting = nil; donation.countUpload()
+        case .skip(let why): state.skipped = why; state.waiting = nil
+        case .later(let why): state.waiting = why
+        case .stop: break
+        }
+        state.save(folder)
+    }
+
+    /// Kann diese Nacht (erneut) gespendet werden? Spektrogramm oder Ton muss noch da sein.
+    nonisolated static func canResend(_ folder: URL) -> Bool {
+        hasMel(folder) || !NightExport.audioFiles(in: folder).isEmpty
+    }
+
+    /// Spektrogramm-Datei der Nacht (Roh-Log-Mel, Float16, Bild für Bild je 64 Bänder)
+    nonisolated static func melURL(_ folder: URL) -> URL { folder.appendingPathComponent("spende_mel.f16") }
+    nonisolated static func hasMel(_ folder: URL) -> Bool { FileManager.default.fileExists(atPath: melURL(folder).path) }
+
+    /// Umwandeln: Spektrogramm sichern, dann den Ton löschen (Geräusche, Modell und Ausschnitte werden vorher fertig).
+    /// Gibt einen Grund zurück, wenn die Nacht nicht gespendet werden kann.
+    func prepare(folder: URL) async -> String? {
+        let files = NightExport.audioFiles(in: folder)
+        guard !files.isEmpty else { return NightDonationState.noAudio }
+        let seconds = files.reduce(0.0) { $0 + ((try? audioSeconds($1)) ?? 0) }
+        guard seconds >= Self.minSeconds else { return NightDonationState.short }
+        let ok = await Task.detached(priority: .utility) { () -> Bool in
+            guard let frames = try? NightModel.melFrames(files: files) else { return false }
+            var data = Data(capacity: frames.count * LogMel.bands * 2)
+            var half = [Float16](repeating: 0, count: LogMel.bands)
+            for f in frames {
+                for b in 0..<LogMel.bands { half[b] = Float16(f[b]) }
+                half.withUnsafeBytes { data.append(contentsOf: $0) }
+            }
+            return (try? data.write(to: Self.melURL(folder), options: .atomic)) != nil
+        }.value
+        guard ok else { return nil }   // später nochmal
+        _ = try? await NightAudioTrim.trim(folder)   // Ton weg, Ausschnitte bleiben
+        return nil
+    }
+
+    /// alte Spektrogramm-Dateien gesendeter Nächte aufräumen
+    nonisolated static func cleanupMel(olderThan days: Double) {
+        let dirs = (try? FileManager.default.contentsOfDirectory(at: NightRecorder.nightsFolder,
+                                                                 includingPropertiesForKeys: nil)) ?? []
+        for folder in dirs where hasMel(folder) {
+            guard let s = NightDonationState.load(folder), let sent = s.sent,
+                  Date().timeIntervalSince(sent) > days * 86400 else { continue }
+            try? FileManager.default.removeItem(at: melURL(folder))
+        }
+    }
 
     private func upload(folder: URL, state: inout NightDonationState, donor: String, key: String) async -> Outcome {
-        let files = NightExport.audioFiles(in: folder)
-        guard !files.isEmpty else { return .skip("kein Ton mehr") }
-        guard let start = Self.audioStart(folder) else { return .skip("ohne Startzeit") }
-        let seconds = files.reduce(0.0) { $0 + ((try? audioSeconds($1)) ?? 0) }
-        guard seconds >= Self.minSeconds else { return .skip("kürzer als 5 Stunden") }
-        let epochs = Int(seconds / 30)
+        guard Self.hasMel(folder) else { return .later(NightDonationState.converting) }
+        guard let start = Self.audioStart(folder) else { return .skip(NightDonationState.noStart) }
+        let bytes = (try? FileManager.default.attributesOfItem(atPath: Self.melURL(folder).path)[.size] as? Int) ?? 0
+        let epochs = bytes / 2 / LogMel.bands / LogMel.framesPerEpoch
 
         // Watch-Phasen je 30-s-Epoche ab Aufnahmebeginn
         guard let watch = await watchStages(start: start, epochs: epochs) else {
-            return Date().timeIntervalSince(start) > Self.watchWait ? .skip("keine Watch-Daten") : .later
+            return Date().timeIntervalSince(start) > Self.watchWait ? .skip(NightDonationState.noWatch) : .later(NightDonationState.waitWatch)
         }
         guard watch.filter({ $0 >= 0 }).count >= 240 else {
-            return Date().timeIntervalSince(start) > Self.watchWait ? .skip("zu wenig Watch-Daten") : .later
+            return Date().timeIntervalSince(start) > Self.watchWait ? .skip(NightDonationState.noWatch) : .later(NightDonationState.waitWatch)
         }
 
-        // Paket bauen (rechnet das Spektrogramm, dauert etwa so lange wie die Modell-Auswertung)
         let night = state.id
         let built = await Task.detached(priority: .utility) { () -> URL? in
-            try? Self.buildPackage(folder: folder, files: files, watch: watch)
+            try? Self.buildPackage(folder: folder, watch: watch)
         }.value
-        guard let packageURL = built else { return .later }
+        guard let packageURL = built else { return .later(NightDonationState.converting) }
         defer { try? FileManager.default.removeItem(at: packageURL) }
-        guard let body = try? Data(contentsOf: packageURL, options: .mappedIfSafe) else { return .later }
+        guard let body = try? Data(contentsOf: packageURL, options: .mappedIfSafe) else { return .later(NightDonationState.converting) }
         let hash = SHA256.hash(data: body).map { String(format: "%02x", $0) }.joined()
 
         var request = URLRequest(url: Self.server.appendingPathComponent("api/spende/nacht"))
@@ -115,12 +181,15 @@ final class DonationUploader {
             request.setValue(v, forHTTPHeaderField: k)
         }
         guard let (_, response) = try? await session.upload(for: request, fromFile: packageURL),
-              let code = (response as? HTTPURLResponse)?.statusCode else { return .stop }   // kein WLAN o. Ä.
+              let code = (response as? HTTPURLResponse)?.statusCode else {
+            state.waiting = NightDonationState.waitWifi; state.save(folder)
+            return .stop   // kein WLAN o. Ä.
+        }
         switch code {
         case 201: return .sent
-        case 429, 503, 507: return .stop     // Server-Grenzen: später wieder
-        case 403: return .stop               // Schlüssel oder App Attest passt nicht
-        default: return .later
+        case 429, 503, 507: state.waiting = NightDonationState.waitServer; state.save(folder); return .stop
+        case 403: state.waiting = NightDonationState.rejected; state.save(folder); return .stop
+        default: return .later(NightDonationState.waitServer)
         }
     }
 
@@ -187,9 +256,10 @@ final class DonationUploader {
         return withUnsafeBytes(of: &u.machine) { String(decoding: $0.prefix { $0 != 0 }, as: UTF8.self) }
     }
 
-    nonisolated static func buildPackage(folder: URL, files: [URL], watch: [Int]) throws -> URL {
-        let frames = try NightModel.melFrames(files: files)
-        let epochs = min(frames.count / LogMel.framesPerEpoch, watch.count)
+    nonisolated static func buildPackage(folder: URL, watch: [Int]) throws -> URL {
+        let mel = try Data(contentsOf: melURL(folder), options: .mappedIfSafe)
+        let total = mel.count / 2 / LogMel.bands
+        let epochs = min(total / LogMel.framesPerEpoch, watch.count)
         let used = epochs * LogMel.framesPerEpoch
 
         // Lautstärke je Sekunde (levels.csv: time,rms_db,…)
@@ -218,11 +288,7 @@ final class DonationUploader {
         raw.append(Data(bytes: &n, count: 4))
         raw.append(json)
         raw.reserveCapacity(raw.count + used * LogMel.bands * 2 + levels.count * 2)
-        var half = [Float16](repeating: 0, count: LogMel.bands)
-        for f in frames.prefix(used) {
-            for b in 0..<LogMel.bands { half[b] = Float16(f[b]) }
-            half.withUnsafeBytes { raw.append(contentsOf: $0) }
-        }
+        raw.append(mel.prefix(used * LogMel.bands * 2))   // schon Float16, Bild für Bild
         let lv = levels.map { Float16($0) }
         lv.withUnsafeBytes { raw.append(contentsOf: $0) }
 
@@ -239,17 +305,44 @@ private func audioSeconds(_ url: URL) throws -> Double {
     return Double(f.length) / f.fileFormat.sampleRate
 }
 
-/// Spendenstand einer Nacht (donation.json im Ordner der Nacht): zufällige Nacht-Kennung, gesendet/übersprungen.
+/// Spendenstand einer Nacht (donation.json im Ordner der Nacht): zufällige Nacht-Kennung, gesendet/übersprungen,
+/// worauf gerade gewartet wird. Gründe als Kürzel (Text: `reasonText`).
 struct NightDonationState: Codable {
     var id: String
     var sent: Date?
     var skipped: String?
+    var waiting: String?
     var done: Bool { sent != nil || skipped != nil }
+
+    static let beforeConsent = "vorZustimmung", short = "kurz", noAudio = "ohneTon", noStart = "ohneStart",
+               noWatch = "ohneWatch", waitWatch = "warteWatch", waitWifi = "warteWLAN", waitServer = "warteServer",
+               rejected = "abgelehnt", converting = "umwandeln"
+
+    static func reasonText(_ code: String) -> String {
+        switch code {
+        case beforeConsent: tr("Vor deiner Zustimmung aufgenommen – wird nicht gespendet.")
+        case short: tr("Kürzer als 5 Stunden – wird nicht gespendet.")
+        case noAudio: tr("Ohne Ton aufgenommen oder schon gelöscht – wird nicht gespendet.")
+        case noStart: tr("Ohne Startzeit – wird nicht gespendet.")
+        case noWatch: tr("Ohne Schlafphasen der Watch – wird nicht gespendet.")
+        case waitWatch: tr("Wartet auf die Schlafphasen der Watch.")
+        case waitWifi: tr("Wird gesendet, sobald das iPhone im WLAN ist.")
+        case waitServer: tr("Der Server nimmt gerade nichts an. Suya versucht es später wieder.")
+        case rejected: tr("Der Server hat die Spende abgelehnt.")
+        default: tr("Wird vorbereitet.")
+        }
+    }
 
     static func load(_ folder: URL) -> NightDonationState? {
         let url = folder.appendingPathComponent("donation.json")
         if let data = try? Data(contentsOf: url), let s = try? JSONDecoder().decode(Self.self, from: data) { return s }
         return NightDonationState(id: UUID().uuidString.lowercased())
+    }
+
+    /// nur lesen, ohne eine neue Kennung zu erfinden (für die Anzeige)
+    static func existing(_ folder: URL) -> NightDonationState? {
+        guard let data = try? Data(contentsOf: folder.appendingPathComponent("donation.json")) else { return nil }
+        return try? JSONDecoder().decode(Self.self, from: data)
     }
 
     func save(_ folder: URL) {

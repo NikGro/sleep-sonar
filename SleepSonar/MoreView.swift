@@ -66,20 +66,16 @@ struct MoreView: View {
                     Link(destination: URL(string: tr("https://suya.ng-lab.de/impressum"))!) {
                         Label(tr("Impressum"), systemImage: "info.circle")
                     }
+                    NavigationLink { SoundCreditsView() } label: {
+                        Label(tr("Quellen der Klänge"), systemImage: "music.note")
+                    }
+                    LabeledContent(tr("Version"), value: Self.version)
                 } header: {
                     ListHeader(tr("Rechtliches"))
                 }
                 .tint(Theme.moon)
                 .listRowBackground(Theme.raised)
 
-                Section {
-                    NavigationLink(tr("Quellen der Klänge")) { SoundCreditsView() }
-                    NavigationLink(tr("Health-Schreibtest")) { HealthTestView() }
-                    LabeledContent(tr("Version"), value: Self.version)
-                } header: {
-                    ListHeader(tr("Für Entwickler"))
-                }
-                .listRowBackground(Theme.raised)
             }
             .nightBackground()
             .navigationTitle(tr("Mehr"))

@@ -5,6 +5,11 @@ import Foundation
 /// Geräusche behalten (zum Anhören). Vorher werden Geräusche und Modell-Schlafphasen berechnet,
 /// denn beides braucht die Aufnahme. Pegel, Bewegung und Watch-Daten bleiben unverändert.
 enum NightAudioTrim {
+    enum TrimError: LocalizedError {
+        case modelFailed
+        var errorDescription: String? { tr("Das Modell konnte die Nacht nicht auswerten. Der Ton bleibt erhalten.") }
+    }
+
     static func audioBytes(_ folder: URL) -> Int64 {
         NightExport.audioFiles(in: folder).reduce(0) {
             $0 + Int64((try? $1.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
@@ -18,6 +23,8 @@ enum NightAudioTrim {
         let events = try await SoundEventDetector.analyze(folder: folder) { _ in }
         if NightModel.isAvailable, NightModel.cached(folder) == nil {
             _ = try? await Task.detached(priority: .userInitiated) { try NightModel.stages(folder: folder) }.value
+            // ohne Ergebnis den Ton nicht löschen – sonst bliebe von der Nacht nichts übrig
+            guard NightModel.cached(folder) != nil else { throw TrimError.modelFailed }
         }
         try await Task.detached(priority: .userInitiated) {
             let dir = folder.appendingPathComponent("clips", isDirectory: true)

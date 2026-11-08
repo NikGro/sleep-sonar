@@ -48,6 +48,18 @@ enum DemoScreens {
             csv += iso.string(from: start.addingTimeInterval(Double(t))) + "," + line.joined(separator: ",") + "\n"
         }
         try? csv.write(to: folder.appendingPathComponent("levels.csv"), atomically: true, encoding: .utf8)
+        // Beginn und Schlafphasen (wie vom Modell, je 30 s)
+        let meta = ["start": iso.string(from: start)]
+        if let d = try? JSONSerialization.data(withJSONObject: meta) { try? d.write(to: folder.appendingPathComponent("meta.json")) }
+        var code = ""
+        for e in 0..<(total / 30) {
+            let t = e * 30
+            let cycle = Double(t % 5400) / 5400
+            let awake = t < 900 || (t > 15000 && t < 15240) || t > total - 600
+            code += awake ? "0" : (cycle > 0.15 && cycle < 0.45 && t < 4 * 3600) ? "3" : (cycle > 0.75 && t > 3600) ? "1" : "2"
+        }
+        let model: [String: Any] = ["version": NightModel.version, "stages": code]
+        if let d = try? JSONSerialization.data(withJSONObject: model) { try? d.write(to: folder.appendingPathComponent("model.json")) }
         try? SoundEventDetector.save([
             SoundEvent(kind: .snoring, start: 7200, end: 7238, confidence: 0.92),
             SoundEvent(kind: .snoring, start: 9100, end: 9121, confidence: 0.78),

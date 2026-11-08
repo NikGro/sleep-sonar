@@ -21,59 +21,37 @@ struct NightAnalysisResult {
 
 enum NightAnalyzer {
     enum Failure: LocalizedError {
-        case noLevels
+        case noModel
         var errorDescription: String? {
-            tr("Diese Nacht hat keine Pegeldaten (nur Nächte aus der Mikrofon-Aufnahme lassen sich auswerten).")
+            tr("Für diese Nacht gibt es keine Auswertung (der Ton fehlt oder das Modell konnte nicht rechnen).")
         }
     }
 
-    /// Nur die eigene Schätzung (ohne Health) – schnell genug für die Nächte-Liste.
-    static func estimate(folder: URL) throws -> (start: Date, stages: [SleepStaging.Stage], epochSeconds: Double) {
-        let iso = ISO8601DateFormatter()
-        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-        // levels.csv: time,rms_db,peak_db,low,mid,high
-        guard let levelText = try? String(contentsOf: folder.appendingPathComponent("levels.csv"), encoding: .utf8)
-        else { throw Failure.noLevels }
-        // Jede Zeile = eine Audiosekunde (lückenlos). Nach Reihenfolge einsortieren, nicht nach
-        // Uhrzeit – sonst entstehen durch minimale Taktabweichungen Scheinlücken.
-        var seconds: [SleepStaging.Second?] = []
-        var first: Date?
-        for line in levelText.split(separator: "\n").dropFirst() {
-            let c = line.split(separator: ",", omittingEmptySubsequences: false)
-            guard c.count >= 6, let rms = Double(c[1]), let mid = Double(c[4]), let high = Double(c[5]) else {
-                seconds.append(nil); continue
-            }
-            if first == nil { first = iso.date(from: String(c[0])) }
-            seconds.append(.init(rms: rms, mid: mid, high: high))
+    /// Schlafphasen der Nacht aus dem Modell (gespeichert oder neu gerechnet, braucht dann den Ton).
+    /// Beginn: erste Audiodatei (darauf beziehen sich die 30-s-Epochen des Modells).
+    static func estimate(folder: URL, progress: @escaping @Sendable (Double) -> Void = { _ in }) throws
+        -> (start: Date, stages: [SleepStaging.Stage], epochSeconds: Double) {
+        guard let start = DonationUploader.audioStart(folder) else { throw Failure.noModel }
+        let stages: [SleepStaging.Stage]
+        if let c = NightModel.cached(folder) {
+            stages = c
+        } else if NightExport.audioFiles(in: folder).isEmpty, let c = NightModel.cachedAnyVersion(folder) {
+            stages = c   // Ton schon gelöscht: das zuletzt gerechnete Ergebnis behalten
+        } else {
+            guard NightModel.isAvailable, let s = try? NightModel.stages(folder: folder, progress: progress)
+            else { throw Failure.noModel }
+            stages = s
         }
-        guard let first, !seconds.isEmpty else { throw Failure.noLevels }
-        let total = seconds.count
-
-        // motion.csv: time,activity_g,…
-        var motion = [Double?](repeating: nil, count: total)
-        if let mt = try? String(contentsOf: folder.appendingPathComponent("motion.csv"), encoding: .utf8) {
-            for line in mt.split(separator: "\n").dropFirst() {
-                let c = line.split(separator: ",")
-                guard c.count >= 2, let t = iso.date(from: String(c[0])), let a = Double(c[1]) else { continue }
-                let i = Int(t.timeIntervalSince(first).rounded())
-                if i >= 0 && i < total { motion[i] = a }
-            }
-        }
-
-        let params = SleepStaging.Parameters()
-        // Geräusche (falls schon ausgewertet): Schnarchen = Schlaf, Sprechen/Husten = Unruhe
-        let marks = SoundEventDetector.marks(SoundEventDetector.cached(in: folder) ?? [])
-        let epochs = SleepStaging.estimate(seconds: seconds, motion: motion, sleepSounds: marks.sleep,
-                                           wakeSounds: marks.wake, parameters: params)
-        return (first, epochs.map(\.stage), Double(params.epochSeconds))
+        guard !stages.isEmpty else { throw Failure.noModel }
+        return (start, stages, 30)
     }
 
-    static func analyze(folder: URL, progress: @escaping @Sendable (Double) -> Void = { _ in })
-        async throws -> NightAnalysisResult {
-        let events = (try? await SoundEventDetector.analyze(folder: folder, progress: progress)) ?? []
+    /// Geräusche (erst), dann Modell, dann die Watch-Phasen zum Vergleich.
+    static func analyze(folder: URL, sounds: @escaping @Sendable (Double) -> Void = { _ in },
+                        model: @escaping @Sendable (Double) -> Void = { _ in }) async throws -> NightAnalysisResult {
+        let events = (try? await SoundEventDetector.analyze(folder: folder, progress: sounds)) ?? []
         let (first, ours, epochSeconds) = try await Task.detached(priority: .userInitiated) {
-            try estimate(folder: folder)
+            try estimate(folder: folder, progress: model)
         }.value
         let end = first.addingTimeInterval(Double(ours.count) * epochSeconds)
 
@@ -128,14 +106,11 @@ struct NightAnalysisView: View {
     @State private var result: NightAnalysisResult?
     @State private var error: String?
     @State private var soundProgress: Double?
-    /// Schlafphasen aus dem gelernten Modell (nil = noch nicht gerechnet)
-    @State private var model: [SleepStaging.Stage]?
     @State private var modelProgress: Double?
-    @State private var modelError: String?
 
-    /// ein Zeitraum für alle Zeitstrahlen der Nacht (Regeln, Modell, Watch)
+    /// ein Zeitraum für alle Zeitstrahlen der Nacht (Suya und Watch)
     private func span(_ r: NightAnalysisResult) -> ClosedRange<Date> {
-        let n = max(r.ours.count, r.watch.count, model?.count ?? 0, 1)
+        let n = max(r.ours.count, r.watch.count, 1)
         return r.start...r.start.addingTimeInterval(Double(n) * r.epochSeconds)
     }
     @StateObject private var player = NightClipPlayer()
@@ -149,7 +124,11 @@ struct NightAnalysisView: View {
                     content(r)
                 } else {
                     VStack(spacing: 14) {
-                        if let p = soundProgress, p < 1 {
+                        if let p = modelProgress, p < 1 {
+                            ProgressView(value: p).tint(Theme.moon).frame(maxWidth: 220)
+                            Text(tr("Das Modell hört die Nacht nach (%d %%). Das passiert einmal je Nacht auf dem iPhone.", Int(p * 100)))
+                                .font(.callout).foregroundStyle(Theme.mist)
+                        } else if let p = soundProgress, p < 1 {
                             ProgressView(value: p).tint(Theme.moon).frame(maxWidth: 220)
                             Text(tr("Geräusche der Nacht werden erkannt (%d %%)", Int(p * 100)))
                                 .font(.callout).foregroundStyle(Theme.mist)
@@ -175,25 +154,13 @@ struct NightAnalysisView: View {
             BackgroundAnalysis.analysisStarted()
             defer { BackgroundAnalysis.analysisEnded() }
             do {
-                let r = try await NightAnalyzer.analyze(folder: folder) { p in
-                    Task { @MainActor in soundProgress = p }
-                }
+                let r = try await NightAnalyzer.analyze(folder: folder,
+                    sounds: { p in Task { @MainActor in soundProgress = p } },
+                    model: { p in Task { @MainActor in modelProgress = p } })
                 result = r
                 // Liste aktuell halten
-                NightSummary(start: r.start, stages: r.ours, epochSeconds: r.epochSeconds,
-                             eventsDate: NightSummary.eventsDate(folder)).save(folder)
+                NightSummary(start: r.start, stages: r.ours, epochSeconds: r.epochSeconds).save(folder)
             } catch { self.error = error.localizedDescription }
-            // danach das Modell (braucht die Audioaufnahme, etwa eine Minute)
-            guard NightModel.isAvailable else { return }
-            if let c = NightModel.cached(folder) { model = c; return }
-            guard !NightExport.audioFiles(in: folder).isEmpty else { return }
-            modelProgress = 0
-            let f = folder
-            do {
-                model = try await Task.detached(priority: .userInitiated) {
-                    try NightModel.stages(folder: f) { p in Task { @MainActor in modelProgress = p } }
-                }.value
-            } catch { modelError = tr("Modell konnte nicht rechnen: %@", error.localizedDescription) }
             modelProgress = nil
         }
         .onDisappear { player.stop() }
@@ -248,27 +215,10 @@ struct NightAnalysisView: View {
         }
 
         VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(model != nil ? tr("Suya (Regeln)") : "Suya")
+            SectionTitle("Suya")
             Hypnogram(stages: ours, start: r.start, epochSeconds: r.epochSeconds, domain: span(r))
                 .frame(height: 112)
             StageLegend()
-        }
-
-        if NightModel.isAvailable && (model != nil || modelProgress != nil || modelError != nil) {
-            VStack(alignment: .leading, spacing: 12) {
-                SectionTitle(tr("Suya-Modell (neu)"))
-                if let model {
-                    Hypnogram(stages: model.map { Optional($0) }, start: r.start, epochSeconds: r.epochSeconds,
-                              domain: span(r))
-                        .frame(height: 112)
-                } else if let p = modelProgress {
-                    ProgressView(value: p).tint(Theme.moon)
-                    Text(tr("Das Modell hört die Nacht nach (%d %%). Das passiert einmal je Nacht auf dem iPhone.", Int(p * 100)))
-                        .font(.caption).foregroundStyle(Theme.mist)
-                } else if let modelError {
-                    Text(modelError).font(.caption).foregroundStyle(Theme.mist)
-                }
-            }
         }
 
         VStack(alignment: .leading, spacing: 12) {
@@ -310,9 +260,6 @@ struct NightAnalysisView: View {
         if r.agreement.epochs > 0 {
             VStack(alignment: .leading, spacing: 10) {
                 SectionTitle(tr("Vergleich mit der Watch"))
-                if model != nil {
-                    Text(tr("Suya (Regeln)")).font(.caption.weight(.semibold)).foregroundStyle(Theme.mist)
-                }
                 // über die volle Breite wie die übrigen Elemente
                 HStack(alignment: .firstTextBaseline, spacing: 16) {
                     Figure(value: String(format: "%.0f %%", r.agreement.sleepWake * 100), label: tr("Schlaf oder wach gleich"))
@@ -321,24 +268,12 @@ struct NightAnalysisView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxWidth: .infinity)
-                if let model {
-                    let m = SleepStaging.agreement(Array(model.map { Optional($0) }.prefix(r.watch.count)),
-                                                   Array(r.watch.prefix(model.count)))
-                    if m.epochs > 0 {
-                        Text(tr("Suya-Modell (neu)")).font(.caption.weight(.semibold)).foregroundStyle(Theme.mist)
-                            .padding(.top, 6)
-                        HStack(alignment: .firstTextBaseline, spacing: 16) {
-                            Figure(value: String(format: "%.0f %%", m.sleepWake * 100), label: tr("Schlaf oder wach gleich"))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            Figure(value: String(format: "%.0f %%", m.fourClass * 100), label: tr("Phase gleich"))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-                }
                 Text(tr("Verglichen über %@.", Self.hm(Double(r.agreement.epochs) * r.epochSeconds)))
                     .font(.caption).foregroundStyle(Theme.mist)
             }
         }
+
+        DonationStatusSection(folder: folder)
 
         Text(tr("Die Schätzung ist noch in Entwicklung. Wach und Schlaf sind halbwegs verlässlich, Tief und REM noch grob. Kein Medizinprodukt."))
             .font(.caption).foregroundStyle(Theme.mist)
@@ -521,5 +456,47 @@ struct Hypnogram: View {
         .chartXAxis(compact ? .hidden : .automatic)
         .chartXScale(domain: domain ?? start...start.addingTimeInterval(max(1, Double(stages.count)) * epochSeconds))
         .chartLegend(.hidden)
+    }
+}
+
+
+/// Stand der Datenspende dieser Nacht (nur wenn du spendest).
+struct DonationStatusSection: View {
+    let folder: URL
+    @ObservedObject private var donation = DataDonation.shared
+    @State private var state: NightDonationState?
+    @State private var sending = false
+
+    var body: some View {
+        if donation.state == .granted {
+            VStack(alignment: .leading, spacing: 8) {
+                SectionTitle(tr("Datenspende"))
+                Text(text).font(.callout).foregroundStyle(Theme.mist)
+                if !sending, state?.sent != nil, DonationUploader.canResend(folder) {
+                    Button(tr("Erneut senden")) { resend() }.font(.callout).tint(Theme.moon)
+                }
+                if sending { ProgressView().tint(Theme.moon) }
+            }
+            .task { state = NightDonationState.existing(folder) }
+        }
+    }
+
+    private var text: String {
+        guard let state else { return tr("Wird nach dem Aufwachen vorbereitet und im WLAN gesendet.") }
+        if let sent = state.sent {
+            return tr("Gespendet am %@.", sent.formatted(date: .abbreviated, time: .shortened))
+        }
+        if let s = state.skipped { return NightDonationState.reasonText(s) }
+        if let w = state.waiting { return NightDonationState.reasonText(w) }
+        return NightDonationState.reasonText(NightDonationState.converting)
+    }
+
+    private func resend() {
+        sending = true
+        Task {
+            await DonationUploader.shared.resend(folder)
+            state = NightDonationState.existing(folder)
+            sending = false
+        }
     }
 }

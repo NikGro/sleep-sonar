@@ -7,11 +7,11 @@ import SonarDSP
 ///
 /// Läuft nach dem Ende einer Aufnahme und bei jedem Öffnen der App für die Nächte der letzten
 /// 7 Tage. Kommt die Watch-Nacht später an, werden Suyas Einträge dieser Nacht wieder gelöscht.
-/// Ändern sich die Regeln, werden Suyas Einträge neu geschrieben.
+/// Ändert sich das Modell, werden Suyas Einträge neu geschrieben.
 enum HealthSync {
     private static let store = HKHealthStore()
     private static let type = HKCategoryType(.sleepAnalysis)
-    /// Metadaten an jedem Eintrag: Ordnername der Nacht und Regel-Version
+    /// Metadaten an jedem Eintrag: Ordnername der Nacht und Version der Auswertung (Schlüssel heißt noch „Rules“)
     static let nightKey = "SuyaNight"
     static let rulesKey = "SuyaRules"
     /// kürzere Aufnahmen (z. B. Tests) nicht eintragen
@@ -44,8 +44,7 @@ enum HealthSync {
             guard let e = try? await Task.detached(priority: .utility, operation: {
                 try NightAnalyzer.estimate(folder: folder)
             }).value else { return }
-            NightSummary(start: e.start, stages: e.stages, epochSeconds: e.epochSeconds,
-                         eventsDate: NightSummary.eventsDate(folder)).save(folder)
+            NightSummary(start: e.start, stages: e.stages, epochSeconds: e.epochSeconds).save(folder)
             night = e
         }
         let ep = night.epochSeconds
@@ -75,7 +74,7 @@ enum HealthSync {
         // schon in dieser Fassung eingetragen?
         let name = folder.lastPathComponent
         if !mine.isEmpty, mine.allSatisfy({
-            ($0.metadata?[nightKey] as? String) == name && ($0.metadata?[rulesKey] as? Int) == NightSummary.rulesVersion
+            ($0.metadata?[nightKey] as? String) == name && ($0.metadata?[rulesKey] as? Int) == NightSummary.currentVersion
         }) { return }
 
         let stages = night.stages
@@ -85,7 +84,7 @@ enum HealthSync {
             if !mine.isEmpty { try? await store.delete(mine) }
             return
         }
-        let meta: [String: Any] = [nightKey: name, rulesKey: NightSummary.rulesVersion]
+        let meta: [String: Any] = [nightKey: name, rulesKey: NightSummary.currentVersion]
         var out: [HKCategorySample] = [
             HKCategorySample(type: type, value: HKCategoryValueSleepAnalysis.inBed.rawValue,
                              start: night.start, end: end, metadata: meta)

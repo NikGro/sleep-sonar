@@ -20,6 +20,13 @@ enum NightModel {
         return c.stages.compactMap { $0.wholeNumberValue.flatMap(SleepStaging.Stage.init) }
     }
 
+    /// gespeichertes Ergebnis auch eines älteren Modells (für Nächte, deren Ton schon gelöscht ist)
+    static func cachedAnyVersion(_ folder: URL) -> [SleepStaging.Stage]? {
+        guard let data = try? Data(contentsOf: folder.appendingPathComponent("model.json")),
+              let c = try? JSONDecoder().decode(Cache.self, from: data) else { return nil }
+        return c.stages.compactMap { $0.wholeNumberValue.flatMap(SleepStaging.Stage.init) }
+    }
+
     static var isAvailable: Bool {
         Bundle.main.url(forResource: "SuyaEpochEncoder", withExtension: "mlmodelc") != nil
             && Bundle.main.url(forResource: "SuyaNightSequence", withExtension: "mlmodelc") != nil

@@ -11,7 +11,7 @@ struct NightView: View {
     @State private var share: ShareItem?
     @State private var message: String?
     @State private var demo: URL?
-    @State private var trimming: URL?
+    @ObservedObject private var donation = DataDonation.shared
     @State private var deleting: [URL] = []
 
     var body: some View {
@@ -45,27 +45,24 @@ struct NightView: View {
                     .task { if !recording { summaries.load(url) } }
                     .contextMenu {
                         if !recording {
-                            Button {
-                                Task { await export(url) }
-                            } label: {
-                                Label(tr("Daten und Watch teilen (ZIP)"), systemImage: "square.and.arrow.up")
-                            }
-                            Button {
-                                Task { await export(url, includeAudio: true) }
-                            } label: {
-                                Label(tr("Alles fürs Training teilen (mit Audio)"), systemImage: "shippingbox")
-                            }
-                            if !NightExport.audioFiles(in: url).isEmpty {
+                            if donation.state == .granted, DonationUploader.canResend(url) {
                                 Button {
-                                    share = ShareItem(urls: NightExport.audioFiles(in: url))
+                                    Task {
+                                        exporting = url
+                                        defer { exporting = nil }
+                                        await DonationUploader.shared.resend(url)
+                                        let st = NightDonationState.existing(url)
+                                        message = st?.sent != nil ? tr("Nacht gespendet.")
+                                            : (st?.skipped ?? st?.waiting).map(NightDonationState.reasonText)
+                                    }
                                 } label: {
-                                    Label(tr("Audio teilen"), systemImage: "waveform")
+                                    Label(tr("Datenspende erneut senden"), systemImage: "arrow.up.heart")
                                 }
-                                Button(role: .destructive) {
-                                    trimming = url
-                                } label: {
-                                    Label(tr("Aufnahme löschen, Geräusche behalten"), systemImage: "waveform.slash")
-                                }
+                            }
+                            Button(role: .destructive) {
+                                deleting = [url]
+                            } label: {
+                                Label(tr("Löschen"), systemImage: "trash")
                             }
                         }
                     }
@@ -105,28 +102,6 @@ struct NightView: View {
             } message: {
                 Text(tr("Aufnahme, Auswertung und Geräusche dieser Nacht werden vom iPhone gelöscht. Einträge in Health bleiben."))
             }
-            .alert(trimming.map { tr("Tonaufnahme löschen (%@)?", ByteCountFormatter.string(
-                       fromByteCount: NightAudioTrim.audioBytes($0), countStyle: .file)) } ?? "",
-                   isPresented: Binding(get: { trimming != nil }, set: { if !$0 { trimming = nil } })) {
-                Button(tr("Aufnahme löschen"), role: .destructive) {
-                    guard let url = trimming else { return }
-                    trimming = nil
-                    Task {
-                        exporting = url
-                        defer { exporting = nil }
-                        do {
-                            let freed = try await NightAudioTrim.trim(url)
-                            message = tr("%@ frei. Schlafphasen, Geräusche und Watch-Daten bleiben erhalten.",
-                                         ByteCountFormatter.string(fromByteCount: freed, countStyle: .file))
-                        } catch {
-                            message = tr("Löschen fehlgeschlagen: %@", error.localizedDescription)
-                        }
-                    }
-                }
-                Button(tr("Abbrechen"), role: .cancel) { trimming = nil }
-            } message: {
-                Text(tr("Vorher werden Geräusche und Modell-Schlafphasen fertig berechnet. Die Ausschnitte der erkannten Geräusche bleiben zum Anhören erhalten. Fürs Training teilen geht danach nur noch ohne Audio."))
-            }
         }
     }
 
@@ -137,50 +112,27 @@ struct NightView: View {
         summaries.preload(nights)
     }
 
-    private func export(_ url: URL, includeAudio: Bool = false) async {
-        exporting = url
-        message = nil
-        defer { exporting = nil }
-        var start = Date().addingTimeInterval(-12 * 3600), end = Date()
-        if let data = try? Data(contentsOf: url.appendingPathComponent("meta.json")),
-           let meta = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            let iso = ISO8601DateFormatter()
-            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let s = meta["start"] as? String, let d = iso.date(from: s) { start = d }
-            if let e = meta["end"] as? String, let d = iso.date(from: e) { end = d }
-        }
-        let notes = await NightExport.writeHealthData(into: url, from: start, to: end)
-        do {
-            share = ShareItem(urls: [try NightExport.zip(folder: url, includeAudio: includeAudio)])
-            if !notes.isEmpty { message = notes.joined(separator: "\n") }
-        } catch {
-            message = tr("ZIP konnte nicht erstellt werden: %@", error.localizedDescription)
-        }
-    }
-
     static func duration(_ t: TimeInterval) -> String {
         let s = Int(t)
         return String(format: "%d:%02d:%02d", s / 3600, (s / 60) % 60, s % 60)
     }
 }
 
-/// Kurzfassung einer Nacht für die Liste (eigene Schätzung, ohne Health).
+/// Kurzfassung einer Nacht für die Liste (Schlafphasen aus dem Modell, ohne Health).
 /// Wird je Nacht in summary.json gespeichert, damit die Liste sofort Grafiken zeigt.
 struct NightSummary: Codable {
-    /// erhöhen, wenn sich die Regeln ändern → alte Zusammenfassungen werden neu berechnet
-    static let rulesVersion = 7
-    var version = rulesVersion
-    /// Änderungsdatum von events.json (Geräusche fließen in die Schätzung ein)
-    var eventsDate: Date?
+    /// 100 + Modellversion: ändert sich das Modell, werden Zusammenfassungen (und Health-Einträge) neu berechnet.
+    /// (bis 7: Regeln)
+    static let currentVersion = 100 + NightModel.version
+    var version = currentVersion
     let start: Date
     let stagesCode: String
     let epochSeconds: Double
 
-    init(start: Date, stages: [SleepStaging.Stage], epochSeconds: Double, eventsDate: Date?) {
+    init(start: Date, stages: [SleepStaging.Stage], epochSeconds: Double) {
         self.start = start
         self.stagesCode = String(stages.map { Character(String($0.rawValue)) })
         self.epochSeconds = epochSeconds
-        self.eventsDate = eventsDate
     }
 
     var stages: [SleepStaging.Stage] { stagesCode.compactMap { $0.wholeNumberValue.flatMap(SleepStaging.Stage.init) } }
@@ -189,10 +141,6 @@ struct NightSummary: Codable {
     var score: SleepScore? { SleepScore.compute(stages, epochSeconds: epochSeconds) }
 
     static func file(_ folder: URL) -> URL { folder.appendingPathComponent("summary.json") }
-    static func eventsDate(_ folder: URL) -> Date? {
-        try? folder.appendingPathComponent("events.json").resourceValues(forKeys: [.contentModificationDateKey])
-            .contentModificationDate
-    }
 
     /// Gespeicherte Fassung, egal ob aktuell (für die sofortige Anzeige)
     static func cached(_ folder: URL) -> NightSummary? {
@@ -200,8 +148,11 @@ struct NightSummary: Codable {
         return try? JSONDecoder().decode(NightSummary.self, from: data)
     }
 
-    var isCurrent: Bool { version == Self.rulesVersion }
-    func isCurrent(for folder: URL) -> Bool { isCurrent && eventsDate == Self.eventsDate(folder) }
+    var isCurrent: Bool { version == Self.currentVersion }
+    /// Ist der Ton schon gelöscht, bleibt auch eine ältere Fassung gültig (neu rechnen geht nicht mehr).
+    func isCurrent(for folder: URL) -> Bool {
+        isCurrent || (NightExport.audioFiles(in: folder).isEmpty && NightModel.cachedAnyVersion(folder) == nil)
+    }
 
     func save(_ folder: URL) {
         if let data = try? JSONEncoder().encode(self) { try? data.write(to: Self.file(folder), options: .atomic) }
@@ -213,6 +164,7 @@ final class NightSummaries: ObservableObject {
     @Published private(set) var items: [URL: NightSummary] = [:]
     private var failed: Set<URL> = []
     private var checked: Set<URL> = []
+    private var queue: Task<Void, Never>?
 
     /// Gespeicherte Zusammenfassungen sofort übernehmen (klein, schnell)
     func preload(_ urls: [URL]) {
@@ -229,11 +181,13 @@ final class NightSummaries: ObservableObject {
             items[url] = c
             return
         }
-        Task {
+        // nacheinander rechnen (das Modell braucht je Nacht etwas Speicher und Zeit)
+        let previous = queue
+        queue = Task {
+            await previous?.value
             let r = try? await Task.detached(priority: .utility) { () -> NightSummary in
-                let events = NightSummary.eventsDate(url)
                 let e = try NightAnalyzer.estimate(folder: url)
-                let s = NightSummary(start: e.start, stages: e.stages, epochSeconds: e.epochSeconds, eventsDate: events)
+                let s = NightSummary(start: e.start, stages: e.stages, epochSeconds: e.epochSeconds)
                 s.save(url)
                 return s
             }.value

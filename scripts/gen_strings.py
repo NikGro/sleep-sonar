@@ -29,6 +29,13 @@ if missing:
 bad = [k for k, v in EN.items() if re.findall(r"%[0-9.]*[@dfs%]|%0\d+d", k) != re.findall(r"%[0-9.]*[@dfs%]|%0\d+d", v)]
 if bad:
     print("Platzhalter passen nicht:"); [print("  ", k) for k in bad]; sys.exit(1)
+# weitere Sprachen: scripts/i18n/<sprache>.json – {deutscher Schlüssel: Übersetzung}
+import json
+I18N = os.path.join(os.path.dirname(os.path.abspath(__file__)), "i18n")
+extra = json.load(open(os.path.join(I18N, "_extra.json"), encoding="utf-8"))
+LANGS = ["es", "fr", "it", "pt-BR", "nl", "ja", "ko", "zh-Hans"]
+P = re.compile(r"%[0-9.]*[@dfs%]|%0\d+d")
+problems = []
 if "--check" in sys.argv:
     print(f"{len(EN)} Übersetzungen vollständig"); sys.exit(0)
 
@@ -39,24 +46,15 @@ for target in ("SleepSonar", "Widgets"):
 write(f"{ROOT}/SleepSonar/en.lproj/InfoPlist.strings", sorted(INFOPLIST_EN.items()))
 write(f"{ROOT}/SleepSonar/en.lproj/AppShortcuts.strings", [(k, v[0]) for k, v in SHORTCUTS.items()])
 write(f"{ROOT}/SleepSonar/de.lproj/AppShortcuts.strings", [(k, v[1]) for k, v in SHORTCUTS.items()])
-# weitere Sprachen: scripts/i18n/<sprache>.json – Liste in der Reihenfolge von _keys.json (sortierte deutsche Schlüssel)
-import json
-I18N = os.path.join(os.path.dirname(os.path.abspath(__file__)), "i18n")
-keys = json.load(open(os.path.join(I18N, "_keys.json"), encoding="utf-8"))
-if keys != sorted(EN):
-    print("i18n/_keys.json passt nicht mehr zu strings_en.py – neue/geänderte Texte zuerst übersetzen:")
-    for k in sorted(set(EN) - set(keys)): print("   neu:", k)
-    for k in sorted(set(keys) - set(EN)): print("   weg:", k)
-    sys.exit(1)
-extra = json.load(open(os.path.join(I18N, "_extra.json"), encoding="utf-8"))
-LANGS = ["es", "fr", "it", "pt-BR", "nl", "ja", "ko", "zh-Hans"]
-P = re.compile(r"%[0-9.]*[@dfs%]|%0\d+d")
 for lang in LANGS:
-    tr = json.load(open(os.path.join(I18N, f"{lang}.json"), encoding="utf-8"))
-    assert len(tr) == len(keys), lang
-    for k, t in zip(keys, tr):
-        assert P.findall(k) == P.findall(t), (lang, k, t)
-    lp = sorted(zip(keys, tr))
+    d = json.load(open(os.path.join(I18N, f"{lang}.json"), encoding="utf-8"))
+    problems += [f"{lang}: fehlt: {k}" for k in sorted(set(EN) - set(d))]
+    problems += [f"{lang}: Platzhalter: {k}" for k in EN if k in d and P.findall(k) != P.findall(d[k])]
+if problems:
+    print("Übersetzungen unvollständig:"); [print("  ", p) for p in problems]; sys.exit(1)
+for lang in LANGS:
+    d = json.load(open(os.path.join(I18N, f"{lang}.json"), encoding="utf-8"))
+    lp = sorted((k, d[k]) for k in EN)
     for target in ("SleepSonar", "Widgets"):
         write(f"{ROOT}/{target}/{lang}.lproj/Localizable.strings", lp)
     write(f"{ROOT}/SleepSonar/{lang}.lproj/InfoPlist.strings", sorted(extra["infoplist"][lang].items()))
