@@ -1,13 +1,33 @@
 import Foundation
 import SonarDSP
 
-/// Speicher sparen, für alle: Ist eine Nacht fertig ausgewertet (Geräusche, Modell, Ausschnitte), wird der Ton
-/// gelöscht. Vorher wird das grobe Klangbild (Spektrogramm, kein Ton) gesichert und 7 Tage behalten – so lässt sich
+/// Speicher sparen, für alle: Ist eine Nacht fertig ausgewertet (Geräusche, Modell, Ausschnitte) und 24 Stunden
+/// vorbei (so lange lässt sie sich komplett mit Ton exportieren), wird der Ton gelöscht. Vorher wird das grobe Klangbild (Spektrogramm, kein Ton) gesichert und 7 Tage behalten – so lässt sich
 /// eine Nacht auch nachträglich spenden. Konnte das Modell nicht rechnen, bleibt der Ton erhalten.
 @MainActor
 enum NightFinisher {
     /// so lange bleibt das Spektrogramm einer Nacht auf dem iPhone
     static let keepMelDays: Double = 7
+    /// so lange bleibt der Ton nach dem Ende der Nacht (Export mit Audio)
+    static let keepAudioHours: Double = 24
+
+    /// Ende der Nacht: meta.json „end“, sonst die letzte Änderung einer Audiodatei
+    nonisolated static func nightEnd(_ folder: URL) -> Date? {
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let data = try? Data(contentsOf: folder.appendingPathComponent("meta.json")),
+           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let e = obj["end"] as? String, let d = iso.date(from: e) { return d }
+        return NightExport.audioFiles(in: folder)
+            .compactMap { try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate }.max()
+    }
+
+    /// Ton noch da und Nacht keine 24 Stunden her: Export mit Audio möglich
+    nonisolated static func canExportAudio(_ folder: URL) -> Bool {
+        guard !NightExport.audioFiles(in: folder).isEmpty else { return false }
+        guard let end = nightEnd(folder) else { return true }
+        return Date().timeIntervalSince(end) < keepAudioHours * 3600
+    }
     private static var running = false
 
     static func run() async {
@@ -24,6 +44,8 @@ enum NightFinisher {
                 let ok = await Task.detached(priority: .utility) { DonationUploader.writeMel(folder: folder, files: files) }.value
                 guard ok else { continue }
             }
+            // Ton erst nach 24 Stunden löschen (bis dahin: Export mit Audio)
+            if let end = nightEnd(folder), Date().timeIntervalSince(end) < keepAudioHours * 3600 { continue }
             _ = try? await NightAudioTrim.trim(folder)   // Ton weg, Ausschnitte bleiben; scheitert das Modell, bleibt er
         }
         cleanupMel()

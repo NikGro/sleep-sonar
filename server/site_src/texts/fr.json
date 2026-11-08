@@ -13,7 +13,7 @@
 "dpo": "Il n’y a pas de délégué à la protection des données, car il n’y a pas d’obligation. Pour toute question, écris à l’adresse ci-dessus.",
 "h_device": "Ce qui se passe sur ton iPhone",
 "mic_h": "Micro",
-"mic_p": "Pendant un enregistrement nocturne, Suya enregistre des sons avec le micro (respiration, ronflement, mouvement, environnement). À partir de là, l’app calcule sur l’appareil les phases de sommeil, les événements sonores et un score de sommeil. Les enregistrements sont stockés uniquement sur ton iPhone. Tu peux les supprimer à tout moment – un par un, tous, ou en ne gardant que les courts extraits des sons détectés. Une fois la nuit analysée, Suya supprime automatiquement l’audio. Il ne reste que les courts extraits des sons détectés et, pendant 7 jours, une image sonore grossière (spectrogramme, sans son).",
+"mic_p": "Pendant un enregistrement nocturne, Suya enregistre des sons avec le micro (respiration, ronflement, mouvement, environnement). À partir de là, l’app calcule sur l’appareil les phases de sommeil, les événements sonores et un score de sommeil. Les enregistrements sont stockés uniquement sur ton iPhone. Tu peux les supprimer à tout moment – un par un, tous, ou en ne gardant que les courts extraits des sons détectés. 24 heures après la fin d’une nuit, Suya supprime automatiquement l’audio (d’ici là, tu peux exporter la nuit complète avec l’audio). Il ne reste que les courts extraits des sons détectés et, pendant 7 jours, une image sonore grossière (spectrogramme, sans son).",
 "motion_h": "Capteur de mouvement",
 "motion_p": "Lorsque l’iPhone est posé dans le lit, Suya mesure les mouvements grossiers avec l’accéléromètre. Ces valeurs restent aussi sur l’appareil.",
 "health_h": "Apple Santé",

@@ -13,7 +13,7 @@
 "dpo": "Er is geen functionaris voor gegevensbescherming, omdat dat niet verplicht is. Stuur vragen over privacy naar het adres hierboven.",
 "h_device": "Wat er op je iPhone gebeurt",
 "mic_h": "Microfoon",
-"mic_p": "Tijdens een nachtopname neemt Suya geluiden op met de microfoon (ademhaling, snurken, beweging, omgeving). Daaruit berekent de app op het apparaat slaapfasen, geluidsgebeurtenissen en een slaapscore. De opnamen worden alleen op je iPhone opgeslagen. Je kunt ze altijd verwijderen – één voor één, allemaal, of zo dat alleen de korte fragmenten van herkende geluiden blijven. Is een nacht geanalyseerd, dan verwijdert Suya de audio automatisch. Alleen de korte fragmenten van herkende geluiden blijven, plus 7 dagen lang een grof klankbeeld (spectrogram, geen geluid).",
+"mic_p": "Tijdens een nachtopname neemt Suya geluiden op met de microfoon (ademhaling, snurken, beweging, omgeving). Daaruit berekent de app op het apparaat slaapfasen, geluidsgebeurtenissen en een slaapscore. De opnamen worden alleen op je iPhone opgeslagen. Je kunt ze altijd verwijderen – één voor één, allemaal, of zo dat alleen de korte fragmenten van herkende geluiden blijven. 24 uur na het einde van een nacht verwijdert Suya de audio automatisch (tot dan kun je de nacht volledig met audio exporteren). Alleen de korte fragmenten van herkende geluiden blijven, plus 7 dagen lang een grof klankbeeld (spectrogram, geen geluid).",
 "motion_h": "Bewegingssensor",
 "motion_p": "Ligt de iPhone in bed, dan meet Suya grove bewegingen met de versnellingsmeter. Ook deze waarden blijven op het apparaat.",
 "health_h": "Apple Gezondheid",

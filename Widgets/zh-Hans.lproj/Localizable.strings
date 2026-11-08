@@ -18,6 +18,7 @@
 "Alle %d anzeigen" = "显示全部 %d 个";
 "Alle Einzelheiten in der Datenschutzerklärung" = "详情请见隐私政策";
 "Alle gespendeten Nächte löschen lassen?" = "删除所有捐赠的夜晚？";
+"Alles exportieren (mit Audio)" = "导出全部（含音频）";
 "Am Wochenende" = "周末";
 "Anhalten" = "暂停";
 "Ans Ladekabel, Mikrofon (Unterseite) zeigt zu dir." = "接上电源，让麦克风（底边）朝向你。";
@@ -289,6 +290,7 @@
 "Wohin" = "发往哪里";
 "Wähle unten einen Klang" = "在下方选择一个声音";
 "Während des Schlafs wurden keine auffälligen Geräusche erkannt. Für Nächte ohne Audio lässt sich das nicht auswerten." = "睡眠期间未检测到明显声音。没有音频的夜晚无法进行此分析。";
+"ZIP konnte nicht erstellt werden: %@" = "无法创建 ZIP：%@";
 "Zeit je Phase" = "各阶段时间";
 "Zeitraum" = "时间窗";
 "Zugfahrt" = "火车旅行";

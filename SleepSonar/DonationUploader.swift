@@ -120,7 +120,7 @@ final class DonationUploader {
     nonisolated static func melURL(_ folder: URL) -> URL { folder.appendingPathComponent("spende_mel.f16") }
     nonisolated static func hasMel(_ folder: URL) -> Bool { FileManager.default.fileExists(atPath: melURL(folder).path) }
 
-    /// Umwandeln: Spektrogramm sichern, dann den Ton löschen (Geräusche, Modell und Ausschnitte werden vorher fertig).
+    /// Umwandeln: Spektrogramm sichern (den Ton löscht NightFinisher nach 24 Stunden).
     /// Gibt einen Grund zurück, wenn die Nacht nicht gespendet werden kann.
     func prepare(folder: URL) async -> String? {
         let files = NightExport.audioFiles(in: folder)
@@ -128,8 +128,7 @@ final class DonationUploader {
         let seconds = files.reduce(0.0) { $0 + ((try? audioSeconds($1)) ?? 0) }
         guard seconds >= Self.minSeconds else { return NightDonationState.short }
         let ok = await Task.detached(priority: .utility) { Self.writeMel(folder: folder, files: files) }.value
-        guard ok else { return nil }   // später nochmal
-        _ = try? await NightAudioTrim.trim(folder)   // Ton weg, Ausschnitte bleiben
+        _ = ok   // klappt es nicht, beim nächsten Mal wieder; den Ton löscht NightFinisher nach 24 h
         return nil
     }
 

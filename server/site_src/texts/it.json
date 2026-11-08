@@ -13,7 +13,7 @@
 "dpo": "Non c’è un responsabile della protezione dei dati perché non è obbligatorio. Per qualsiasi domanda sulla privacy scrivi all’indirizzo indicato sopra.",
 "h_device": "Cosa succede sul tuo iPhone",
 "mic_h": "Microfono",
-"mic_p": "Durante una registrazione notturna Suya registra suoni con il microfono (respiro, russare, movimento, ambiente). Da questi l’app calcola sul dispositivo le fasi del sonno, gli eventi sonori e un punteggio del sonno. Le registrazioni sono salvate solo sul tuo iPhone. Puoi eliminarle in qualsiasi momento – una per una, tutte, oppure conservando solo i brevi estratti dei suoni rilevati. Quando una notte è stata analizzata, Suya elimina automaticamente l’audio. Restano solo i brevi estratti dei suoni rilevati e, per 7 giorni, un’immagine sonora approssimativa (spettrogramma, senza audio).",
+"mic_p": "Durante una registrazione notturna Suya registra suoni con il microfono (respiro, russare, movimento, ambiente). Da questi l’app calcola sul dispositivo le fasi del sonno, gli eventi sonori e un punteggio del sonno. Le registrazioni sono salvate solo sul tuo iPhone. Puoi eliminarle in qualsiasi momento – una per una, tutte, oppure conservando solo i brevi estratti dei suoni rilevati. 24 ore dopo la fine di una notte, Suya elimina automaticamente l’audio (fino ad allora puoi esportare la notte completa con l’audio). Restano solo i brevi estratti dei suoni rilevati e, per 7 giorni, un’immagine sonora approssimativa (spettrogramma, senza audio).",
 "motion_h": "Sensore di movimento",
 "motion_p": "Se l’iPhone è nel letto, Suya misura i movimenti approssimativi con l’accelerometro. Anche questi valori restano sul dispositivo.",
 "health_h": "Apple Salute",

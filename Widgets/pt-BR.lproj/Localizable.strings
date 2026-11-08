@@ -18,6 +18,7 @@
 "Alle %d anzeigen" = "Mostrar todos os %d";
 "Alle Einzelheiten in der Datenschutzerklärung" = "Todos os detalhes na política de privacidade";
 "Alle gespendeten Nächte löschen lassen?" = "Excluir todas as noites doadas?";
+"Alles exportieren (mit Audio)" = "Exportar tudo (com áudio)";
 "Am Wochenende" = "Fins de semana";
 "Anhalten" = "Pausar";
 "Ans Ladekabel, Mikrofon (Unterseite) zeigt zu dir." = "Coloque para carregar, com o microfone (borda inferior) voltado para você.";
@@ -289,6 +290,7 @@
 "Wohin" = "Para onde vai";
 "Wähle unten einen Klang" = "Escolha um som abaixo";
 "Während des Schlafs wurden keine auffälligen Geräusche erkannt. Für Nächte ohne Audio lässt sich das nicht auswerten." = "Nenhum som marcante foi detectado durante o sono. Noites sem áudio não podem ser analisadas para isso.";
+"ZIP konnte nicht erstellt werden: %@" = "Não foi possível criar o ZIP: %@";
 "Zeit je Phase" = "Tempo por fase";
 "Zeitraum" = "Intervalo";
 "Zugfahrt" = "Viagem de trem";

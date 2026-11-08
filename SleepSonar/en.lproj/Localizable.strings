@@ -18,6 +18,7 @@
 "Alle %d anzeigen" = "Show all %d";
 "Alle Einzelheiten in der Datenschutzerklärung" = "All details in the privacy policy";
 "Alle gespendeten Nächte löschen lassen?" = "Have all donated nights deleted?";
+"Alles exportieren (mit Audio)" = "Export everything (with audio)";
 "Am Wochenende" = "Weekends";
 "Anhalten" = "Pause";
 "Ans Ladekabel, Mikrofon (Unterseite) zeigt zu dir." = "Plug it in, with the microphone (bottom edge) facing you.";
@@ -289,6 +290,7 @@
 "Wohin" = "Where it goes";
 "Wähle unten einen Klang" = "Pick a sound below";
 "Während des Schlafs wurden keine auffälligen Geräusche erkannt. Für Nächte ohne Audio lässt sich das nicht auswerten." = "No notable sounds were detected during sleep. Nights without audio can't be analyzed for this.";
+"ZIP konnte nicht erstellt werden: %@" = "Couldn't create ZIP: %@";
 "Zeit je Phase" = "Time per stage";
 "Zeitraum" = "Window";
 "Zugfahrt" = "Train ride";

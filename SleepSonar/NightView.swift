@@ -59,6 +59,13 @@ struct NightView: View {
                                     Label(DonationUploader.donateLabel(url), systemImage: "arrow.up.heart")
                                 }
                             }
+                            if NightFinisher.canExportAudio(url) {
+                                Button {
+                                    Task { await export(url) }
+                                } label: {
+                                    Label(tr("Alles exportieren (mit Audio)"), systemImage: "square.and.arrow.up")
+                                }
+                            }
                             Button(role: .destructive) {
                                 deleting = [url]
                             } label: {
@@ -110,6 +117,21 @@ struct NightView: View {
                                                                  includingPropertiesForKeys: nil)) ?? []
         nights = dirs.filter { $0.hasDirectoryPath }.sorted { $0.lastPathComponent > $1.lastPathComponent }
         summaries.preload(nights)
+    }
+
+    /// ZIP mit allem: Ton, Pegel, Bewegung, Auswertung und Watch-Daten aus Health (24 h nach der Nacht möglich)
+    private func export(_ url: URL) async {
+        exporting = url
+        message = nil
+        defer { exporting = nil }
+        let end = NightFinisher.nightEnd(url) ?? Date()
+        let start = DonationUploader.audioStart(url) ?? end.addingTimeInterval(-12 * 3600)
+        _ = await NightExport.writeHealthData(into: url, from: start, to: end)
+        do {
+            share = ShareItem(urls: [try NightExport.zip(folder: url, includeAudio: true)])
+        } catch {
+            message = tr("ZIP konnte nicht erstellt werden: %@", error.localizedDescription)
+        }
     }
 
     static func duration(_ t: TimeInterval) -> String {

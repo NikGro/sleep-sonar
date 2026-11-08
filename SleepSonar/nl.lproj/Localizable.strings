@@ -18,6 +18,7 @@
 "Alle %d anzeigen" = "Alle %d tonen";
 "Alle Einzelheiten in der Datenschutzerklärung" = "Alle details in het privacybeleid";
 "Alle gespendeten Nächte löschen lassen?" = "Alle gedoneerde nachten laten verwijderen?";
+"Alles exportieren (mit Audio)" = "Alles exporteren (met audio)";
 "Am Wochenende" = "Weekenden";
 "Anhalten" = "Pauzeer";
 "Ans Ladekabel, Mikrofon (Unterseite) zeigt zu dir." = "Sluit hem aan, met de microfoon (onderkant) naar je toe.";
@@ -289,6 +290,7 @@
 "Wohin" = "Waarheen";
 "Wähle unten einen Klang" = "Kies hieronder een geluid";
 "Während des Schlafs wurden keine auffälligen Geräusche erkannt. Für Nächte ohne Audio lässt sich das nicht auswerten." = "Tijdens de slaap zijn geen opvallende geluiden herkend. Nachten zonder audio kunnen hiervoor niet worden geanalyseerd.";
+"ZIP konnte nicht erstellt werden: %@" = "ZIP kon niet worden gemaakt: %@";
 "Zeit je Phase" = "Tijd per fase";
 "Zeitraum" = "Tijdvenster";
 "Zugfahrt" = "Treinrit";

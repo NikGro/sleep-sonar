@@ -18,6 +18,7 @@
 "Alle %d anzeigen" = "%d件すべて表示";
 "Alle Einzelheiten in der Datenschutzerklärung" = "詳しくはプライバシーポリシーへ";
 "Alle gespendeten Nächte löschen lassen?" = "寄付したすべての夜を削除しますか？";
+"Alles exportieren (mit Audio)" = "すべて書き出す（音声付き）";
 "Am Wochenende" = "週末";
 "Anhalten" = "一時停止";
 "Ans Ladekabel, Mikrofon (Unterseite) zeigt zu dir." = "充電しながら、マイク（下端）を自分に向けて置いてください。";
@@ -289,6 +290,7 @@
 "Wohin" = "送信先";
 "Wähle unten einen Klang" = "下からサウンドを選んでください";
 "Während des Schlafs wurden keine auffälligen Geräusche erkannt. Für Nächte ohne Audio lässt sich das nicht auswerten." = "睡眠中に目立つ音は検出されませんでした。音声のない夜はこの分析ができません。";
+"ZIP konnte nicht erstellt werden: %@" = "ZIPを作成できませんでした：%@";
 "Zeit je Phase" = "段階ごとの時間";
 "Zeitraum" = "時間枠";
 "Zugfahrt" = "列車の旅";

@@ -13,7 +13,7 @@
 "dpo": "Einen Datenschutzbeauftragten gibt es nicht, weil keine Pflicht dazu besteht. Bei Fragen zum Datenschutz schreib einfach an die oben genannte Adresse.",
 "h_device": "Was auf deinem iPhone passiert",
 "mic_h": "Mikrofon",
-"mic_p": "Während einer Nachtaufnahme nimmt Suya über das Mikrofon Geräusche auf (Atmung, Schnarchen, Bewegung, Umgebung). Daraus berechnet die App auf dem Gerät Schlafphasen, Geräusch-Ereignisse und einen Schlafwert. Die Aufnahmen werden ausschließlich auf deinem iPhone gespeichert. Du kannst sie jederzeit löschen – einzeln, ganz oder so, dass nur die kurzen Ausschnitte der erkannten Geräusche bleiben. Ist eine Nacht fertig ausgewertet, löscht Suya den Ton automatisch. Es bleiben nur die kurzen Ausschnitte der erkannten Geräusche und für 7 Tage ein grobes Klangbild (Spektrogramm, kein Ton).",
+"mic_p": "Während einer Nachtaufnahme nimmt Suya über das Mikrofon Geräusche auf (Atmung, Schnarchen, Bewegung, Umgebung). Daraus berechnet die App auf dem Gerät Schlafphasen, Geräusch-Ereignisse und einen Schlafwert. Die Aufnahmen werden ausschließlich auf deinem iPhone gespeichert. Du kannst sie jederzeit löschen – einzeln, ganz oder so, dass nur die kurzen Ausschnitte der erkannten Geräusche bleiben. 24 Stunden nach dem Ende einer Nacht löscht Suya den Ton automatisch (bis dahin kannst du die Nacht komplett mit Ton exportieren). Es bleiben nur die kurzen Ausschnitte der erkannten Geräusche und für 7 Tage ein grobes Klangbild (Spektrogramm, kein Ton).",
 "motion_h": "Bewegungssensor",
 "motion_p": "Liegt das iPhone im Bett, misst Suya über den Beschleunigungssensor grobe Bewegungen. Auch diese Werte bleiben auf dem Gerät.",
 "health_h": "Apple Health",
