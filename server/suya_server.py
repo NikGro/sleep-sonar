@@ -7,12 +7,19 @@ Schnittstelle (alles JSON-Antworten):
                               Installation), X-Nacht (zufällige Nacht-Kennung). Inhalt: Spendenpaket (≤ MAX_BYTES).
   POST /api/spende/loeschen   Kopf: X-Spender, X-Schluessel. Löscht alle Nächte dieser Spender-Nummer.
   GET  /api/status            {"ok": true}
+  GET  /api/attest/challenge  {"challenge": base64} – einmal gültig, 5 Minuten
+  POST /api/attest/register   Kopf: X-Spender, X-Schluessel. Inhalt JSON {keyId, attestation, challenge} (base64).
+                              Bindet einen App-Attest-Schlüssel an die Spender-Nummer.
+
+App Attest (Apple): Ist für eine Spender-Nummer ein Schlüssel hinterlegt, braucht jede weitere Anfrage eine
+Assertion (Kopf X-Assertion + X-Challenge) über "art|challenge|spender|nacht|sha256(inhalt)".
+ATTEST=required: ohne App Attest gar nicht (für die App-Store-Version). ATTEST=optional: wer kann, muss.
 
 Spender-Nummer und Schlüssel: Beim ersten Hochladen wird ein Hash des Schlüssels hinterlegt. Danach geht
 Hochladen und Löschen nur mit demselben Schlüssel - wer bloß die 8-stellige Nummer kennt, kann nichts löschen.
 Es werden keine IP-Adressen gespeichert; für die Mengenbegrenzung liegen sie nur kurz im Arbeitsspeicher.
 """
-import hashlib, hmac, json, os, re, shutil, threading, time
+import base64, hashlib, hmac, json, os, re, secrets, shutil, threading, time
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 ROOT = os.environ.get("DATA", "/data")                 # Spenden
@@ -24,6 +31,17 @@ PER_DONOR_DAY = 4                                      # Nächte je Spender und 
 PER_IP_HOUR = 30                                       # Anfragen je Adresse und Stunde (nur im Speicher)
 DAY_BYTES = 4 * 2**30                                  # höchstens 4 GB pro Tag insgesamt
 MIN_FREE = 30 * 2**30                                  # mindestens 30 GB frei lassen
+
+ATTEST = os.environ.get("ATTEST", "optional")          # off | optional | required
+APP_ID = os.environ.get("APP_ID", "")                  # "TEAMID.de.nikgro.sleepsonar" – leer: App Attest aus
+ATTEST_ENV = os.environ.get("ATTEST_ENV", "production")
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # mit python -I fehlt das eigene Verzeichnis
+try:
+    import appattest
+except ImportError:                                    # ohne cryptography/cbor2 läuft der Rest trotzdem
+    appattest = None
+challenges = {}                                        # base64 → Ablaufzeit
 
 ID = re.compile(r"^[0-9A-F]{8}$")
 NIGHT = re.compile(r"^[0-9A-Za-z-]{8,40}$")
@@ -45,6 +63,32 @@ def log_event(kind, d):
     """Nur Ereignis, Spender-Nummer und Zeit - für Nachweise (z. B. erledigte Löschungen)."""
     with open(os.path.join(ROOT, "protokoll.jsonl"), "a") as f:
         f.write(json.dumps({"t": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "ereignis": kind, "spender": d}) + "\n")
+
+def take_challenge(c):
+    """einmal verwendbar und höchstens 5 Minuten alt"""
+    with lock:
+        exp = challenges.pop(c, 0)
+    return exp > time.time()
+
+def attest_file(d): return os.path.join(donor_dir(d), "appattest.json")
+
+def check_attest(h, d, kind, night="", body_hash=""):
+    """None = in Ordnung, sonst Fehlermeldung."""
+    p = attest_file(d)
+    if not os.path.exists(p):
+        # Löschen geht immer (Recht auf Löschung), Hochladen in der App-Store-Version nur mit App Attest
+        return "App Attest nötig" if ATTEST == "required" and kind == "nacht" else None
+    a, c = h.headers.get("X-Assertion") or "", h.headers.get("X-Challenge") or ""
+    if not a or not c or not take_challenge(c): return "Assertion oder Challenge fehlt"
+    info = json.load(open(p))
+    data = f"{kind}|{c}|{d}|{night}|{body_hash}".encode()
+    try:
+        info["counter"] = appattest.verify_assertion(APP_ID, info["key"], info["counter"], base64.b64decode(a), data)
+    except Exception as e:
+        return f"Assertion ungültig ({e})"
+    with open(p + ".tmp", "w") as f: json.dump(info, f)
+    os.replace(p + ".tmp", p)
+    return None
 
 def cleanup_loop():
     """Täglich: Nächte löschen, die älter als KEEP_DAYS sind."""
@@ -89,7 +133,16 @@ class H(BaseHTTPRequestHandler):
     # ---------- Seiten ----------
     def do_GET(self):
         path = self.path.split("?")[0].rstrip("/") or "/"
-        if path == "/api/status": return self.send(200, {"ok": True})
+        if path == "/api/status": return self.send(200, {"ok": True, "attest": bool(APP_ID and appattest) and ATTEST != "off"})
+        if path == "/api/attest/challenge":
+            if self.limited(): return self.send(429, {"fehler": "zu viele Anfragen"})
+            c = base64.b64encode(secrets.token_bytes(32)).decode()
+            with lock:
+                now = time.time()
+                for k in [k for k, v in challenges.items() if v < now]: del challenges[k]
+                if len(challenges) > 5000: return self.send(503, {"fehler": "später"})
+                challenges[c] = now + 300
+            return self.send(200, {"challenge": c})
         pages = {"/": "index.html", "/datenschutz": "datenschutz.html", "/impressum": "impressum.html",
                  "/en": "en/index.html", "/en/privacy": "en/privacy.html", "/en/imprint": "en/imprint.html",
                  "/style.css": "style.css", "/favicon.svg": "favicon.svg"}
@@ -109,6 +162,7 @@ class H(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         if path == "/api/spende/nacht": return self.upload(d, token)
         if path == "/api/spende/loeschen": return self.delete(d, token)
+        if path == "/api/attest/register": return self.register(d, token)
         self.send(404, {"fehler": "unbekannt"})
 
     def upload(self, d, token):
@@ -137,6 +191,11 @@ class H(BaseHTTPRequestHandler):
                 if not chunk: break
                 f.write(chunk); left -= len(chunk)
         if left: os.remove(tmp); return self.send(400, {"fehler": "Übertragung abgebrochen"})
+        hsh = hashlib.sha256()
+        with open(tmp, "rb") as f:
+            for chunk in iter(lambda: f.read(1 << 20), b""): hsh.update(chunk)
+        err = check_attest(self, d, "nacht", night, hsh.hexdigest())
+        if err: os.remove(tmp); return self.send(403, {"fehler": err})
         os.replace(tmp, os.path.join(nd, night + ".suya"))
         log_event("nacht", d)
         self.send(201, {"ok": True, "nacht": night})
@@ -145,9 +204,38 @@ class H(BaseHTTPRequestHandler):
         with lock:
             ok = token_ok(d, token)
             if ok is False: return self.send(403, {"fehler": "Schlüssel passt nicht"})
+        if ok:
+            err = check_attest(self, d, "loeschen")
+            if err: return self.send(403, {"fehler": err})
+        with lock:
             if ok is not None: shutil.rmtree(donor_dir(d), ignore_errors=True)
         log_event("geloescht", d)
         self.send(200, {"ok": True, "geloescht": ok is not None})
+
+    def register(self, d, token):
+        if ATTEST == "off" or not APP_ID or not appattest: return self.send(503, {"fehler": "App Attest nicht eingerichtet"})
+        n = int(self.headers.get("Content-Length") or 0)
+        if n <= 0 or n > 64 * 1024: return self.send(413, {"fehler": "zu groß"})
+        try:
+            j = json.loads(self.rfile.read(n))
+            key_id, att, c = j["keyId"], base64.b64decode(j["attestation"]), j["challenge"]
+        except Exception:
+            return self.send(400, {"fehler": "unlesbar"})
+        if not take_challenge(c): return self.send(403, {"fehler": "Challenge ungültig"})
+        try:
+            pem, counter = appattest.verify_attestation(APP_ID, key_id, att, base64.b64decode(c), ATTEST_ENV)
+        except Exception as e:
+            return self.send(403, {"fehler": f"Attestation ungültig ({e})"})
+        with lock:
+            ok = token_ok(d, token)
+            if ok is False: return self.send(403, {"fehler": "Schlüssel passt nicht"})
+            if os.path.exists(attest_file(d)): return self.send(409, {"fehler": "schon registriert"})
+            os.makedirs(donor_dir(d), exist_ok=True)
+            if ok is None:
+                open(os.path.join(donor_dir(d), "schluessel.sha256"), "w").write(hashlib.sha256(token.encode()).hexdigest())
+            json.dump({"keyId": key_id, "key": pem, "counter": counter}, open(attest_file(d), "w"))
+        log_event("appattest", d)
+        self.send(201, {"ok": True})
 
 if __name__ == "__main__":
     os.makedirs(os.path.join(ROOT, "spender"), exist_ok=True)
