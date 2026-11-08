@@ -247,6 +247,7 @@ def train(own, iters=ITERS, crop=CROP, watch=()):
                 r = raw[s:s + L].to(dev)
                 clean.append(gate(r)); aug1.append(gate(vary(r))); aug2.append(gate(vary(r)))
             yb.append(Y[s:s + L].to(dev))
+        if NORM == "night" and dev == "cuda": torch.cuda.empty_cache()   # große Ganz-Nacht-Puffer freigeben (sonst Fragmentierung)
         L = min(len(v) for v in yb)
         st = lambda vs: torch.stack([v[:L] for v in vs])
         yb = st(yb)
