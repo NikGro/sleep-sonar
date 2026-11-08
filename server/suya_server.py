@@ -166,21 +166,30 @@ class H(BaseHTTPRequestHandler):
         if path == "/api/attest/register": return self.register(d, token)
         self.send(404, {"fehler": "unbekannt"})
 
+    def fail(self, d, code, msg):
+        """Fehler zurückgeben und (ohne IP) protokollieren – zur Fehlersuche"""
+        log_event(f"fehler {code}: {msg}", d)
+        return self.send(code, {"fehler": msg})
+
     def upload(self, d, token):
         night = self.headers.get("X-Nacht") or ""
         n = int(self.headers.get("Content-Length") or 0)
-        if not NIGHT.match(night): return self.send(400, {"fehler": "Nacht-Kennung ungültig"})
-        if n <= 0 or n > MAX_BYTES: return self.send(413, {"fehler": "Paket zu groß oder leer"})
-        if shutil.disk_usage(ROOT).free < MIN_FREE + n: return self.send(507, {"fehler": "Speicher voll"})
+        if not NIGHT.match(night): return self.fail(d, 400, "Nacht-Kennung ungültig")
+        if n <= 0 or n > MAX_BYTES: return self.fail(d, 413, "Paket zu groß oder leer")
+        if shutil.disk_usage(ROOT).free < MIN_FREE + n: return self.fail(d, 507, "Speicher voll")
         today = time.strftime("%Y-%m-%d", time.gmtime())
         with lock:
             if day["date"] != today: day.update(date=today, bytes=0)
-            if day["bytes"] + n > DAY_BYTES: return self.send(503, {"fehler": "Tageslimit erreicht"})
+            if day["bytes"] + n > DAY_BYTES: return self.fail(d, 503, "Tageslimit erreicht")
             ok = token_ok(d, token)
-            if ok is False: return self.send(403, {"fehler": "Schlüssel passt nicht"})
+            if ok is False: return self.fail(d, 403, "Schlüssel passt nicht")
             nd = os.path.join(donor_dir(d), "naechte"); os.makedirs(nd, exist_ok=True)
-            recent = [f for f in os.listdir(nd) if time.time() - os.path.getmtime(os.path.join(nd, f)) < 86400]
-            if len(recent) >= PER_DONOR_DAY: return self.send(429, {"fehler": "zu viele Nächte heute"})
+            for f in os.listdir(nd):                       # abgebrochene Reste aufräumen
+                if f.startswith(".") and time.time() - os.path.getmtime(os.path.join(nd, f)) > 3600:
+                    os.remove(os.path.join(nd, f))
+            recent = [f for f in os.listdir(nd) if not f.startswith(".")
+                      and time.time() - os.path.getmtime(os.path.join(nd, f)) < 86400]
+            if len(recent) >= PER_DONOR_DAY: return self.fail(d, 429, "zu viele Nächte heute")
             if ok is None:
                 open(os.path.join(donor_dir(d), "schluessel.sha256"), "w").write(hashlib.sha256(token.encode()).hexdigest())
             day["bytes"] += n
@@ -191,12 +200,12 @@ class H(BaseHTTPRequestHandler):
                 chunk = self.rfile.read(min(left, 1 << 20))
                 if not chunk: break
                 f.write(chunk); left -= len(chunk)
-        if left: os.remove(tmp); return self.send(400, {"fehler": "Übertragung abgebrochen"})
+        if left: os.remove(tmp); return self.fail(d, 400, "Übertragung abgebrochen")
         hsh = hashlib.sha256()
         with open(tmp, "rb") as f:
             for chunk in iter(lambda: f.read(1 << 20), b""): hsh.update(chunk)
         err = check_attest(self, d, "nacht", night, hsh.hexdigest())
-        if err: os.remove(tmp); return self.send(403, {"fehler": err})
+        if err: os.remove(tmp); return self.fail(d, 403, err)
         os.replace(tmp, os.path.join(nd, night + ".suya"))
         log_event("nacht", d)
         self.send(201, {"ok": True, "nacht": night})
