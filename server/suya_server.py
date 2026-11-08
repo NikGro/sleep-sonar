@@ -5,6 +5,10 @@ Nur Python-Standardbibliothek. Hinter dem DSM-Reverse-Proxy (TLS dort), lauscht 
 Schnittstelle (alles JSON-Antworten):
   POST /api/spende/nacht      Kopf: X-Spender (8 Zeichen, in der App sichtbar), X-Schluessel (geheimes Token der
                               Installation), X-Nacht (zufällige Nacht-Kennung). Inhalt: Spendenpaket (≤ MAX_BYTES).
+  POST /api/spende/teil       wie /nacht, aber in Teilen (robuster bei wackligem Netz): Kopf X-Teil (0 …),
+                              X-Teile (Anzahl), X-Gesamt (sha256 des ganzen Pakets). Fehlende Teile einfach
+                              erneut senden; mit dem letzten fehlenden Teil wird die Nacht zusammengesetzt
+                              (App Attest dann über den Hash des ganzen Pakets).
   POST /api/spende/loeschen   Kopf: X-Spender, X-Schluessel. Löscht alle Nächte dieser Spender-Nummer.
   GET  /api/status            {"ok": true}
   GET  /api/attest/challenge  {"challenge": base64} – einmal gültig, 5 Minuten
@@ -28,7 +32,7 @@ PORT = int(os.environ.get("PORT", "8770"))
 MAX_BYTES = int(os.environ.get("MAX_BYTES", str(80 * 2**20)))
 KEEP_DAYS = int(os.environ.get("KEEP_DAYS", "183"))   # 6 Monate
 PER_DONOR_DAY = 4                                      # Nächte je Spender und Tag
-PER_IP_HOUR = 30                                       # Anfragen je Adresse und Stunde (nur im Speicher)
+PER_IP_HOUR = 300                                      # Anfragen je Adresse und Stunde (nur im Speicher)
 DAY_BYTES = 4 * 2**30                                  # höchstens 4 GB pro Tag insgesamt
 MIN_FREE = 30 * 2**30                                  # mindestens 30 GB frei lassen
 
@@ -162,6 +166,7 @@ class H(BaseHTTPRequestHandler):
             return self.send(400, {"fehler": "Spender-Nummer oder Schlüssel ungültig"})
         path = self.path.split("?")[0]
         if path == "/api/spende/nacht": return self.upload(d, token)
+        if path == "/api/spende/teil": return self.upload_part(d, token)
         if path == "/api/spende/loeschen": return self.delete(d, token)
         if path == "/api/attest/register": return self.register(d, token)
         self.send(404, {"fehler": "unbekannt"})
@@ -185,8 +190,9 @@ class H(BaseHTTPRequestHandler):
             if ok is False: return self.fail(d, 403, "Schlüssel passt nicht")
             nd = os.path.join(donor_dir(d), "naechte"); os.makedirs(nd, exist_ok=True)
             for f in os.listdir(nd):                       # abgebrochene Reste aufräumen
-                if f.startswith(".") and time.time() - os.path.getmtime(os.path.join(nd, f)) > 3600:
-                    os.remove(os.path.join(nd, f))
+                q = os.path.join(nd, f)
+                if f.startswith(".") and time.time() - os.path.getmtime(q) > 86400:
+                    shutil.rmtree(q, ignore_errors=True) if os.path.isdir(q) else os.remove(q)
             recent = [f for f in os.listdir(nd) if not f.startswith(".")
                       and time.time() - os.path.getmtime(os.path.join(nd, f)) < 86400]
             if len(recent) >= PER_DONOR_DAY: return self.fail(d, 429, "zu viele Nächte heute")
@@ -207,6 +213,63 @@ class H(BaseHTTPRequestHandler):
         err = check_attest(self, d, "nacht", night, hsh.hexdigest())
         if err: os.remove(tmp); return self.fail(d, 403, err)
         os.replace(tmp, os.path.join(nd, night + ".suya"))
+        log_event("nacht", d)
+        self.send(201, {"ok": True, "nacht": night})
+
+    def upload_part(self, d, token):
+        night = self.headers.get("X-Nacht") or ""
+        try:
+            i, total = int(self.headers.get("X-Teil", "")), int(self.headers.get("X-Teile", ""))
+        except ValueError:
+            return self.fail(d, 400, "Teil ungültig")
+        full = (self.headers.get("X-Gesamt") or "").lower()
+        n = int(self.headers.get("Content-Length") or 0)
+        if not NIGHT.match(night): return self.fail(d, 400, "Nacht-Kennung ungültig")
+        if not (0 <= i < total <= 64) or not re.fullmatch(r"[0-9a-f]{64}", full):
+            return self.fail(d, 400, "Teil ungültig")
+        if n <= 0 or n > 16 * 2**20: return self.fail(d, 413, "Teil zu groß oder leer")
+        if shutil.disk_usage(ROOT).free < MIN_FREE + n: return self.fail(d, 507, "Speicher voll")
+        today = time.strftime("%Y-%m-%d", time.gmtime())
+        with lock:
+            if day["date"] != today: day.update(date=today, bytes=0)
+            if day["bytes"] + n > DAY_BYTES: return self.fail(d, 503, "Tageslimit erreicht")
+            ok = token_ok(d, token)
+            if ok is False: return self.fail(d, 403, "Schlüssel passt nicht")
+            nd = os.path.join(donor_dir(d), "naechte"); os.makedirs(nd, exist_ok=True)
+            if ok is None:
+                open(os.path.join(donor_dir(d), "schluessel.sha256"), "w").write(hashlib.sha256(token.encode()).hexdigest())
+            day["bytes"] += n
+        pd = os.path.join(nd, f".{night}.teile")
+        os.makedirs(pd, exist_ok=True)
+        left, tmp = n, os.path.join(pd, f"{i}.part")
+        with open(tmp, "wb") as f:
+            while left:
+                chunk = self.rfile.read(min(left, 1 << 20))
+                if not chunk: break
+                f.write(chunk); left -= len(chunk)
+        if left: os.remove(tmp); return self.fail(d, 400, "Teil abgebrochen")
+        os.replace(tmp, os.path.join(pd, str(i)))
+        have = [k for k in range(total) if os.path.exists(os.path.join(pd, str(k)))]
+        if len(have) < total:
+            return self.send(202, {"ok": True, "fehlt": [k for k in range(total) if k not in have]})
+        # alles da: zusammensetzen und prüfen
+        h = hashlib.sha256()
+        out = os.path.join(nd, f".{night}.part")
+        with open(out, "wb") as f:
+            for k in range(total):
+                with open(os.path.join(pd, str(k)), "rb") as src:
+                    for chunk in iter(lambda: src.read(1 << 20), b""):
+                        h.update(chunk); f.write(chunk)
+        shutil.rmtree(pd, ignore_errors=True)
+        if h.hexdigest() != full: os.remove(out); return self.fail(d, 400, "Paket passt nicht zum Hash")
+        err = check_attest(self, d, "nacht", night, full)
+        if err: os.remove(out); return self.fail(d, 403, err)
+        with lock:
+            recent = [f for f in os.listdir(nd) if not f.startswith(".")
+                      and time.time() - os.path.getmtime(os.path.join(nd, f)) < 86400]
+            if len(recent) >= PER_DONOR_DAY and not os.path.exists(os.path.join(nd, night + ".suya")):
+                os.remove(out); return self.fail(d, 429, "zu viele Nächte heute")
+        os.replace(out, os.path.join(nd, night + ".suya"))
         log_event("nacht", d)
         self.send(201, {"ok": True, "nacht": night})
 

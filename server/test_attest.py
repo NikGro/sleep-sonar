@@ -77,3 +77,18 @@ print("ohne attest spender upload", call("/api/spende/nacht", body, {"X-Spender"
 S.ATTEST = "required"
 print("required upload ohne attest", call("/api/spende/nacht", body, {"X-Spender": "FFFF0001", "X-Schluessel": T, "X-Nacht": "n-00000004"}))
 print("required loeschen ohne attest", call("/api/spende/loeschen", b"", {"X-Spender": "FFFF0000", "X-Schluessel": T}))
+
+# Teile: 3 Teile, mittleres zuerst fehlend, dann nachgereicht; mit App Attest beim letzten Teil
+S.ATTEST = "optional"
+D2 = "ABCD9999"; H2 = {"X-Spender": D2, "X-Schluessel": T}
+ch = call("/api/attest/challenge")[1]["challenge"]
+kk2, kid2, att2 = make_attestation(base64.b64decode(ch))
+print("register2", call("/api/attest/register", json.dumps({"keyId": kid2, "attestation": base64.b64encode(att2).decode(), "challenge": ch}).encode(), H2)[0])
+blob = os.urandom(10000); full = hashlib.sha256(blob).hexdigest(); parts = [blob[:4000], blob[4000:8000], blob[8000:]]
+ph = lambda i: {**H2, "X-Nacht": "n-teile-01", "X-Teil": str(i), "X-Teile": "3", "X-Gesamt": full}
+print("teil 0", call("/api/spende/teil", parts[0], ph(0)))
+print("teil 2", call("/api/spende/teil", parts[2], ph(2)))
+ch = call("/api/attest/challenge")[1]["challenge"]
+a = base64.b64encode(make_assertion(kk2, 1, f"nacht|{ch}|{D2}|n-teile-01|{full}".encode())).decode()
+print("teil 1 (letzter)", call("/api/spende/teil", parts[1], {**ph(1), "X-Assertion": a, "X-Challenge": ch}))
+print("datei da:", os.path.getsize(f"/tmp/aat/data/spender/{D2}/naechte/n-teile-01.suya") == 10000)

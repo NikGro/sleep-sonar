@@ -333,6 +333,8 @@ EN = {
 "Vor deiner Zustimmung aufgenommen – wird nicht automatisch gespendet. Du kannst sie von Hand spenden.": "Recorded before your consent – not donated automatically. You can donate it manually.",
 "Erlaubnisse": "Permissions",
 "Diese Erlaubnisse hast du beim Start übersprungen.": "You skipped these permissions at the start.",
+"Die Übertragung wurde unterbrochen. Suya versucht es beim nächsten Öffnen wieder.": "The transfer was interrupted. Suya will try again the next time you open it.",
+"Der Datensparmodus ist an. Ohne ihn wird im WLAN gesendet.": "Low Data Mode is on. Without it, sending happens over Wi-Fi.",
 }
 # Schlüssel, die nicht über tr("…") im Code stehen (für die Vollständigkeitsprüfung)
 DYNAMIC = ["Aus", "Schlummern", "Klänge ausblenden", "Klänge abspielen", "Klänge sofort aus", "Wach", "REM", "Kern", "Tief", "Im Bett", "Schlafend", "Schnarchen", "Sprechen",

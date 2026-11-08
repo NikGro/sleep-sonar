@@ -60,6 +60,7 @@
 "Dauer" = "Durata";
 "Dein iPhone spielt für Wecker nur die eingebauten Töne in voller Lautstärke, eigene Töne werden zum Standardton. Die Lautstärke folgt der Klingellautstärke des iPhones." = "Per le sveglie il tuo iPhone riproduce a pieno volume solo i suoni integrati; i suoni personali diventano il suono standard. Il volume segue il volume della suoneria dell’iPhone.";
 "Deine Entscheidung" = "La tua scelta";
+"Der Datensparmodus ist an. Ohne ihn wird im WLAN gesendet." = "La modalità dati ridotti è attiva. Senza di essa l’invio avviene via Wi-Fi.";
 "Der Server hat die Spende abgelehnt." = "Il server ha rifiutato la donazione.";
 "Der Server nimmt gerade nichts an. Suya versucht es später wieder." = "Il server al momento non accetta nulla. Suya riproverà più tardi.";
 "Der Wecker braucht iOS 26 oder neuer." = "La sveglia richiede iOS 26 o successivo.";
@@ -73,6 +74,7 @@
 "Die Spende wird damit auch widerrufen." = "Così ritiri anche la tua donazione.";
 "Die Wecker klingeln wie der iPhone-Wecker, auch bei Stummschaltung und im Schlaf-Fokus." = "Le sveglie suonano come la sveglia dell’iPhone, anche in modalità silenziosa e con la full immersion Sonno.";
 "Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht." = "Il tempo conta dall’inizio della registrazione notturna. Questa sveglia suona solo mentre è in corso una registrazione – senza registrazione non suona.";
+"Die Übertragung wurde unterbrochen. Suya versucht es beim nächsten Öffnen wieder." = "Il trasferimento è stato interrotto. Suya riproverà alla prossima apertura.";
 "Diese Datei lässt sich nicht als Ton verwenden." = "Questo file non può essere usato come suono.";
 "Diese Erlaubnisse hast du beim Start übersprungen." = "Hai saltato questi permessi all’inizio.";
 "Diese Nacht spenden" = "Dona questa notte";

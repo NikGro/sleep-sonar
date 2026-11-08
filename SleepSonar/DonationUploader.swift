@@ -64,7 +64,7 @@ final class DonationUploader: ObservableObject {
             let created = (try? folder.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
             guard created > cutoff, var state = NightDonationState.load(folder), !state.done else { continue }
             // nur Nächte, die nach der Zustimmung aufgenommen wurden
-            if let since = donation.date, created < since {
+            if let since = donation.date, created < since, state.manual != true {
                 state.skipped = NightDonationState.beforeConsent; state.save(folder); continue
             }
             active = folder
@@ -92,7 +92,7 @@ final class DonationUploader: ObservableObject {
     /// „Datenspende erneut senden“ (gedrückt halten auf eine Nacht): Stand zurücksetzen und gleich senden.
     func resend(_ folder: URL) async {
         guard var state = NightDonationState.existing(folder) ?? NightDonationState.load(folder) else { return }
-        state.sent = nil; state.skipped = nil; state.waiting = nil
+        state.sent = nil; state.skipped = nil; state.waiting = nil; state.manual = true
         state.save(folder)
         let donation = DataDonation.shared
         guard donation.state == .granted, let donor = donation.donorID, !running else { return }
@@ -173,25 +173,58 @@ final class DonationUploader: ObservableObject {
         guard let body = try? Data(contentsOf: packageURL, options: .mappedIfSafe) else { return .later(NightDonationState.converting) }
         let hash = SHA256.hash(data: body).map { String(format: "%02x", $0) }.joined()
 
-        var request = URLRequest(url: Self.server.appendingPathComponent("api/spende/nacht"))
-        request.httpMethod = "POST"
-        request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
-        request.setValue(donor, forHTTPHeaderField: "X-Spender")
-        request.setValue(key, forHTTPHeaderField: "X-Schluessel")
-        request.setValue(night, forHTTPHeaderField: "X-Nacht")
-        for (k, v) in await AppAttestClient.assertionHeaders(kind: "nacht", donor: donor, night: night, bodyHash: hash) {
-            request.setValue(v, forHTTPHeaderField: k)
+        // in Teilen à 4 MB senden, jedes Teil bis zu 3-mal (robust bei wackligem WLAN); der Server setzt zusammen
+        let partSize = 4 * 1024 * 1024
+        let count = max(1, (body.count + partSize - 1) / partSize)
+        var lastCode = 0
+        var networkError: URLError?
+        for i in 0..<count {
+            let chunk = body.subdata(in: (i * partSize)..<min(body.count, (i + 1) * partSize))
+            var done = false
+            for attempt in 0..<3 where !done {
+                if attempt > 0 { try? await Task.sleep(for: .seconds(Double(attempt) * 3)) }
+                var request = URLRequest(url: Self.server.appendingPathComponent("api/spende/teil"))
+                request.httpMethod = "POST"
+                request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+                request.setValue(donor, forHTTPHeaderField: "X-Spender")
+                request.setValue(key, forHTTPHeaderField: "X-Schluessel")
+                request.setValue(night, forHTTPHeaderField: "X-Nacht")
+                request.setValue(String(i), forHTTPHeaderField: "X-Teil")
+                request.setValue(String(count), forHTTPHeaderField: "X-Teile")
+                request.setValue(hash, forHTTPHeaderField: "X-Gesamt")
+                // App Attest über das ganze Paket (der Server prüft es beim letzten fehlenden Teil)
+                for (k, v) in await AppAttestClient.assertionHeaders(kind: "nacht", donor: donor, night: night, bodyHash: hash) {
+                    request.setValue(v, forHTTPHeaderField: k)
+                }
+                do {
+                    let (_, response) = try await session.upload(for: request, from: chunk)
+                    lastCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+                    networkError = nil
+                    if lastCode == 201 || lastCode == 202 { done = true }
+                    else if [403, 429, 503, 507].contains(lastCode) { break }
+                } catch let e as URLError {
+                    networkError = e
+                } catch {}
+            }
+            if !done { break }
+            if lastCode == 201 { break }
         }
-        guard let (_, response) = try? await session.upload(for: request, fromFile: packageURL),
-              let code = (response as? HTTPURLResponse)?.statusCode else {
-            state.waiting = NightDonationState.waitWifi; state.save(folder)
-            return .stop   // kein WLAN o. Ä.
+        if lastCode == 201 { return .sent }
+        if let e = networkError {
+            // wirklich kein WLAN (nur Mobilfunk) oder Datensparmodus – sonst nur unterbrochen
+            let why: String
+            switch e.networkUnavailableReason {
+            case .expensive: why = NightDonationState.waitWifi
+            case .constrained: why = NightDonationState.lowData
+            default: why = NightDonationState.interrupted
+            }
+            state.waiting = why; state.save(folder)
+            return .stop
         }
-        switch code {
-        case 201: return .sent
+        switch lastCode {
         case 429, 503, 507: state.waiting = NightDonationState.waitServer; state.save(folder); return .stop
         case 403: state.waiting = NightDonationState.rejected; state.save(folder); return .stop
-        default: return .later(NightDonationState.waitServer)
+        default: return .later(NightDonationState.interrupted)
         }
     }
 
@@ -314,11 +347,13 @@ struct NightDonationState: Codable {
     var sent: Date?
     var skipped: String?
     var waiting: String?
+    /// von Hand gespendet (z. B. eine Nacht von vor der Zustimmung): automatisch weiter versuchen
+    var manual: Bool?
     var done: Bool { sent != nil || skipped != nil }
 
     static let beforeConsent = "vorZustimmung", short = "kurz", noAudio = "ohneTon", noStart = "ohneStart",
                noWatch = "ohneWatch", waitWatch = "warteWatch", waitWifi = "warteWLAN", waitServer = "warteServer",
-               rejected = "abgelehnt", converting = "umwandeln"
+               rejected = "abgelehnt", converting = "umwandeln", interrupted = "unterbrochen", lowData = "datensparen"
 
     static func reasonText(_ code: String) -> String {
         switch code {
@@ -331,6 +366,8 @@ struct NightDonationState: Codable {
         case waitWifi: tr("Wird gesendet, sobald das iPhone im WLAN ist.")
         case waitServer: tr("Der Server nimmt gerade nichts an. Suya versucht es später wieder.")
         case rejected: tr("Der Server hat die Spende abgelehnt.")
+        case interrupted: tr("Die Übertragung wurde unterbrochen. Suya versucht es beim nächsten Öffnen wieder.")
+        case lowData: tr("Der Datensparmodus ist an. Ohne ihn wird im WLAN gesendet.")
         default: tr("Wird vorbereitet.")
         }
     }

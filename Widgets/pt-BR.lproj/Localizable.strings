@@ -60,6 +60,7 @@
 "Dauer" = "Duração";
 "Dein iPhone spielt für Wecker nur die eingebauten Töne in voller Lautstärke, eigene Töne werden zum Standardton. Die Lautstärke folgt der Klingellautstärke des iPhones." = "Para alarmes, seu iPhone só toca os sons integrados em volume máximo; sons próprios viram o som padrão. O volume segue o volume da campainha do iPhone.";
 "Deine Entscheidung" = "Sua decisão";
+"Der Datensparmodus ist an. Ohne ihn wird im WLAN gesendet." = "O Modo Dados Reduzidos está ativado. Sem ele, o envio é feito pelo Wi-Fi.";
 "Der Server hat die Spende abgelehnt." = "O servidor recusou a doação.";
 "Der Server nimmt gerade nichts an. Suya versucht es später wieder." = "O servidor não está aceitando nada agora. O Suya tentará de novo mais tarde.";
 "Der Wecker braucht iOS 26 oder neuer." = "O alarme requer iOS 26 ou posterior.";
@@ -73,6 +74,7 @@
 "Die Spende wird damit auch widerrufen." = "Isso também retira a sua doação.";
 "Die Wecker klingeln wie der iPhone-Wecker, auch bei Stummschaltung und im Schlaf-Fokus." = "Os alarmes tocam como o alarme do iPhone, mesmo no modo silencioso e com o foco Sono.";
 "Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht." = "O tempo conta a partir do início da gravação noturna. Este alarme só toca enquanto uma gravação estiver em andamento – sem gravação, ele não toca.";
+"Die Übertragung wurde unterbrochen. Suya versucht es beim nächsten Öffnen wieder." = "A transferência foi interrompida. O Suya tentará de novo na próxima vez que você abrir o app.";
 "Diese Datei lässt sich nicht als Ton verwenden." = "Este arquivo não pode ser usado como som.";
 "Diese Erlaubnisse hast du beim Start übersprungen." = "Você pulou estas permissões no início.";
 "Diese Nacht spenden" = "Doar esta noite";
