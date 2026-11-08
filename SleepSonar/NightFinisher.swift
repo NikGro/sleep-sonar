@@ -22,6 +22,17 @@ enum NightFinisher {
             .compactMap { try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate }.max()
     }
 
+    /// verbleibende Zeit für den Export mit Audio, z. B. „5 Std., 12 Min.“ (in der Sprache des iPhones)
+    nonisolated static func exportTimeLeft(_ folder: URL) -> String? {
+        guard canExportAudio(folder) else { return nil }
+        let left = max(60, keepAudioHours * 3600 - Date().timeIntervalSince(nightEnd(folder) ?? Date()))
+        let f = DateComponentsFormatter()
+        f.allowedUnits = left >= 3600 ? [.hour, .minute] : [.minute]
+        f.unitsStyle = .short
+        f.maximumUnitCount = 2
+        return f.string(from: left)
+    }
+
     /// Ton noch da und Nacht keine 24 Stunden her: Export mit Audio möglich
     nonisolated static func canExportAudio(_ folder: URL) -> Bool {
         guard !NightExport.audioFiles(in: folder).isEmpty else { return false }

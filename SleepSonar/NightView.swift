@@ -59,11 +59,17 @@ struct NightView: View {
                                     Label(DonationUploader.donateLabel(url), systemImage: "arrow.up.heart")
                                 }
                             }
-                            if NightFinisher.canExportAudio(url) {
+                            if let left = NightFinisher.exportTimeLeft(url) {
                                 Button {
                                     Task { await export(url) }
                                 } label: {
-                                    Label(tr("Alles exportieren (mit Audio)"), systemImage: "square.and.arrow.up")
+                                    // Untertitel im Menü: wie lange der Ton noch da ist
+                                    Label {
+                                        Text(tr("Alles exportieren (mit Audio)"))
+                                        Text(tr("Noch %@ möglich", left))
+                                    } icon: {
+                                        Image(systemName: "square.and.arrow.up")
+                                    }
                                 }
                             }
                             Button(role: .destructive) {

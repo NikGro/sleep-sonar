@@ -330,6 +330,7 @@ EN = {
 "Ältere Nächte kannst du einzeln spenden: Nacht gedrückt halten, solange ihr Klangbild noch auf dem iPhone ist (7 Tage).": "You can donate older nights one by one: press and hold a night while its sound picture is still on the iPhone (7 days).",
 "Alles exportieren (mit Audio)": "Export everything (with audio)",
 "ZIP konnte nicht erstellt werden: %@": "Couldn't create ZIP: %@",
+"Noch %@ möglich": "Available for %@ more",
 }
 # Schlüssel, die nicht über tr("…") im Code stehen (für die Vollständigkeitsprüfung)
 DYNAMIC = ["Aus", "Schlummern", "Klänge ausblenden", "Klänge abspielen", "Klänge sofort aus", "Wach", "REM", "Kern", "Tief", "Im Bett", "Schlafend", "Schnarchen", "Sprechen",
