@@ -20,7 +20,10 @@ W_NIGHT = int(os.environ.get("W_NIGHT", "20"))
 NAMES = ["Wach", "REM", "Kern", "Tief"]; t0 = time.time()
 mel = torchaudio.transforms.MelSpectrogram(16000, n_fft=1024, hop_length=1600, n_mels=64, f_min=50, f_max=7800).to(dev)
 
-def logmel(path, lab):
+MASK_SEC = {k: tuple(map(float, v.split("-"))) for k, v in (x.split(":") for x in os.environ.get("MASK_SEC", "").split(",") if x)}
+
+def logmel(path, lab, skip=None):
+    """skip: (von, bis) in Sekunden mit App-Klaengen – zaehlt wie in der App nicht fuer Median/Streuung"""
     x, sr = sf.read(path, dtype="float32")
     n = min(len(x) // (sr * 30), len(lab)); x = x[:n * 30 * sr]
     M = []
@@ -28,7 +31,9 @@ def logmel(path, lab):
         seg = torch.tensor(x[s:s + sr * 600], device=dev)
         M.append(torch.log(mel(seg) + 1e-10)[:, : len(seg) // 1600])
     M = torch.cat(M, 1)[:, : n * 300]
-    M = M - M.median(1, keepdim=True).values; M = M / (M.std() + 1e-6)
+    keep = torch.ones(M.shape[1], dtype=torch.bool, device=M.device)
+    if skip: keep[int(skip[0] * 10): int(skip[1] * 10)] = False
+    M = M - M[:, keep].median(1, keepdim=True).values; M = M / (M[:, keep].std() + 1e-6)
     return M.T.reshape(n, 300, 64).permute(0, 2, 1).contiguous(), lab[:n]
 
 lab_data = []
@@ -41,10 +46,9 @@ for i, f in enumerate(files):
     if i % 50 == 0: print(f"Labor {i}/{len(files)}  %.0f s" % (time.time() - t0), flush=True)
 homes = {}
 for f in sorted(glob.glob(os.path.join(homedir, "*.flac"))):
-    X, y = logmel(f, np.load(f[:-5] + ".labels.npy").astype(np.int64))
+    X, y = logmel(f, np.load(f[:-5] + ".labels.npy").astype(np.int64), MASK_SEC.get(os.path.basename(f)[:-5]))
     homes[os.path.basename(f)[:-5]] = (X, torch.tensor(y, device=dev), y)
 # Zeiten mit App-Klaengen ausblenden: Epochen, die das Intervall beruehren, bekommen Label -1
-MASK_SEC = {k: tuple(map(float, v.split("-"))) for k, v in (x.split(":") for x in os.environ.get("MASK_SEC", "").split(",") if x)}
 for k, (a, b) in MASK_SEC.items():
     if k in homes:
         X, yt, y = homes[k]; y = y.copy(); y[int(a // 30): int(np.ceil(b / 30))] = -1
