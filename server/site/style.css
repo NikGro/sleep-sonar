@@ -2,14 +2,14 @@
 *{box-sizing:border-box}
 html{background:var(--ink);color:var(--moon);font:17px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
 body{margin:0;padding:0 20px;background:radial-gradient(120% 60% at 50% -10%,#232a55 0%,var(--ink) 60%) no-repeat}
-main{max-width:720px;margin:0 auto;padding:48px 0 72px}
-header{display:flex;align-items:center;gap:12px;margin-bottom:28px}
-header img{width:40px;height:40px}
-header a{color:var(--moon);text-decoration:none;font-weight:600;font-size:22px;letter-spacing:.02em}
-nav{margin-left:auto;font-size:15px}
-nav a{color:var(--mist);margin-left:14px;text-decoration:none}
+main{max-width:720px;margin:0 auto;padding:40px 0 72px}
+header{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:28px}
+header img{width:34px;height:34px}
+header>a{color:var(--moon);text-decoration:none;font-weight:600;font-size:20px;letter-spacing:.02em}
+nav{margin-left:auto;font-size:14px}
+nav a{color:var(--mist);margin-left:14px;text-decoration:none;white-space:nowrap}
 nav a:hover{color:var(--moon)}
-h1{font-family:ui-rounded,"SF Pro Rounded",-apple-system,sans-serif;color:var(--rem);font-size:34px;line-height:1.2;margin:0 0 8px}
+h1{font-family:ui-rounded,"SF Pro Rounded",-apple-system,sans-serif;color:var(--rem);font-size:clamp(26px,7.5vw,38px);line-height:1.2;margin:0 0 8px;hyphens:auto;overflow-wrap:break-word}
 h2{color:var(--rem);font-size:21px;margin:36px 0 8px}
 h3{color:var(--moon);font-size:17px;margin:22px 0 4px}
 p,li{color:var(--moon)}
@@ -20,3 +20,4 @@ ul{padding-left:22px}
 address{font-style:normal}
 footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font-size:14px;color:var(--mist)}
 footer a{color:var(--mist)}
+.card>:first-child{margin-top:0}.card>:last-child{margin-bottom:0}

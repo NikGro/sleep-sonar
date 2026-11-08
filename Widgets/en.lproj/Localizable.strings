@@ -22,6 +22,7 @@
 "Akku %.0f %%, %@" = "Battery %.0f %%, %@";
 "Aktuelle Mischung sichern …" = "Save current mix …";
 "Alle %d anzeigen" = "Show all %d";
+"Alle Einzelheiten in der Datenschutzerklärung" = "All details in the privacy policy";
 "Alle gespendeten Nächte löschen lassen?" = "Have all donated nights deleted?";
 "Alles fürs Training teilen (mit Audio)" = "Share everything for training (with audio)";
 "Am Wochenende" = "Weekends";
@@ -66,6 +67,7 @@
 "Das Modell hört die Nacht nach (%d %%). Das passiert einmal je Nacht auf dem iPhone." = "The model is listening back through the night (%d %%). This happens once per night on the iPhone.";
 "Das passiert einmal je Nacht und bleibt auf dem iPhone. Du kannst die App verlassen: Was fehlt, erledigt das iPhone später am Ladekabel." = "This happens once per night and stays on your iPhone. You can leave the app: whatever is left, your iPhone finishes later while charging.";
 "Daten und Watch teilen (ZIP)" = "Share data and Watch (ZIP)";
+"Datenschutzerklärung" = "Privacy policy";
 "Datenspende" = "Data donation";
 "Dauer" = "Duration";
 "Dein iPhone spielt für Wecker nur die eingebauten Töne in voller Lautstärke, eigene Töne werden zum Standardton. Die Lautstärke folgt der Klingellautstärke des iPhones." = "Your iPhone only plays the built-in tones at full volume for alarms; your own tones become the default tone. The volume follows the iPhone's ringer volume.";
@@ -127,6 +129,7 @@
 "Im Bett" = "In bed";
 "Im leichten Schlaf wecken" = "Wake in light sleep";
 "Im leichten Schlaf wecken geht nur, während die Nachtaufnahme läuft. Ohne Aufnahme klingelt jeder Wecker zur eingestellten Zeit." = "Waking in light sleep only works while the night recording is running. Without a recording, every alarm rings at its set time.";
+"Impressum" = "Imprint";
 "In der Nacht" = "At night";
 "Ja, Nächte spenden" = "Yes, donate nights";
 "Ja, leise Spieluhr" = "Yes, a quiet music box";
@@ -208,6 +211,7 @@
 "Protokoll" = "Log";
 "Quellen der Klänge" = "Sound credits";
 "REM" = "REM";
+"Rechtliches" = "Legal";
 "Regen" = "Rain";
 "Rosa Rauschen" = "Pink noise";
 "Routenwechsel (Grund %@), Eingang: %@" = "Route change (reason %@), input: %@";
@@ -340,6 +344,9 @@
 "aus" = "off";
 "aus um %@" = "off at %@";
 "geschlafen, %@ bis %@ Uhr" = "asleep, %@ to %@";
+"https://suya.ng-lab.de/datenschutz" = "https://suya.ng-lab.de/en/privacy";
+"https://suya.ng-lab.de/datenschutz#spende" = "https://suya.ng-lab.de/en/privacy#donation";
+"https://suya.ng-lab.de/impressum" = "https://suya.ng-lab.de/en/imprint";
 "hört zu" = "listening";
 "hört zu, %d× neu gestartet" = "listening, restarted %d×";
 "iPhone bewegt" = "iPhone movement";

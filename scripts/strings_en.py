@@ -369,6 +369,13 @@ EN = {
 "Schlafaufnahme beenden": "Stop sleep recording",
 "Startet die Nachtaufnahme von Suya (nur Mikrofon).": "Starts Suya's night recording (microphone only).",
 "Beendet die laufende Nachtaufnahme von Suya.": "Stops Suya's running night recording.",
+"https://suya.ng-lab.de/datenschutz": "https://suya.ng-lab.de/en/privacy",
+"https://suya.ng-lab.de/impressum": "https://suya.ng-lab.de/en/imprint",
+"https://suya.ng-lab.de/datenschutz#spende": "https://suya.ng-lab.de/en/privacy#donation",
+"Datenschutzerklärung": "Privacy policy",
+"Impressum": "Imprint",
+"Rechtliches": "Legal",
+"Alle Einzelheiten in der Datenschutzerklärung": "All details in the privacy policy",
 }
 # Schlüssel, die nicht über tr("…") im Code stehen (für die Vollständigkeitsprüfung)
 DYNAMIC = ["Aus", "Schlummern", "Klänge ausblenden", "Klänge abspielen", "Klänge sofort aus", "Wach", "REM", "Kern", "Tief", "Im Bett", "Schlafend", "Schnarchen", "Sprechen",

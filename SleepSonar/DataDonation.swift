@@ -99,6 +99,9 @@ struct DonationConsentView: View {
                     ("clock", tr("Noch wird nichts gesendet. Die Übertragung kommt mit einem späteren Update.")),
                 ])
 
+                Link(tr("Alle Einzelheiten in der Datenschutzerklärung"), destination: URL(string: tr("https://suya.ng-lab.de/datenschutz#spende"))!)
+                    .font(.callout).tint(Theme.color(.core))
+
                 // beide Antworten gleich gewichtet (keine Vorauswahl, kein Hervorheben)
                 VStack(spacing: 12) {
                     Button(tr("Ja, Nächte spenden")) { Haptics.select(); donation.grant(); done() }

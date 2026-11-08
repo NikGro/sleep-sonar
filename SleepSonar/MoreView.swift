@@ -60,6 +60,19 @@ struct MoreView: View {
                 .listRowBackground(Theme.raised)
 
                 Section {
+                    Link(destination: URL(string: tr("https://suya.ng-lab.de/datenschutz"))!) {
+                        Label(tr("Datenschutzerklärung"), systemImage: "hand.raised")
+                    }
+                    Link(destination: URL(string: tr("https://suya.ng-lab.de/impressum"))!) {
+                        Label(tr("Impressum"), systemImage: "info.circle")
+                    }
+                } header: {
+                    ListHeader(tr("Rechtliches"))
+                }
+                .tint(Theme.moon)
+                .listRowBackground(Theme.raised)
+
+                Section {
                     NavigationLink(tr("Quellen der Klänge")) { SoundCreditsView() }
                     NavigationLink(tr("Health-Schreibtest")) { HealthTestView() }
                     LabeledContent(tr("Version"), value: Self.version)
