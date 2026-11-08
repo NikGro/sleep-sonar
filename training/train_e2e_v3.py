@@ -56,6 +56,24 @@ def gate(raw):
 bank = [torch.tensor(v.astype(np.float32)) for v in np.load(soundfile).values()]
 bank = [b - b.median(1, keepdim=True).values for b in bank if b.shape[1] >= 20]
 
+# Alltagsgeräusche (FSD50K, CC0/CC BY) - kurze Ereignisse, optional (EVERYDAY=Pfad zur npz)
+events = []
+if os.environ.get("EVERYDAY") and os.path.exists(os.environ["EVERYDAY"]):
+    events = [torch.tensor(v.astype(np.float32)) for v in np.load(os.environ["EVERYDAY"]).values()]
+    events = [e - e.median(1, keepdim=True).values for e in events]
+print("Alltagsgeräusche:", len(events), flush=True)
+
+def add_events(x, med, rng=np.random):
+    """x: (L, 64, 300) roh. Streut 1-10 Alltagsgeräusche an zufällige Stellen (je 0 … 30 dB über Grund)."""
+    L = x.shape[0]; T = L * 300
+    y = x.permute(1, 0, 2).reshape(64, T)
+    for _ in range(rng.randint(1, 11)):
+        e = events[rng.randint(len(events))].to(x.device)
+        n = min(e.shape[1], T); a = rng.randint(0, T - n + 1)
+        lvl = rng.uniform(0, 30) * np.log(10) / 10
+        y[:, a:a + n] = torch.logaddexp(y[:, a:a + n], e[:, :n] + med.view(64, 1).to(x.device) + lvl)
+    return y.reshape(64, L, 300).permute(1, 0, 2)
+
 def vary(raw, rng=np.random):
     """Abwandlung einer Strecke roh (L, 64, 300) auf dev: Pegel, Klangfarbe, Tonhöhe, Hall, Klang."""
     x = raw.float()
@@ -72,9 +90,9 @@ def vary(raw, rng=np.random):
         for d in range(1, 9):
             h[:, d:] += (a ** d) * p[:, :-d]
         x = torch.log(h + 1e-10).reshape(64, L, 300).permute(1, 0, 2)
-    if rng.rand() < 0.6:                                                          # Klang einmischen
-        med = x.permute(1, 0, 2).reshape(64, -1).median(1).values.view(1, 64, 1)
-        x = add_sound(x, med, rng)
+    med = x.permute(1, 0, 2).reshape(64, -1).median(1).values.view(1, 64, 1)
+    if rng.rand() < 0.6: x = add_sound(x, med, rng)                               # Schlafklang darunter
+    if events and rng.rand() < 0.6: x = add_events(x.clone(), med, rng)           # Alltagsgeräusche
     return x
 
 def add_sound(raw, med, rng=np.random):
