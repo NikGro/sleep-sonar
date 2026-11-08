@@ -1,0 +1,5 @@
+/* Erzeugt von scripts/gen_strings.py – nicht von Hand ändern. */
+"NSAlarmKitUsageDescription" = "Suya 会在你设定的时间窗内、在你浅睡时叫醒你。";
+"NSHealthShareUsageDescription" = "Suya 读取 Apple Watch 的睡眠阶段，与自己的估计进行对比。";
+"NSHealthUpdateUsageDescription" = "Suya 将你的睡眠阶段（清醒、核心、深睡、快速眼动）写入 Apple 健康。";
+"NSMicrophoneUsageDescription" = "Suya 夜间录制呼吸和动作的声音来分析你的睡眠。录音会留在你的 iPhone 上，直到你自己分享。";

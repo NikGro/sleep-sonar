@@ -1,0 +1,5 @@
+/* Erzeugt von scripts/gen_strings.py – nicht von Hand ändern. */
+"NSAlarmKitUsageDescription" = "Suya ti sveglia nell’intervallo impostato, appena dormi leggero.";
+"NSHealthShareUsageDescription" = "Suya legge le fasi del sonno del tuo Apple Watch per confrontarle con la propria stima.";
+"NSHealthUpdateUsageDescription" = "Suya scrive le tue fasi del sonno (sveglio, principale, profondo, REM) in Apple Salute.";
+"NSMicrophoneUsageDescription" = "Suya registra di notte i suoni del respiro e dei movimenti per analizzare il tuo sonno. Le registrazioni restano sul tuo iPhone finché non le condividi tu.";

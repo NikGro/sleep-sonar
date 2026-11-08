@@ -1,0 +1,5 @@
+/* Erzeugt von scripts/gen_strings.py – nicht von Hand ändern. */
+"Starte Schlafaufnahme in ${applicationName}" = "${applicationName}で睡眠記録を開始";
+"${applicationName} Nacht starten" = "${applicationName}の夜を開始";
+"Beende Schlafaufnahme in ${applicationName}" = "${applicationName}で睡眠記録を終了";
+"${applicationName} Nacht beenden" = "${applicationName}の夜を終了";

@@ -1,0 +1,5 @@
+/* Erzeugt von scripts/gen_strings.py – nicht von Hand ändern. */
+"Starte Schlafaufnahme in ${applicationName}" = "在${applicationName}中开始睡眠记录";
+"${applicationName} Nacht starten" = "开始${applicationName}夜晚";
+"Beende Schlafaufnahme in ${applicationName}" = "在${applicationName}中结束睡眠记录";
+"${applicationName} Nacht beenden" = "结束${applicationName}夜晚";

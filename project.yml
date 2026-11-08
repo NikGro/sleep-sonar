@@ -23,7 +23,7 @@ targets:
         CFBundleShortVersionString: "0.3.0"
         CFBundleVersion: "2"
         CFBundleDevelopmentRegion: en
-        CFBundleLocalizations: [en, de]
+        CFBundleLocalizations: [en, de, es, fr, it, pt-BR, nl, ja, ko, zh-Hans]
         UILaunchScreen: {}
         NSSupportsLiveActivities: true
         UIBackgroundModes: [audio, processing]
@@ -53,7 +53,7 @@ targets:
         CFBundleShortVersionString: "0.3.0"
         CFBundleVersion: "2"
         CFBundleDevelopmentRegion: en
-        CFBundleLocalizations: [en, de]
+        CFBundleLocalizations: [en, de, es, fr, it, pt-BR, nl, ja, ko, zh-Hans]
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:

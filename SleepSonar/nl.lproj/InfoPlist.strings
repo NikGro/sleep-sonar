@@ -1,0 +1,5 @@
+/* Erzeugt von scripts/gen_strings.py – nicht von Hand ändern. */
+"NSAlarmKitUsageDescription" = "Suya wekt je binnen het ingestelde tijdvenster, zodra je licht slaapt.";
+"NSHealthShareUsageDescription" = "Suya leest de slaapfasen van je Apple Watch om ze met de eigen schatting te vergelijken.";
+"NSHealthUpdateUsageDescription" = "Suya schrijft je slaapfasen (wakker, kern, diep, REM) naar Apple Gezondheid.";
+"NSMicrophoneUsageDescription" = "Suya neemt ’s nachts adem- en bewegingsgeluiden op om je slaap te analyseren. De opnamen blijven op je iPhone tot je ze zelf deelt.";
