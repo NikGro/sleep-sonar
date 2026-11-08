@@ -77,7 +77,10 @@ struct SleepSonarApp: App {
                 }
                 if phase == .active {
                     SmartAlarm.shared.refresh()
-                    Task { await HealthSync.syncRecent() }
+                    Task {
+                        await HealthSync.syncRecent()
+                        await DonationUploader.shared.run()   // nur mit Einwilligung, nur im WLAN
+                    }
                 }
             }
             // Einmal bei der Einrichtung fragen (und wieder, wenn sich der Text ändert)

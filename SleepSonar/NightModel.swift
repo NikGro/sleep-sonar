@@ -42,27 +42,8 @@ enum NightModel {
         let sequence = try MLModel(contentsOf: seqURL, configuration: config)
 
         // 1) Log-Mel in 10-min-Stücken über alle Dateien hinweg (wie die zusammengefügte Datei im Training)
-        let sr = LogMel.sampleRate
-        let total = files.reduce(0) { $0 + Int((try? AVAudioFile(forReading: $1))?.length ?? 0) }
-        let epochs = total / (sr * 30)
-        guard epochs >= 20 else { throw Failure.noAudio }
-        let usable = epochs * 30 * sr
-        let mel = LogMel()
-        var frames: [[Float]] = []
-        frames.reserveCapacity(epochs * LogMel.framesPerEpoch)
-        var reader = AudioStream(files: files)
-        var done = 0
-        while done < usable {
-            let want = min(sr * LogMel.segmentSeconds, usable - done)
-            let chunk = try reader.read(want)
-            guard !chunk.isEmpty else { break }
-            frames.append(contentsOf: mel.segment(chunk))
-            done += chunk.count
-            progress(0.7 * Double(done) / Double(usable))
-        }
-        let n = min(epochs, frames.count / LogMel.framesPerEpoch)
-        guard n >= 20 else { throw Failure.noAudio }
-        frames = Array(frames.prefix(n * LogMel.framesPerEpoch))
+        var frames = try melFrames(files: files) { progress(0.7 * $0) }
+        let n = frames.count / LogMel.framesPerEpoch
         let values = LogMel.normalize(frames, epochs: n, masked: soundFrames(folder))
         frames = []
 
@@ -109,6 +90,32 @@ enum NightModel {
 }
 
 extension NightModel {
+    /// Roh-Log-Mel der ganzen Nacht (10 Bilder je Sekunde, 64 Bänder), auf ganze 30-s-Epochen gekürzt –
+    /// genau die Eingabe des Trainings. Auch für die Datenspende.
+    static func melFrames(files: [URL], progress: (Double) -> Void = { _ in }) throws -> [[Float]] {
+        let sr = LogMel.sampleRate
+        let total = files.reduce(0) { $0 + Int((try? AVAudioFile(forReading: $1))?.length ?? 0) }
+        let epochs = total / (sr * 30)
+        guard epochs >= 20 else { throw Failure.noAudio }
+        let usable = epochs * 30 * sr
+        let mel = LogMel()
+        var frames: [[Float]] = []
+        frames.reserveCapacity(epochs * LogMel.framesPerEpoch)
+        var reader = AudioStream(files: files)
+        var done = 0
+        while done < usable {
+            let want = min(sr * LogMel.segmentSeconds, usable - done)
+            let chunk = try reader.read(want)
+            guard !chunk.isEmpty else { break }
+            frames.append(contentsOf: mel.segment(chunk))
+            done += chunk.count
+            progress(Double(done) / Double(usable))
+        }
+        let n = min(epochs, frames.count / LogMel.framesPerEpoch)
+        guard n >= 20 else { throw Failure.noAudio }
+        return Array(frames.prefix(n * LogMel.framesPerEpoch))
+    }
+
     /// Bild-Bereiche (10 je Sekunde), in denen eigene Schlafklänge liefen – aus sounds.csv, für
     /// ältere Nächte aus dem Protokoll. Etwas Rand davor, Ausblenden (30 s) und Nachhall danach.
     static func soundFrames(_ folder: URL) -> [Range<Int>] {

@@ -78,6 +78,7 @@
 "Die Lautstärke wird in den Ton gerechnet. Die Klingellautstärke des iPhones gilt zusätzlich." = "The volume is built into the tone. The iPhone's ringer volume applies on top.";
 "Die Nacht wird gespeichert und lässt sich danach auswerten." = "The night will be saved and can be analyzed afterwards.";
 "Die Nachtaufnahme läuft bereits." = "The night recording is already running.";
+"Die Schlafphasen deiner Apple Watch für dieselbe Zeit und wann Suyas Einschlafklänge liefen – ohne Uhrzeit, nur ab Aufnahmebeginn gezählt." = "Your Apple Watch sleep stages for the same time and when Suya's sleep sounds were playing – no time of day, only counted from the start of the recording.";
 "Die Schlafphasen deiner Apple Watch für dieselbe Zeit." = "Your Apple Watch sleep stages for the same time.";
 "Die Schlafphasen sind eine Schätzung aus Geräuschen und keine medizinische Messung. Bei Verdacht auf Schlafstörungen hilft ein Arzt oder ein Schlaflabor." = "The sleep stages are an estimate based on sounds, not a medical measurement. If you suspect a sleep disorder, see a doctor or a sleep lab.";
 "Die Schätzung ist noch in Entwicklung. Wach und Schlaf sind halbwegs verlässlich, Tief und REM noch grob. Kein Medizinprodukt." = "The estimate is still in development. Awake and asleep are fairly reliable, deep and REM are still rough. Not a medical device.";
@@ -109,6 +110,7 @@
 "Geräusche der Nacht werden erkannt (%d %%)" = "Detecting the night's sounds (%d %%)";
 "Geräusche im Schlaf" = "Sounds during sleep";
 "Gesamtlautstärke" = "Overall volume";
+"Gespendet: %d Nächte, zuletzt am %@." = "Donated: %d nights, last on %@.";
 "Gestoppt" = "Stopped";
 "Gewitter" = "Thunderstorm";
 "Gitarre" = "Guitar";
@@ -160,6 +162,8 @@
 "Luftschnappen" = "Gasping";
 "Löschen" = "Delete";
 "Löschen fehlgeschlagen: %@" = "Deleting failed: %@";
+"Löschung am %@ beantragt und vom Server bestätigt." = "Deletion requested on %@ and confirmed by the server.";
+"Löschung am %@ beantragt. Sie wird gesendet, sobald das iPhone online ist." = "Deletion requested on %@. It will be sent as soon as the iPhone is online.";
 "Löschung beantragen" = "Request deletion";
 "Löschung beantragt am %@. Bisher wurden keine Nächte übertragen – es gibt also nichts zu löschen. Sobald die Übertragung kommt, wird die Anfrage mitgeschickt." = "Deletion requested on %@. No nights have been transferred so far – so there is nothing to delete. Once transfers start, the request will be sent along.";
 "Löschung meiner Daten beantragen" = "Request deletion of my data";
@@ -196,6 +200,7 @@
 "Noch keine Nacht aufgezeichnet" = "No nights recorded yet";
 "Noch nichts passiert." = "Nothing has happened yet.";
 "Noch wird nichts gesendet. Die Übertragung kommt mit einem späteren Update." = "Nothing is sent yet. Sending will come with a later update.";
+"Nur Nächte ab deiner Zustimmung, mit mindestens 5 Stunden Aufnahme und Schlafphasen der Watch." = "Only nights after your consent, with at least 5 hours of recording and Watch sleep stages.";
 "Nur Nächte mit mindestens 5 Stunden Aufnahme und Schlafphasen der Watch." = "Only nights with at least 5 hours of recording and Watch sleep stages.";
 "Nächte" = "Nights";
 "Nächte spenden …" = "Donate nights …";
@@ -242,6 +247,7 @@
 "Sommernacht" = "Summer night";
 "Sonnenaufgang" = "Sunrise";
 "Spende widerrufen" = "Withdraw donation";
+"Spenden ist ab 18 Jahren möglich." = "You must be 18 or older to donate.";
 "Spender-Nummer" = "Donor number";
 "Sperre jetzt das iPhone: In 30 s klingelt ein Test-Wecker. Hast du eine leise Spieluhr gehört, die weiterspielt?" = "Lock your iPhone now: a test alarm rings in 30 s. Did you hear a quiet music box that keeps playing?";
 "Spieluhr" = "Music box";
@@ -286,6 +292,7 @@
 "Ventilator" = "Fan";
 "Vergleich mit der Watch" = "Comparison with the Watch";
 "Verglichen über %@." = "Compared over %@.";
+"Verschlüsselt und nur im WLAN an den Suya-Server in Hamburg. Dort nur für das Training, nie weitergegeben, nach 6 Monaten gelöscht." = "Encrypted and only over Wi-Fi to the Suya server in Hamburg. Used there only for training, never shared, deleted after 6 months.";
 "Version" = "Version";
 "Verstanden" = "Got it";
 "Vorher werden Geräusche und Modell-Schlafphasen fertig berechnet. Die Ausschnitte der erkannten Geräusche bleiben zum Anhören erhalten. Fürs Training teilen geht danach nur noch ohne Audio." = "Sounds and model sleep stages are finished first. The clips of detected sounds are kept for listening. Afterwards, sharing for training only works without audio.";
@@ -332,6 +339,7 @@
 "Willst du diese Nacht löschen?" = "Do you want to delete this night?";
 "Wind" = "Wind";
 "Wirklich beenden?" = "Really stop?";
+"Wohin" = "Where it goes";
 "Wähle unten einen Klang" = "Pick a sound below";
 "Während der Nachtaufnahme rechnet Suya die Klänge aus dem Mikrofon heraus, damit sie die Messung kaum stören. Ganz verschwinden sie nicht, deshalb ist Ausblenden beim Einschlafen voreingestellt." = "During the night recording, Suya subtracts the sounds from the microphone so they barely affect the measurement. They don't disappear completely, which is why fading out when you fall asleep is on by default.";
 "Während des Schlafs wurden keine auffälligen Geräusche erkannt. Für Nächte ohne Audio lässt sich das nicht auswerten." = "No notable sounds were detected during sleep. Nights without audio can't be analyzed for this.";

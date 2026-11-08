@@ -1,12 +1,12 @@
 import SwiftUI
 
-/// Einwilligung zur Datenspende (noch ohne Übertragung). Keine Vorauswahl, jederzeit widerrufbar;
+/// Einwilligung zur Datenspende (Übertragung: DonationUploader). Keine Vorauswahl, jederzeit widerrufbar;
 /// Zeitpunkt und Textversion werden gespeichert (Art. 7 Abs. 1 DSGVO).
 @MainActor
 final class DataDonation: ObservableObject {
     static let shared = DataDonation()
     /// erhöhen, wenn sich der Einwilligungstext inhaltlich ändert → erneut fragen
-    static let textVersion = 2
+    static let textVersion = 3   // 3: Übertragung an suya.ng-lab.de, 6 Monate, ab 18
 
     enum State: String { case undecided, granted, declined }
 
@@ -17,6 +17,10 @@ final class DataDonation: ObservableObject {
     @Published private(set) var donorID: String?
     /// Löschung der bisher gespendeten Nächte verlangt (wird mit der Übertragung an den Server geschickt)
     @Published private(set) var deletionRequested: Date?
+    /// Löschanfrage beim Server angekommen
+    @Published private(set) var deletionSent: Bool
+    @Published private(set) var uploads: Int
+    @Published private(set) var lastUpload: Date?
 
     private init() {
         let version = d.integer(forKey: "donation.version")
@@ -26,6 +30,29 @@ final class DataDonation: ObservableObject {
         date = d.object(forKey: "donation.date") as? Date
         donorID = d.string(forKey: "donation.id")
         deletionRequested = d.object(forKey: "donation.deletion") as? Date
+        deletionSent = d.bool(forKey: "donation.deletionSent")
+        uploads = d.integer(forKey: "donation.uploads")
+        lastUpload = d.object(forKey: "donation.lastUpload") as? Date
+    }
+
+    /// geheimer Schlüssel dieser Installation: nur wer ihn hat, kann für die Spender-Nummer hochladen oder löschen
+    var secretKey: String {
+        if let k = d.string(forKey: "donation.key") { return k }
+        let k = UUID().uuidString + "-" + UUID().uuidString.prefix(8)
+        d.set(k, forKey: "donation.key")
+        return k
+    }
+
+    func countUpload() {
+        uploads += 1; lastUpload = Date()
+        d.set(uploads, forKey: "donation.uploads"); d.set(lastUpload, forKey: "donation.lastUpload")
+    }
+
+    func markDeletionSent() {
+        deletionSent = true
+        d.set(true, forKey: "donation.deletionSent")
+        uploads = 0; d.set(0, forKey: "donation.uploads")
+        AppAttestClient.reset()
     }
 
     var shouldAsk: Bool { state == .undecided }
@@ -35,7 +62,13 @@ final class DataDonation: ObservableObject {
             donorID = String(UUID().uuidString.prefix(8))
             d.set(donorID, forKey: "donation.id")
         }
+        // nach einer erledigten Löschung neu anfangen
+        if deletionSent || deletionRequested != nil {
+            deletionRequested = nil; deletionSent = false
+            d.removeObject(forKey: "donation.deletion"); d.set(false, forKey: "donation.deletionSent")
+        }
         set(.granted)
+        Task { await DonationUploader.shared.run() }
     }
 
     func decline() { set(.declined) }
@@ -43,8 +76,11 @@ final class DataDonation: ObservableObject {
     /// Löschung verlangen: widerruft auch die Spende (Art. 17 DSGVO)
     func requestDeletion() {
         deletionRequested = Date()
+        deletionSent = false
         d.set(deletionRequested, forKey: "donation.deletion")
+        d.set(false, forKey: "donation.deletionSent")
         if state == .granted { decline() }
+        Task { await DonationUploader.shared.run() }
     }
 
     private func set(_ s: State) {
@@ -87,16 +123,19 @@ struct DonationConsentView: View {
 
                 section(tr("Was übertragen wird"), color: Theme.color(.core), points: [
                     ("waveform.slash", tr("Ein grobes Klangbild der Nacht (Spektrogramm, 10-mal pro Sekunde) und die Lautstärke je Sekunde. Daraus lässt sich Atem, Schnarchen und Bewegung erkennen, aber keine Sprache verstehen. Kein Ton, keine Aufnahmen.")),
-                    ("applewatch", tr("Die Schlafphasen deiner Apple Watch für dieselbe Zeit.")),
+                    ("applewatch", tr("Die Schlafphasen deiner Apple Watch für dieselbe Zeit und wann Suyas Einschlafklänge liefen – ohne Uhrzeit, nur ab Aufnahmebeginn gezählt.")),
                     ("person.crop.circle.badge.questionmark", tr("iPhone-Modell, App-Version und eine zufällige Spender-Nummer. Kein Name, keine Apple-ID, kein Datum.")),
                 ])
                 section(tr("Welche Nächte"), color: Theme.color(.rem), points: [
-                    ("moon.zzz", tr("Nur Nächte mit mindestens 5 Stunden Aufnahme und Schlafphasen der Watch.")),
+                    ("moon.zzz", tr("Nur Nächte ab deiner Zustimmung, mit mindestens 5 Stunden Aufnahme und Schlafphasen der Watch.")),
+                ])
+                section(tr("Wohin"), color: Theme.color(.deep), points: [
+                    ("lock.shield", tr("Verschlüsselt und nur im WLAN an den Suya-Server in Hamburg. Dort nur für das Training, nie weitergegeben, nach 6 Monaten gelöscht.")),
                 ])
                 section(tr("Deine Entscheidung"), color: Theme.color(.wake), points: [
                     ("hand.raised", tr("Freiwillig. Suya funktioniert ohne Spende genauso.")),
                     ("arrow.uturn.backward", tr("Du kannst jederzeit unter „Mehr“ widerrufen und mit deiner Spender-Nummer die Löschung verlangen.")),
-                    ("clock", tr("Noch wird nichts gesendet. Die Übertragung kommt mit einem späteren Update.")),
+                    ("person.badge.clock", tr("Spenden ist ab 18 Jahren möglich.")),
                 ])
 
                 Link(tr("Alle Einzelheiten in der Datenschutzerklärung"), destination: URL(string: tr("https://suya.ng-lab.de/datenschutz#spende"))!)
@@ -149,6 +188,10 @@ struct DonationSection: View {
             case .granted:
                 Text(tr("Du spendest Nächte seit %@.", donation.date?.formatted(date: .abbreviated, time: .omitted) ?? ""))
                     .font(.callout)
+                if let last = donation.lastUpload, donation.uploads > 0 {
+                    Text(tr("Gespendet: %d Nächte, zuletzt am %@.", donation.uploads, last.formatted(date: .abbreviated, time: .omitted)))
+                        .font(.caption).foregroundStyle(Theme.mist)
+                }
                 // Widerrufen so leicht und gleich gestaltet wie Zustimmen
                 Button(tr("Spende widerrufen")) { donation.decline() }
                     .foregroundStyle(Theme.moon)
@@ -161,8 +204,9 @@ struct DonationSection: View {
                 LabeledContent(tr("Spender-Nummer"), value: id)
                     .font(.callout)
                 if let when = donation.deletionRequested {
-                    Text(tr("Löschung beantragt am %@. Bisher wurden keine Nächte übertragen – es gibt also nichts zu löschen. Sobald die Übertragung kommt, wird die Anfrage mitgeschickt.",
-                            when.formatted(date: .abbreviated, time: .omitted)))
+                    Text(donation.deletionSent
+                         ? tr("Löschung am %@ beantragt und vom Server bestätigt.", when.formatted(date: .abbreviated, time: .omitted))
+                         : tr("Löschung am %@ beantragt. Sie wird gesendet, sobald das iPhone online ist.", when.formatted(date: .abbreviated, time: .omitted)))
                         .font(.caption).foregroundStyle(Theme.mist)
                 } else {
                     Button(tr("Löschung meiner Daten beantragen")) { confirmDelete = true }

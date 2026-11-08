@@ -376,6 +376,14 @@ EN = {
 "Impressum": "Imprint",
 "Rechtliches": "Legal",
 "Alle Einzelheiten in der Datenschutzerklärung": "All details in the privacy policy",
+"Die Schlafphasen deiner Apple Watch für dieselbe Zeit und wann Suyas Einschlafklänge liefen – ohne Uhrzeit, nur ab Aufnahmebeginn gezählt.": "Your Apple Watch sleep stages for the same time and when Suya's sleep sounds were playing – no time of day, only counted from the start of the recording.",
+"Gespendet: %d Nächte, zuletzt am %@.": "Donated: %d nights, last on %@.",
+"Löschung am %@ beantragt und vom Server bestätigt.": "Deletion requested on %@ and confirmed by the server.",
+"Löschung am %@ beantragt. Sie wird gesendet, sobald das iPhone online ist.": "Deletion requested on %@. It will be sent as soon as the iPhone is online.",
+"Nur Nächte ab deiner Zustimmung, mit mindestens 5 Stunden Aufnahme und Schlafphasen der Watch.": "Only nights after your consent, with at least 5 hours of recording and Watch sleep stages.",
+"Spenden ist ab 18 Jahren möglich.": "You must be 18 or older to donate.",
+"Verschlüsselt und nur im WLAN an den Suya-Server in Hamburg. Dort nur für das Training, nie weitergegeben, nach 6 Monaten gelöscht.": "Encrypted and only over Wi-Fi to the Suya server in Hamburg. Used there only for training, never shared, deleted after 6 months.",
+"Wohin": "Where it goes",
 }
 # Schlüssel, die nicht über tr("…") im Code stehen (für die Vollständigkeitsprüfung)
 DYNAMIC = ["Aus", "Schlummern", "Klänge ausblenden", "Klänge abspielen", "Klänge sofort aus", "Wach", "REM", "Kern", "Tief", "Im Bett", "Schlafend", "Schnarchen", "Sprechen",
