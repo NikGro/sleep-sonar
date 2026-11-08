@@ -42,6 +42,15 @@ final class DonationUploader: ObservableObject {
     }()
 
     /// Beim Öffnen der App, nach dem Ende einer Nacht und nach Zustimmung/Löschanfrage aufrufen.
+    /// nach bestätigter Löschung: Spendenstand aller Nächte vergessen. Ältere Nächte gelten danach als
+    /// „vor der Zustimmung“ und lassen sich nur von Hand erneut spenden.
+    static func forgetSentNights() {
+        let dirs = (try? FileManager.default.contentsOfDirectory(at: NightStore.nightsFolder, includingPropertiesForKeys: nil)) ?? []
+        for folder in dirs where folder.hasDirectoryPath {
+            try? FileManager.default.removeItem(at: folder.appendingPathComponent("donation.json"))
+        }
+    }
+
     func run() async {
         guard !running else { return }
         running = true

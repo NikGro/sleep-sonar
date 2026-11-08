@@ -7,6 +7,8 @@ import SwiftUI
 struct MoreView: View {
     enum Permission: Hashable { case microphone, health, alarm }
     @State private var pending: [Permission] = []
+    @State private var askingDonation = false
+    @State private var confirmDonationDelete = false
 
     /// noch nicht gefragte Erlaubnisse (abgelehnte lassen sich nur in den iOS-Einstellungen ändern)
     private func refresh() {
@@ -52,7 +54,7 @@ struct MoreView: View {
                 }
 
                 Section {
-                    DonationSection()
+                    DonationSection(asking: $askingDonation, confirmDelete: $confirmDonationDelete)
                 } header: {
                     ListHeader(tr("Datenspende"))
                 } footer: {
@@ -104,6 +106,7 @@ struct MoreView: View {
             }
             .nightBackground()
             .onAppear(perform: refresh)
+            .donationDialogs(asking: $askingDonation, confirmDelete: $confirmDonationDelete)
             .navigationTitle(tr("Mehr"))
             .toolbarTitleDisplayMode(.inlineLarge)
             .suyaTopEdge()

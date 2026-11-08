@@ -51,9 +51,15 @@ final class DataDonation: ObservableObject {
 
     func markDeletionSent() {
         deletionSent = true
+        DonationUploader.forgetSentNights()   // auf dem Server gelöscht → in der App nicht mehr „gespendet am …“
         d.set(true, forKey: "donation.deletionSent")
         uploads = 0; d.set(0, forKey: "donation.uploads")
         AppAttestClient.reset()
+        // schon wieder zugestimmt, während die Löschung noch unterwegs war: Hinweis darauf nicht stehen lassen
+        if state == .granted {
+            deletionRequested = nil; deletionSent = false
+            d.removeObject(forKey: "donation.deletion"); d.set(false, forKey: "donation.deletionSent")
+        }
     }
 
     var shouldAsk: Bool { state == .undecided }
@@ -63,8 +69,8 @@ final class DataDonation: ObservableObject {
             donorID = String(UUID().uuidString.prefix(8))
             d.set(donorID, forKey: "donation.id")
         }
-        // nach einer erledigten Löschung neu anfangen
-        if deletionSent || deletionRequested != nil {
+        // nach einer erledigten Löschung neu anfangen; eine noch offene Löschung bleibt stehen und geht zuerst raus
+        if deletionSent {
             deletionRequested = nil; deletionSent = false
             d.removeObject(forKey: "donation.deletion"); d.set(false, forKey: "donation.deletionSent")
         }
@@ -179,10 +185,12 @@ struct DonationConsentView: View {
 }
 
 /// Abschnitt unter „Mehr“: Stand der Einwilligung, widerrufen oder nachträglich zustimmen.
+/// Die Zeilen liegen in einer List-Section; Dialog und Rückfrage hängen am Aufrufer (`donationDialogs`),
+/// sonst verteilt SwiftUI sie auf jede Zeile und der Dialog schließt sich von selbst wieder.
 struct DonationSection: View {
     @ObservedObject private var donation = DataDonation.shared
-    @State private var asking = false
-    @State private var confirmDelete = false
+    @Binding var asking: Bool
+    @Binding var confirmDelete: Bool
 
     var body: some View {
         Group {
@@ -216,12 +224,18 @@ struct DonationSection: View {
                 }
             }
         }
-        .sheet(isPresented: $asking) { DonationConsentView() }
-        .alert(tr("Alle gespendeten Nächte löschen lassen?"), isPresented: $confirmDelete) {
-            Button(tr("Löschung beantragen"), role: .destructive) { Haptics.warning(); donation.requestDeletion() }
-            Button(tr("Abbrechen"), role: .cancel) {}
-        } message: {
-            Text(tr("Die Spende wird damit auch widerrufen."))
-        }
+    }
+}
+
+extension View {
+    /// Einwilligungsdialog und Lösch-Rückfrage zum `DonationSection` – einmal an der Liste, nicht an den Zeilen
+    func donationDialogs(asking: Binding<Bool>, confirmDelete: Binding<Bool>) -> some View {
+        sheet(isPresented: asking) { DonationConsentView() }
+            .alert(tr("Alle gespendeten Nächte löschen lassen?"), isPresented: confirmDelete) {
+                Button(tr("Löschung beantragen"), role: .destructive) { Haptics.warning(); DataDonation.shared.requestDeletion() }
+                Button(tr("Abbrechen"), role: .cancel) {}
+            } message: {
+                Text(tr("Die Spende wird damit auch widerrufen."))
+            }
     }
 }
