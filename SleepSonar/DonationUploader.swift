@@ -19,6 +19,11 @@ final class DonationUploader: ObservableObject {
     static let shared = DonationUploader()
     /// Nacht, an der gerade gearbeitet wird (Spektrogramm oder Übertragung) – für den Spinner in der Detailansicht
     @Published private(set) var active: URL?
+    /// Fortschritt der aktiven Nacht: Phase (Text) und 0 … 1
+    @Published private(set) var phase: String?
+    @Published private(set) var progress: Double?
+
+    private func report(_ phase: String?, _ p: Double?) { self.phase = phase; self.progress = p }
     static let server = URL(string: "https://suya.ng-lab.de")!
     /// nur Nächte ab dieser Länge (wie im Einwilligungstext)
     static let minSeconds: TimeInterval = 5 * 3600
@@ -68,7 +73,7 @@ final class DonationUploader: ObservableObject {
                 state.skipped = NightDonationState.beforeConsent; state.save(folder); continue
             }
             active = folder
-            defer { active = nil }
+            defer { active = nil; report(nil, nil) }
             if !Self.hasMel(folder), let why = await prepare(folder: folder) {
                 state.skipped = why; state.save(folder); continue
             }
@@ -98,7 +103,7 @@ final class DonationUploader: ObservableObject {
         guard donation.state == .granted, let donor = donation.donorID, !running else { return }
         running = true
         active = folder
-        defer { running = false; active = nil }
+        defer { running = false; active = nil; report(nil, nil) }
         if !Self.hasMel(folder), let why = await prepare(folder: folder) {
             state.skipped = why; state.save(folder); return
         }
@@ -132,14 +137,17 @@ final class DonationUploader: ObservableObject {
         guard !files.isEmpty else { return NightDonationState.noAudio }
         let seconds = files.reduce(0.0) { $0 + ((try? audioSeconds($1)) ?? 0) }
         guard seconds >= Self.minSeconds else { return NightDonationState.short }
-        let ok = await Task.detached(priority: .utility) { Self.writeMel(folder: folder, files: files) }.value
+        report(tr("Klangbild wird erstellt"), 0)
+        let ok = await Task.detached(priority: .utility) {
+            Self.writeMel(folder: folder, files: files) { p in Task { @MainActor in DonationUploader.shared.report(tr("Klangbild wird erstellt"), p) } }
+        }.value
         _ = ok   // klappt es nicht, beim nächsten Mal wieder; den Ton löscht NightFinisher nach 24 h
         return nil
     }
 
     /// Spektrogramm (Roh-Log-Mel, Float16) der ganzen Nacht in die Datei schreiben
-    nonisolated static func writeMel(folder: URL, files: [URL]) -> Bool {
-        guard let frames = try? NightModel.melFrames(files: files) else { return false }
+    nonisolated static func writeMel(folder: URL, files: [URL], progress: @escaping (Double) -> Void = { _ in }) -> Bool {
+        guard let frames = try? NightModel.melFrames(files: files, progress: progress) else { return false }
         var data = Data(capacity: frames.count * LogMel.bands * 2)
         var half = [Float16](repeating: 0, count: LogMel.bands)
         for f in frames {
@@ -165,6 +173,7 @@ final class DonationUploader: ObservableObject {
         }
 
         let night = state.id
+        report(tr("Wird verpackt"), nil)
         let built = await Task.detached(priority: .utility) { () -> URL? in
             try? Self.buildPackage(folder: folder, watch: watch)
         }.value
@@ -181,6 +190,7 @@ final class DonationUploader: ObservableObject {
         var delivered = Set<Int>()   // Teile, die der Server schon hat (bleiben dort 24 h liegen)
         // bei Unterbrechung weiter versuchen, solange die App offen ist: 8 Runden mit wachsender Pause (gut 6 min)
         let pauses: [Double] = [0, 5, 10, 20, 30, 60, 90, 120]
+        report(tr("Wird übertragen"), 0)
         rounds: for pause in pauses {
             if pause > 0 { try? await Task.sleep(for: .seconds(pause)) }
             networkError = nil
@@ -203,7 +213,7 @@ final class DonationUploader: ObservableObject {
                     let (_, response) = try await session.upload(for: request, from: chunk)
                     lastCode = (response as? HTTPURLResponse)?.statusCode ?? 0
                     if lastCode == 201 { break rounds }
-                    if lastCode == 202 { delivered.insert(i); continue }
+                    if lastCode == 202 { delivered.insert(i); report(tr("Wird übertragen"), Double(delivered.count) / Double(count)); continue }
                     if [403, 429, 503, 507].contains(lastCode) { break rounds }
                     continue rounds          // anderer Fehler: nächste Runde
                 } catch let e as URLError {

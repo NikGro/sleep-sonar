@@ -123,6 +123,7 @@
 "Kein Mikrofon verfügbar" = "No microphone available";
 "Kein Mikrofonzugriff. Einstellungen → Suya → Mikrofon erlauben." = "No microphone access. Settings → Suya → allow Microphone.";
 "Kern" = "Core";
+"Klangbild wird erstellt" = "Creating sound picture";
 "Klassisch" = "Classic";
 "Klingelt genau zur eingestellten Zeit." = "Rings exactly at the set time.";
 "Klänge" = "Sounds";
@@ -289,8 +290,10 @@
 "Wind" = "Wind";
 "Wird gesendet, sobald das iPhone im WLAN ist." = "Will be sent as soon as the iPhone is on Wi-Fi.";
 "Wird nach dem Aufwachen vorbereitet und im WLAN gesendet." = "Will be prepared after you wake up and sent over Wi-Fi.";
+"Wird verpackt" = "Packing";
 "Wird vorbereitet und übertragen …" = "Preparing and sending …";
 "Wird vorbereitet." = "Being prepared.";
+"Wird übertragen" = "Sending";
 "Wirklich beenden?" = "Really stop?";
 "Wohin" = "Where it goes";
 "Wähle unten einen Klang" = "Pick a sound below";

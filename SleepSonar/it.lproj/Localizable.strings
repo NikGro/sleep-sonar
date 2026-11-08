@@ -123,6 +123,7 @@
 "Kein Mikrofon verfügbar" = "Nessun microfono disponibile";
 "Kein Mikrofonzugriff. Einstellungen → Suya → Mikrofon erlauben." = "Nessun accesso al microfono. Impostazioni → Suya → consenti Microfono.";
 "Kern" = "Principale";
+"Klangbild wird erstellt" = "Creazione dell’immagine sonora";
 "Klassisch" = "Classico";
 "Klingelt genau zur eingestellten Zeit." = "Suona esattamente all’orario impostato.";
 "Klänge" = "Suoni";
@@ -289,8 +290,10 @@
 "Wind" = "Vento";
 "Wird gesendet, sobald das iPhone im WLAN ist." = "Verrà inviata appena l’iPhone è connesso al Wi-Fi.";
 "Wird nach dem Aufwachen vorbereitet und im WLAN gesendet." = "Verrà preparata dopo il risveglio e inviata via Wi-Fi.";
+"Wird verpackt" = "Creazione del pacchetto";
 "Wird vorbereitet und übertragen …" = "Preparazione e invio…";
 "Wird vorbereitet." = "In preparazione.";
+"Wird übertragen" = "Invio in corso";
 "Wirklich beenden?" = "Terminare davvero?";
 "Wohin" = "Dove vanno";
 "Wähle unten einen Klang" = "Scegli un suono qui sotto";

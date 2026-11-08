@@ -123,6 +123,7 @@
 "Kein Mikrofon verfügbar" = "没有可用的麦克风";
 "Kein Mikrofonzugriff. Einstellungen → Suya → Mikrofon erlauben." = "无法访问麦克风。设置 → Suya → 允许麦克风。";
 "Kern" = "核心";
+"Klangbild wird erstellt" = "正在生成声音图";
 "Klassisch" = "经典";
 "Klingelt genau zur eingestellten Zeit." = "在设定时间准时响起。";
 "Klänge" = "声音";
@@ -289,8 +290,10 @@
 "Wind" = "风";
 "Wird gesendet, sobald das iPhone im WLAN ist." = "iPhone 连接无线局域网后即发送。";
 "Wird nach dem Aufwachen vorbereitet und im WLAN gesendet." = "将在你醒来后准备，并通过无线局域网发送。";
+"Wird verpackt" = "正在打包";
 "Wird vorbereitet und übertragen …" = "正在准备并发送…";
 "Wird vorbereitet." = "正在准备。";
+"Wird übertragen" = "正在发送";
 "Wirklich beenden?" = "确定结束？";
 "Wohin" = "发往哪里";
 "Wähle unten einen Klang" = "在下方选择一个声音";

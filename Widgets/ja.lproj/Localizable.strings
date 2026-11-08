@@ -123,6 +123,7 @@
 "Kein Mikrofon verfügbar" = "使用できるマイクがありません";
 "Kein Mikrofonzugriff. Einstellungen → Suya → Mikrofon erlauben." = "マイクへのアクセスがありません。設定 → Suya → マイクを許可。";
 "Kern" = "コア";
+"Klangbild wird erstellt" = "音の画像を作成中";
 "Klassisch" = "クラシック";
 "Klingelt genau zur eingestellten Zeit." = "設定時刻ちょうどに鳴ります。";
 "Klänge" = "サウンド";
@@ -289,8 +290,10 @@
 "Wind" = "風";
 "Wird gesendet, sobald das iPhone im WLAN ist." = "iPhoneがWi-Fiにつながり次第送信します。";
 "Wird nach dem Aufwachen vorbereitet und im WLAN gesendet." = "起床後に準備し、Wi-Fiで送信します。";
+"Wird verpackt" = "パッケージ化中";
 "Wird vorbereitet und übertragen …" = "準備して送信しています…";
 "Wird vorbereitet." = "準備中です。";
+"Wird übertragen" = "送信中";
 "Wirklich beenden?" = "本当に終了しますか？";
 "Wohin" = "送信先";
 "Wähle unten einen Klang" = "下からサウンドを選んでください";

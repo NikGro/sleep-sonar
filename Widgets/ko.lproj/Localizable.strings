@@ -123,6 +123,7 @@
 "Kein Mikrofon verfügbar" = "사용 가능한 마이크가 없습니다";
 "Kein Mikrofonzugriff. Einstellungen → Suya → Mikrofon erlauben." = "마이크 접근 권한이 없습니다. 설정 → Suya → 마이크 허용.";
 "Kern" = "코어";
+"Klangbild wird erstellt" = "소리 그림 만드는 중";
 "Klassisch" = "클래식";
 "Klingelt genau zur eingestellten Zeit." = "설정한 시간에 정확히 울립니다.";
 "Klänge" = "사운드";
@@ -289,8 +290,10 @@
 "Wind" = "바람";
 "Wird gesendet, sobald das iPhone im WLAN ist." = "iPhone이 Wi-Fi에 연결되면 전송됩니다.";
 "Wird nach dem Aufwachen vorbereitet und im WLAN gesendet." = "깨어난 뒤 준비되어 Wi-Fi로 전송됩니다.";
+"Wird verpackt" = "묶는 중";
 "Wird vorbereitet und übertragen …" = "준비하고 전송하는 중…";
 "Wird vorbereitet." = "준비 중입니다.";
+"Wird übertragen" = "전송 중";
 "Wirklich beenden?" = "정말 종료할까요?";
 "Wohin" = "보내는 곳";
 "Wähle unten einen Klang" = "아래에서 소리를 고르세요";

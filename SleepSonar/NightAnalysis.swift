@@ -474,9 +474,21 @@ struct DonationStatusSection: View {
             VStack(alignment: .leading, spacing: 8) {
                 SectionTitle(tr("Datenspende"))
                 if working {
-                    HStack(spacing: 10) {
-                        ProgressView().tint(Theme.moon)
-                        Text(tr("Wird vorbereitet und übertragen …")).font(.callout).foregroundStyle(Theme.mist)
+                    if let p = uploader.progress {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text(uploader.phase ?? tr("Wird vorbereitet und übertragen …"))
+                                Spacer()
+                                Text("\(Int(p * 100)) %").monospacedDigit()
+                            }
+                            .font(.callout).foregroundStyle(Theme.mist)
+                            ProgressView(value: p).tint(Theme.moon)
+                        }
+                    } else {
+                        HStack(spacing: 10) {
+                            ProgressView().tint(Theme.moon)
+                            Text(uploader.phase ?? tr("Wird vorbereitet und übertragen …")).font(.callout).foregroundStyle(Theme.mist)
+                        }
                     }
                 } else {
                     Text(text).font(.callout).foregroundStyle(Theme.mist)
