@@ -39,7 +39,10 @@ def robust_stats(M):
     # sehr lange Vektoren: jeden k-ten Wert nehmen (gleichmäßig, wiederholbar - die App macht es genauso:
     # Reihenfolge Band für Band, k = aufgerundet Anzahl / 4 Mio., Median = unterer Median wie torch)
     if d.numel() > 4_000_000: d = d[:: -(-d.numel() // 4_000_000)]
-    return med, float(1.4826 * d.median()) + 1e-6
+    # Untergrenze: Nächte mit viel völliger Stille (gleiche Werte) hätten sonst eine winzige Skala und
+    # riesige Werte - das hat in Lauf 021 die BatchNorm-Statistik zerstört (Modell sagte nur noch Kern)
+    sd = float((M - med).std())
+    return med, max(float(1.4826 * d.median()), 0.25 * sd, 0.3)
 
 def logmel(path, lab):
     """-> roh (n, 64, 300) half, Median (64,1), Skala"""
@@ -54,7 +57,7 @@ def logmel(path, lab):
     raw = M.T.reshape(n, 300, 64).permute(0, 2, 1).contiguous()
     return raw.half().cpu(), med.view(1, 64, 1).cpu(), sc, lab[:n]
 
-def norm(raw, med, sc): return (raw.float() - med.to(raw.device)) / sc
+def norm(raw, med, sc): return ((raw.float() - med.to(raw.device)) / sc).clamp(-12, 12)
 
 # Schlafklänge (roh, (64, T)), auf Median 0 je Band gebracht
 bank = [torch.tensor(v.astype(np.float32)) for v in np.load(soundfile).values()]
@@ -95,6 +98,9 @@ for f in sorted(glob.glob(os.path.join(homedir, "*.flac"))):
     raw, med, sc, y = logmel(f, np.load(f[:-5] + ".labels.npy").astype(np.int64))
     homes[os.path.basename(f)[:-5]] = (raw, med, sc, torch.tensor(y), y)
 print(len(lab_data), "Laborpersonen, eigene Naechte:", {k: len(v[4]) for k, v in homes.items()}, flush=True)
+scs = np.array([v[2] for v in lab_data])
+print("Skalen Labor min/median/max: %.2f / %.2f / %.2f" % (scs.min(), np.median(scs), scs.max()),
+      "| eigene:", {k: round(v[2], 2) for k, v in homes.items()}, flush=True)
 
 class Net(nn.Module):
     def __init__(s, h=96):
