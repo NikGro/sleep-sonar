@@ -144,9 +144,10 @@ class H(BaseHTTPRequestHandler):
                 challenges[c] = now + 300
             return self.send(200, {"challenge": c})
         pages = {"/": "index.html", "/datenschutz": "datenschutz.html", "/impressum": "impressum.html",
-                 "/en": "en/index.html", "/en/privacy": "en/privacy.html", "/en/imprint": "en/imprint.html",
                  "/style.css": "style.css", "/favicon.svg": "favicon.svg"}
         f = pages.get(path)
+        m = re.match(r"^/(en|es|fr|it|pt|nl|ja|ko|zh)(?:/(privacy|imprint))?$", path)
+        if m: f = f"{m.group(1)}/{m.group(2) or 'index'}.html"
         if not f: return self.send(404, body=b"Nicht gefunden", ctype="text/plain; charset=utf-8")
         ctype = {"css": "text/css", "svg": "image/svg+xml"}.get(f.rsplit(".", 1)[-1], "text/html") + "; charset=utf-8"
         self.send(200, body=open(os.path.join(SITE, f), "rb").read(), ctype=ctype)

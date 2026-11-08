@@ -21,3 +21,5 @@ address{font-style:normal}
 footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font-size:14px;color:var(--mist)}
 footer a{color:var(--mist)}
 .card>:first-child{margin-top:0}.card>:last-child{margin-bottom:0}
+footer .langs{display:inline-block;margin-top:8px;line-height:1.9}
+footer .langs a[aria-current]{color:var(--moon);text-decoration:none}
