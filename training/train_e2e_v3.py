@@ -31,7 +31,12 @@ P_SOUND = float(os.environ.get("P_SOUND", "0.5"))
 ITERS = int(os.environ.get("ITERS", "3500"))
 GATE_DB = float(os.environ.get("GATE_DB", "3"))
 W_CONS = float(os.environ.get("W_CONS", "6.0"))   # JSD-Gewicht (AugMix nutzt 12 je Stück)
-EVAL_EVERY = int(os.environ.get("EVAL_EVERY", "1000"))   # Lernkurve: so oft auf den Testnächten messen
+EVAL_EVERY = int(os.environ.get("EVAL_EVERY", "1000"))
+# NORM=gate: je Epoche Grundrauschen abziehen (Forscher). NORM=night: alte Normierung über die ganze Nacht wie
+# in der App (Median je Band, dann Streuung), Zeiten mit laufenden Schlafklängen durch den Median der übrigen Nacht ersetzt.
+NORM = os.environ.get("NORM", "gate")
+# bekannte Schlafklang-Zeiten echter Nächte (Sekunden ab Aufnahmebeginn), z. B. "nacht7:0-3670"
+MASK_SEC = {k: tuple(map(float, v.split("-"))) for k, v in (x.split(":") for x in os.environ.get("MASK_SEC", "").split(",") if x)}   # Lernkurve: so oft auf den Testnächten messen
 NAMES = ["Wach", "REM", "Kern", "Tief"]; t0 = time.time()
 mel = torchaudio.transforms.MelSpectrogram(16000, n_fft=1024, hop_length=1600, n_mels=64, f_min=50, f_max=7800).to(dev)
 
@@ -51,6 +56,24 @@ def gate(raw):
     x = raw.float()
     floor = x.sort(-1).values[..., 59:60]          # 20-%-Quantil der 300 Bilder (Index 59)
     return (x - floor - GATE_DB * np.log(10) / 10).clamp(min=0) / 4
+
+def night_norm(x, keep=None):
+    """x: (n, 64, 300) roh auf dev, keep: bool (n*300,) oder None. Genau wie LogMel.normalize(masked:) in der App."""
+    n = x.shape[0]; F = x.float().permute(1, 0, 2).reshape(64, n * 300).clone()
+    if keep is not None and keep.sum() > F.shape[1] // 4 and not bool(keep.all()):
+        F[:, ~keep] = F[:, keep].median(1, keepdim=True).values
+    F = F - F.median(1, keepdim=True).values
+    F = F / (F.std() + 1e-6)
+    return F.reshape(64, n, 300).permute(1, 0, 2).contiguous()
+
+def frames_keep(T, spans, device):
+    """spans: Liste (a, b) in Bildern (10/s); 2 s davor und 35 s danach mit ausblenden wie in der App"""
+    keep = torch.ones(T, dtype=torch.bool, device=device)
+    for a, b in spans: keep[max(0, int(a) - 20):min(T, int(b) + 350)] = False
+    return keep
+
+def base_keep(k, n):
+    return frames_keep(n * 300, [(MASK_SEC[k][0] * 10, MASK_SEC[k][1] * 10)], dev) if k in MASK_SEC else None
 
 # Schlafklänge (roh, (64, T)), auf Median 0 je Band gebracht
 bank = [torch.tensor(v.astype(np.float32)) for v in np.load(soundfile).values()]
@@ -76,14 +99,14 @@ def add_events(x, rng=np.random):
     """x: (L, 64, 300) roh. Streut 1-10 Alltagsgeräusche an zufällige Stellen, jedes mit SNR -10 … +10 dB."""
     L = x.shape[0]; T = L * 300
     y = x.permute(1, 0, 2).reshape(64, T)
-    for _ in range(rng.randint(1, 11)):
+    for _ in range(rng.randint(1, 11) * max(1, L // 80)):
         e = events[rng.randint(len(events))].to(x.device)
         n = min(e.shape[1], T); a = rng.randint(0, T - n + 1)
         seg = y[:, a:a + n]; e = e[:, :n]
         y[:, a:a + n] = torch.logaddexp(seg, e + snr_shift(seg, e, rng))
     return y.reshape(64, L, 300).permute(1, 0, 2)
 
-def add_sound(raw, rng=np.random, src=None):
+def add_sound(raw, rng=np.random, src=None, spans=None):
     """raw: (L, 64, 300) roh auf dev. Legt einen Klang in Schleife über einen zufälligen Abschnitt
     (mit Ausblenden), SNR -10 … +10 dB zur Strecke. src: Klangliste (Standard Schlafklänge)."""
     src = src or bank
@@ -103,9 +126,10 @@ def add_sound(raw, rng=np.random, src=None):
     if b < T and fade > 0:   # 30 s Ausblenden
         env[b - fade:b] = torch.linspace(0, -12, fade, device=raw.device)
     x = torch.logaddexp(x, s + env.view(1, T))
+    if spans is not None: spans.append((a, b))    # bekannter Schlafklang-Abschnitt (für die Maske wie in der App)
     return x.reshape(64, L, 300).permute(1, 0, 2)
 
-def vary(raw, rng=np.random):
+def vary(raw, rng=np.random, spans=None):
     """Abwandlung einer Strecke roh (L, 64, 300) auf dev: Pegel, Klangfarbe, Tonhöhe, Hall, Geräusch."""
     x = raw.float()
     L = x.shape[0]
@@ -123,8 +147,8 @@ def vary(raw, rng=np.random):
     # Geräusch wie HomeSleepNet: jede Abwandlung bekommt ein eigenes
     r = rng.rand()
     if not events:
-        if r < 0.6: x = add_sound(x, rng)
-    elif r < 0.25: x = add_sound(x, rng)                                          # Schlafklang
+        if r < 0.6: x = add_sound(x, rng, spans=spans)
+    elif r < 0.25: x = add_sound(x, rng, spans=spans)                             # Schlafklang
     elif r < 0.55: x = add_sound(x, rng, events)                                  # Dauergeräusch (Lüfter, Regen …)
     elif r < 0.85: x = add_events(x.clone(), rng)                                 # einzelne Geräusche
     elif r < 0.95: x = add_events(add_sound(x, rng, events), rng)                 # beides
@@ -169,12 +193,21 @@ def lab_look(x):   # Labor weniger nach Labor klingen lassen (normiert)
     x = torch.logaddexp(x + tilt, floor + 0.3 * torch.randn_like(x[:, :, :, :1]))
     return x + 0.05 * torch.randn_like(x)
 
+def prepare(raw, k, mode, seed=1):
+    """ganze Nacht fürs Modell: mode '' (sauber), 'klang' (Schlafklang), 'alltag' (Dauergeräusch)"""
+    r = raw.to(dev).float(); n = len(raw); spans = []
+    if mode == "klang": r = add_sound(r, np.random.RandomState(seed), spans=spans)
+    if mode == "alltag": r = add_sound(r, np.random.RandomState(seed), events)
+    if NORM == "night":
+        keep = base_keep(k, n)
+        if spans:   # Schlafklang-Zeit ist in der App bekannt und wird ausgeblendet
+            sk = frames_keep(n * 300, spans, dev); keep = sk if keep is None else keep & sk
+        return night_norm(r, keep)
+    return torch.cat([gate(r[i:i + 200]) for i in range(0, n, 200)])
+
 def quick_kappa(net, k, sound):
     raw, _, y = homes[k]
-    if sound:
-        X = gate(add_sound(raw.to(dev).float(), np.random.RandomState(1)))
-    else:
-        X = torch.cat([gate(raw[i:i + 200].to(dev)) for i in range(0, len(raw), 200)])
+    X = prepare(raw, k, "klang" if sound else "")
     p = predict(net, X).argmax(1); ok = y >= 0
     C = np.zeros((4, 4)); np.add.at(C, (y[ok], p[ok]), 1)
     return float(kappa(C))
@@ -193,13 +226,27 @@ def train(own, iters=ITERS, crop=CROP, watch=()):
     for it in range(iters):
         net.train(); clean, aug1, aug2, yb = [], [], [], []
         for _ in range(4):
+            key = None
             if own and np.random.rand() < p_night:
-                raw, Y, _ = homes[own[np.random.randint(len(own))]]
+                key = own[np.random.randint(len(own))]; raw, Y, _ = homes[key]
             else:
                 raw, Y = lab_data[np.random.randint(len(lab_data))]
             L = min(crop, len(Y)); s = np.random.randint(0, len(Y) - L + 1)
-            r = raw[s:s + L].to(dev)
-            clean.append(gate(r)); aug1.append(gate(vary(r))); aug2.append(gate(vary(r))); yb.append(Y[s:s + L].to(dev))
+            if NORM == "night":
+                # ganze Nacht abwandeln und normieren (wie in der App), dann denselben Ausschnitt nehmen
+                r = raw.to(dev).float(); n = len(raw); kb = base_keep(key, n) if key else None
+                def nn_(x, sp):
+                    keep = kb
+                    if sp:
+                        sk = frames_keep(n * 300, sp, dev); keep = sk if keep is None else keep & sk
+                    return night_norm(x, keep)[s:s + L]
+                sp1, sp2 = [], []
+                clean.append(nn_(r, [])); aug1.append(nn_(vary(r, spans=sp1), sp1)); aug2.append(nn_(vary(r, spans=sp2), sp2))
+                del r
+            else:
+                r = raw[s:s + L].to(dev)
+                clean.append(gate(r)); aug1.append(gate(vary(r))); aug2.append(gate(vary(r)))
+            yb.append(Y[s:s + L].to(dev))
         L = min(len(v) for v in yb)
         st = lambda vs: torch.stack([v[:L] for v in vs])
         yb = st(yb)
@@ -250,17 +297,10 @@ TAG = os.environ.get("RUN_TAG", "")   # Namenszusatz der Ergebnisdateien, damit 
 def save(): json.dump(res, open(os.path.join(out, f"e2e_v3{TAG}.json"), "w"), indent=1)
 def evaluate(tag, net, k):
     raw, _, y = homes[k]
-    res[f"{tag}_{k}"] = r = score(predict(net, torch.cat([gate(raw[i:i + 200].to(dev)) for i in range(0, len(raw), 200)])).argmax(1), y)
-    print(tag, k, {a: b for a, b in r.items() if a != "pred"}, "%.0f s" % (time.time() - t0), flush=True)
-    # Belastungstest: künstlicher Klang über einen Teil der Nacht
-    rng = np.random.RandomState(1)
-    rs = add_sound(raw.to(dev).float(), rng)
-    res[f"{tag}_{k}_mitklang"] = r = score(predict(net, gate(rs)).argmax(1), y)
-    print(tag, k, "MIT KUENSTLICHEM KLANG", {a: b for a, b in r.items() if a != "pred"}, flush=True)
-    if events:   # Dauergeräusch (z. B. Lüfter) die ganze Nacht
-        rs = add_sound(raw.to(dev).float(), np.random.RandomState(2), events)
-        res[f"{tag}_{k}_mitalltag"] = r = score(predict(net, gate(rs)).argmax(1), y)
-        print(tag, k, "MIT ALLTAGSGERAEUSCH", {a: b for a, b in r.items() if a != "pred"}, flush=True)
+    for mode, name in (("", ""), ("klang", "_mitklang"), ("alltag", "_mitalltag")):
+        if mode == "alltag" and not events: continue
+        res[f"{tag}_{k}{name}"] = r = score(predict(net, prepare(raw, k, mode)).argmax(1), y)
+        print(tag, k, mode.upper() or "SAUBER", {a: b for a, b in r.items() if a != "pred"}, "%.0f s" % (time.time() - t0), flush=True)
     save()
 
 test = [k for k in os.environ.get("TEST", "").split(",") if k in homes]
