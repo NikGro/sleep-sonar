@@ -246,7 +246,8 @@ def score(p, y):
                 watch_minutes={k: int((y == i).sum() / 2) for i, k in enumerate(NAMES)}, pred="".join(map(str, p)))
 
 res = {}
-def save(): json.dump(res, open(os.path.join(out, "e2e_v3.json"), "w"), indent=1)
+TAG = os.environ.get("RUN_TAG", "")   # Namenszusatz der Ergebnisdateien, damit Läufe sich nicht überschreiben
+def save(): json.dump(res, open(os.path.join(out, f"e2e_v3{TAG}.json"), "w"), indent=1)
 def evaluate(tag, net, k):
     raw, _, y = homes[k]
     res[f"{tag}_{k}"] = r = score(predict(net, torch.cat([gate(raw[i:i + 200].to(dev)) for i in range(0, len(raw), 200)])).argmax(1), y)
@@ -272,5 +273,5 @@ if os.environ.get("FINAL") == "1":
     steps = int(-(-res.get("bester_schritt", ITERS) // 500) * 500) if test else ITERS
     print("ENDMODELL mit", steps, "Schritten", flush=True)
     net = train(list(homes), iters=steps)
-    torch.save(net.state_dict(), os.path.join(out, "model_e2e_v3.pt"))
+    torch.save(net.state_dict(), os.path.join(out, f"model_e2e_v3{TAG}.pt"))
     for k in homes: evaluate("gelernt", net, k)
