@@ -97,10 +97,16 @@ final class DonationUploader: ObservableObject {
     /// „Datenspende erneut senden“ (gedrückt halten auf eine Nacht): Stand zurücksetzen und gleich senden.
     func resend(_ folder: URL) async {
         guard var state = NightDonationState.existing(folder) ?? NightDonationState.load(folder) else { return }
+        let wasSent = state.sent != nil
         state.sent = nil; state.skipped = nil; state.waiting = nil; state.manual = true
         state.save(folder)
         let donation = DataDonation.shared
-        guard donation.state == .granted, let donor = donation.donorID, !running else { return }
+        guard donation.state == .granted, let donor = donation.donorID else { return }
+        // läuft gerade die automatische Spende, danach dran sein (höchstens 15 min warten)
+        for _ in 0..<1800 where running { try? await Task.sleep(for: .milliseconds(500)) }
+        guard !running else { return }
+        state = NightDonationState.existing(folder) ?? state
+        if state.sent != nil { return }        // inzwischen von der automatischen Spende erledigt
         running = true
         active = folder
         defer { running = false; active = nil; report(nil, nil) }
@@ -108,7 +114,7 @@ final class DonationUploader: ObservableObject {
             state.skipped = why; state.save(folder); return
         }
         switch await upload(folder: folder, state: &state, donor: donor, key: donation.secretKey) {
-        case .sent: state.sent = Date(); state.waiting = nil; donation.countUpload()
+        case .sent: state.sent = Date(); state.waiting = nil; if !wasSent { donation.countUpload() }
         case .skip(let why): state.skipped = why; state.waiting = nil
         case .later(let why): state.waiting = why
         case .stop: break

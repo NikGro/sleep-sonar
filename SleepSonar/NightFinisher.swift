@@ -51,7 +51,9 @@ enum NightFinisher {
             if PassiveNightEngine.shared.isRunning { break }
             let files = NightExport.audioFiles(in: folder)
             guard !files.isEmpty else { continue }
-            if !DonationUploader.hasMel(folder) {
+            let created = (try? folder.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
+            let young = Date().timeIntervalSince(created) < keepMelDays * 86400   // ältere bräuchten kein Klangbild mehr
+            if young, !DonationUploader.hasMel(folder) {
                 let ok = await Task.detached(priority: .utility) { DonationUploader.writeMel(folder: folder, files: files) }.value
                 guard ok else { continue }
             }
