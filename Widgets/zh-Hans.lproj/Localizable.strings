@@ -305,7 +305,7 @@
 "ab Aufnahmebeginn, nur mit Aufnahme" = "从记录开始，仅在记录时";
 "aus" = "关";
 "aus um %@" = "%@ 关闭";
-"geschlafen, %@ bis %@ Uhr" = "睡眠，%@ 至 %@";
+"geschlafen, %@ bis %@" = "睡眠，%@ 至 %@";
 "https://suya.ng-lab.de/datenschutz" = "https://suya.ng-lab.de/zh/privacy";
 "https://suya.ng-lab.de/datenschutz#spende" = "https://suya.ng-lab.de/zh/privacy#donation";
 "https://suya.ng-lab.de/impressum" = "https://suya.ng-lab.de/zh/imprint";

@@ -134,7 +134,7 @@ EN = {
 "Wichtig": "Important",
 "Während des Schlafs wurden keine auffälligen Geräusche erkannt. Für Nächte ohne Audio lässt sich das nicht auswerten.": "No notable sounds were detected during sleep. Nights without audio can't be analyzed for this.",
 "Zeit je Phase": "Time per stage",
-"geschlafen, %@ bis %@ Uhr": "asleep, %@ to %@",
+"geschlafen, %@ bis %@": "asleep, %@ to %@",
 "hört zu": "listening",
 "hört zu, %d× neu gestartet": "listening, restarted %d×",
 "iPhone bewegt": "iPhone movement",

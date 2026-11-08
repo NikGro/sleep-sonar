@@ -305,7 +305,7 @@
 "ab Aufnahmebeginn, nur mit Aufnahme" = "from recording start, only with recording";
 "aus" = "off";
 "aus um %@" = "off at %@";
-"geschlafen, %@ bis %@ Uhr" = "asleep, %@ to %@";
+"geschlafen, %@ bis %@" = "asleep, %@ to %@";
 "https://suya.ng-lab.de/datenschutz" = "https://suya.ng-lab.de/en/privacy";
 "https://suya.ng-lab.de/datenschutz#spende" = "https://suya.ng-lab.de/en/privacy#donation";
 "https://suya.ng-lab.de/impressum" = "https://suya.ng-lab.de/en/imprint";

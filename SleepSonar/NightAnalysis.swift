@@ -187,7 +187,7 @@ struct NightAnalysisView: View {
                 }
             }
             GridRow(alignment: .firstTextBaseline) {
-                Text(tr("geschlafen, %@ bis %@ Uhr", r.start.formatted(date: .omitted, time: .shortened),
+                Text(tr("geschlafen, %@ bis %@", r.start.formatted(date: .omitted, time: .shortened),
                         r.start.addingTimeInterval(Double(r.ours.count) * r.epochSeconds)
                             .formatted(date: .omitted, time: .shortened)))
                     .font(.callout).foregroundStyle(Theme.mist)
@@ -444,11 +444,11 @@ struct Hypnogram: View {
         }
         .padding(.leading, compact ? 0 : Self.labelWidth + 6)
         .chartXAxis {
-            // nur die Stunde („3“ statt „03 Uhr“), bei langen Nächten jede zweite – sonst überlappen sie
+            // nur die Stunde („3“ statt „03 Uhr“, im 12-h-Format „12“ statt „0“), bei langen Nächten jede zweite – sonst überlappen sie
             AxisMarks(values: .stride(by: .hour, count: hourStep)) { v in
                 AxisGridLine().foregroundStyle(Theme.hairline)
                 AxisValueLabel(centered: false, anchor: .top) {
-                    if let d = v.as(Date.self) { Text("\(Calendar.current.component(.hour, from: d))") }
+                    if let d = v.as(Date.self) { Text(d.formatted(.dateTime.hour(.defaultDigits(amPM: .omitted)))) }
                 }
                 .foregroundStyle(Theme.mist)
             }
