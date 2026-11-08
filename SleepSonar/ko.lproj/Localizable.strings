@@ -254,6 +254,7 @@
 "Verschlüsselt und nur im WLAN an den Suya-Server in Hamburg. Dort nur für das Training, nie weitergegeben, nach 6 Monaten gelöscht." = "암호화되어 Wi-Fi로만 함부르크의 Suya 서버에 전송됩니다. 그곳에서 학습에만 쓰이며, 공유되지 않고, 6개월 후 삭제됩니다.";
 "Version" = "버전";
 "Verstanden" = "알겠습니다";
+"Vor deiner Zustimmung aufgenommen – wird nicht automatisch gespendet. Du kannst sie von Hand spenden." = "동의 전에 기록되어 자동으로 기증하지 않습니다. 직접 기증할 수 있습니다.";
 "Vor deiner Zustimmung aufgenommen – wird nicht gespendet." = "동의 전에 기록되어 기증하지 않습니다.";
 "Vögel" = "새";
 "Wach" = "깨어 있음";
@@ -286,6 +287,7 @@
 "Wind" = "바람";
 "Wird gesendet, sobald das iPhone im WLAN ist." = "iPhone이 Wi-Fi에 연결되면 전송됩니다.";
 "Wird nach dem Aufwachen vorbereitet und im WLAN gesendet." = "깨어난 뒤 준비되어 Wi-Fi로 전송됩니다.";
+"Wird vorbereitet und übertragen …" = "준비하고 전송하는 중…";
 "Wird vorbereitet." = "준비 중입니다.";
 "Wirklich beenden?" = "정말 종료할까요?";
 "Wohin" = "보내는 곳";

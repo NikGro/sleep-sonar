@@ -464,22 +464,31 @@ struct Hypnogram: View {
 struct DonationStatusSection: View {
     let folder: URL
     @ObservedObject private var donation = DataDonation.shared
+    @ObservedObject private var uploader = DonationUploader.shared
     @State private var state: NightDonationState?
-    @State private var sending = false
+
+    private var working: Bool { uploader.active == folder }
 
     var body: some View {
         if donation.state == .granted {
             VStack(alignment: .leading, spacing: 8) {
                 SectionTitle(tr("Datenspende"))
-                Text(text).font(.callout).foregroundStyle(Theme.mist)
-                // gesendet → erneut senden; noch nicht gespendet (z. B. vor der Zustimmung) → nachträglich spenden
-                if !sending, DonationUploader.canResend(folder), state?.waiting == nil || state?.sent != nil {
-                    Button(state?.sent != nil ? tr("Erneut senden") : tr("Diese Nacht spenden")) { resend() }
-                        .font(.callout).tint(Theme.moon)
+                if working {
+                    HStack(spacing: 10) {
+                        ProgressView().tint(Theme.moon)
+                        Text(tr("Wird vorbereitet und übertragen …")).font(.callout).foregroundStyle(Theme.mist)
+                    }
+                } else {
+                    Text(text).font(.callout).foregroundStyle(Theme.mist)
+                    // gesendet → erneut senden; noch nicht gespendet (z. B. vor der Zustimmung) → von Hand spenden
+                    if DonationUploader.canResend(folder), state?.waiting == nil || state?.sent != nil {
+                        Button(state?.sent != nil ? tr("Erneut senden") : tr("Diese Nacht spenden")) { resend() }
+                            .font(.callout).tint(Theme.moon)
+                    }
                 }
-                if sending { ProgressView().tint(Theme.moon) }
             }
             .task { state = NightDonationState.existing(folder) }
+            .onChange(of: working) { _, w in if !w { state = NightDonationState.existing(folder) } }
         }
     }
 
@@ -488,17 +497,15 @@ struct DonationStatusSection: View {
         if let sent = state.sent {
             return tr("Gespendet am %@.", sent.formatted(date: .abbreviated, time: .shortened))
         }
+        if state.skipped == NightDonationState.beforeConsent, DonationUploader.canResend(folder) {
+            return tr("Vor deiner Zustimmung aufgenommen – wird nicht automatisch gespendet. Du kannst sie von Hand spenden.")
+        }
         if let s = state.skipped { return NightDonationState.reasonText(s) }
         if let w = state.waiting { return NightDonationState.reasonText(w) }
         return NightDonationState.reasonText(NightDonationState.converting)
     }
 
     private func resend() {
-        sending = true
-        Task {
-            await DonationUploader.shared.resend(folder)
-            state = NightDonationState.existing(folder)
-            sending = false
-        }
+        Task { await DonationUploader.shared.resend(folder) }
     }
 }

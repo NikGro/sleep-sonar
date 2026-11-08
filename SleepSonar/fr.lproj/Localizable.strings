@@ -254,6 +254,7 @@
 "Verschlüsselt und nur im WLAN an den Suya-Server in Hamburg. Dort nur für das Training, nie weitergegeben, nach 6 Monaten gelöscht." = "Chiffré et uniquement en Wi-Fi vers le serveur Suya à Hambourg. Utilisé là-bas seulement pour l’entraînement, jamais partagé, supprimé après 6 mois.";
 "Version" = "Version";
 "Verstanden" = "Compris";
+"Vor deiner Zustimmung aufgenommen – wird nicht automatisch gespendet. Du kannst sie von Hand spenden." = "Enregistrée avant ton accord – pas donnée automatiquement. Tu peux la donner manuellement.";
 "Vor deiner Zustimmung aufgenommen – wird nicht gespendet." = "Enregistrée avant ton accord – ne sera pas donnée.";
 "Vögel" = "Oiseaux";
 "Wach" = "Éveillé";
@@ -286,6 +287,7 @@
 "Wind" = "Vent";
 "Wird gesendet, sobald das iPhone im WLAN ist." = "Sera envoyée dès que l’iPhone sera en Wi-Fi.";
 "Wird nach dem Aufwachen vorbereitet und im WLAN gesendet." = "Sera préparée après ton réveil et envoyée en Wi-Fi.";
+"Wird vorbereitet und übertragen …" = "Préparation et envoi …";
 "Wird vorbereitet." = "En préparation.";
 "Wirklich beenden?" = "Vraiment arrêter ?";
 "Wohin" = "Où ça va";

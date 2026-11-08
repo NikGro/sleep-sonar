@@ -331,6 +331,8 @@ EN = {
 "Alles exportieren (mit Audio)": "Export everything (with audio)",
 "ZIP konnte nicht erstellt werden: %@": "Couldn't create ZIP: %@",
 "Noch %@ möglich": "Available for %@ more",
+"Wird vorbereitet und übertragen …": "Preparing and sending …",
+"Vor deiner Zustimmung aufgenommen – wird nicht automatisch gespendet. Du kannst sie von Hand spenden.": "Recorded before your consent – not donated automatically. You can donate it manually.",
 }
 # Schlüssel, die nicht über tr("…") im Code stehen (für die Vollständigkeitsprüfung)
 DYNAMIC = ["Aus", "Schlummern", "Klänge ausblenden", "Klänge abspielen", "Klänge sofort aus", "Wach", "REM", "Kern", "Tief", "Im Bett", "Schlafend", "Schnarchen", "Sprechen",

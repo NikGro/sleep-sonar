@@ -15,8 +15,10 @@ import SonarDSP
 ///   "SUYA" · Version (1 Byte) · Länge des JSON-Kopfs (UInt32 LE) · JSON · Mel (Float16 LE, Bild für Bild je
 ///   64 Bänder) · Lautstärke (Float16 LE, dB je Sekunde)
 @MainActor
-final class DonationUploader {
+final class DonationUploader: ObservableObject {
     static let shared = DonationUploader()
+    /// Nacht, an der gerade gearbeitet wird (Spektrogramm oder Übertragung) – für den Spinner in der Detailansicht
+    @Published private(set) var active: URL?
     static let server = URL(string: "https://suya.ng-lab.de")!
     /// nur Nächte ab dieser Länge (wie im Einwilligungstext)
     static let minSeconds: TimeInterval = 5 * 3600
@@ -65,6 +67,8 @@ final class DonationUploader {
             if let since = donation.date, created < since {
                 state.skipped = NightDonationState.beforeConsent; state.save(folder); continue
             }
+            active = folder
+            defer { active = nil }
             if !Self.hasMel(folder), let why = await prepare(folder: folder) {
                 state.skipped = why; state.save(folder); continue
             }
@@ -93,7 +97,8 @@ final class DonationUploader {
         let donation = DataDonation.shared
         guard donation.state == .granted, let donor = donation.donorID, !running else { return }
         running = true
-        defer { running = false }
+        active = folder
+        defer { running = false; active = nil }
         if !Self.hasMel(folder), let why = await prepare(folder: folder) {
             state.skipped = why; state.save(folder); return
         }
