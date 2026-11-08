@@ -74,6 +74,7 @@
 "Die Wecker klingeln wie der iPhone-Wecker, auch bei Stummschaltung und im Schlaf-Fokus." = "알람은 무음 모드와 수면 집중 모드에서도 iPhone 알람처럼 울립니다.";
 "Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht." = "시간은 밤 기록 시작부터 셉니다. 이 알람은 기록 중에만 울리며, 기록하지 않으면 울리지 않습니다.";
 "Diese Datei lässt sich nicht als Ton verwenden." = "이 파일은 사운드로 사용할 수 없습니다.";
+"Diese Erlaubnisse hast du beim Start übersprungen." = "처음에 이 권한들을 건너뛰었습니다.";
 "Diese Nacht spenden" = "이 밤 기증하기";
 "Du kannst jederzeit unter „Mehr“ widerrufen und mit deiner Spender-Nummer die Löschung verlangen." = "‘더 보기’에서 언제든 철회하고 기증자 번호로 삭제를 요청할 수 있습니다.";
 "Du spendest Nächte seit %@." = "%@부터 밤을 기증하고 있습니다.";
@@ -83,7 +84,7 @@
 "Ein grobes Klangbild der Nacht (Spektrogramm, 10-mal pro Sekunde) und die Lautstärke je Sekunde. Daraus lässt sich Atem, Schnarchen und Bewegung erkennen, aber keine Sprache verstehen. Kein Ton, keine Aufnahmen." = "밤의 대략적인 소리 그림(스펙트로그램, 초당 10회)과 초당 음량. 호흡, 코골이, 움직임은 보이지만 말소리는 알아들을 수 없습니다. 소리도, 녹음도 보내지 않습니다.";
 "Einmal" = "안 함";
 "Erkannt mit Apples Geräuscherkennung direkt auf dem iPhone. Gezeigt wird nur, was während des Schlafs war. Zum Anhören wird jeder Moment automatisch lauter gemacht." = "Apple의 소리 인식으로 iPhone에서 바로 감지했습니다. 수면 중의 소리만 표시합니다. 듣기 쉽도록 각 순간을 자동으로 키웁니다.";
-"Erledigt. Ändern kannst du das in der Health-App unter Profil, Apps, Suya." = "완료되었습니다. 건강 앱의 프로필 → 앱 → Suya에서 변경할 수 있습니다.";
+"Erlaubnisse" = "권한";
 "Erneut senden" = "다시 보내기";
 "Es läuft gerade keine Nachtaufnahme." = "실행 중인 밤 기록이 없습니다.";
 "Freiwillig. Suya funktioniert ohne Spende genauso." = "자발적입니다. 기증하지 않아도 Suya는 똑같이 작동합니다.";
@@ -101,7 +102,6 @@
 "Gleich fragt Suya nach den nötigen Erlaubnissen. Jede kannst du überspringen und später in den Einstellungen ändern." = "이제 Suya가 필요한 권한을 요청합니다. 어떤 권한이든 건너뛰고 나중에 설정에서 바꿀 수 있습니다.";
 "Glocke" = "종";
 "Harfe" = "하프";
-"Health hat nicht geantwortet: %@" = "건강 앱이 응답하지 않습니다: %@";
 "Health verbinden" = "건강 앱 연결";
 "Health-Berechtigung: %@" = "건강 앱 권한: %@";
 "Health-Zugriff erlauben" = "건강 앱 접근 허용";

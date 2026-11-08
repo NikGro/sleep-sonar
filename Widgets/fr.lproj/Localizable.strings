@@ -74,6 +74,7 @@
 "Die Wecker klingeln wie der iPhone-Wecker, auch bei Stummschaltung und im Schlaf-Fokus." = "Les alarmes sonnent comme l’alarme de l’iPhone, même en mode silencieux et avec la concentration Sommeil.";
 "Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht." = "Le temps compte à partir du début de l’enregistrement nocturne. Cette alarme ne sonne que pendant un enregistrement – sans enregistrement, elle ne sonne pas.";
 "Diese Datei lässt sich nicht als Ton verwenden." = "Ce fichier ne peut pas être utilisé comme son.";
+"Diese Erlaubnisse hast du beim Start übersprungen." = "Tu as ignoré ces autorisations au début.";
 "Diese Nacht spenden" = "Donner cette nuit";
 "Du kannst jederzeit unter „Mehr“ widerrufen und mit deiner Spender-Nummer die Löschung verlangen." = "Tu peux retirer ton accord à tout moment sous « Plus » et demander la suppression avec ton numéro de donneur.";
 "Du spendest Nächte seit %@." = "Tu donnes des nuits depuis le %@.";
@@ -83,7 +84,7 @@
 "Ein grobes Klangbild der Nacht (Spektrogramm, 10-mal pro Sekunde) und die Lautstärke je Sekunde. Daraus lässt sich Atem, Schnarchen und Bewegung erkennen, aber keine Sprache verstehen. Kein Ton, keine Aufnahmen." = "Une image sonore grossière de la nuit (spectrogramme, 10 fois par seconde) et le volume par seconde. On y voit la respiration, le ronflement et les mouvements, mais on ne peut pas y comprendre la parole. Pas de son, pas d’enregistrements.";
 "Einmal" = "Jamais";
 "Erkannt mit Apples Geräuscherkennung direkt auf dem iPhone. Gezeigt wird nur, was während des Schlafs war. Zum Anhören wird jeder Moment automatisch lauter gemacht." = "Détecté avec la reconnaissance des sons d’Apple directement sur ton iPhone. Seuls les sons pendant le sommeil sont affichés. Chaque moment est automatiquement amplifié pour l’écoute.";
-"Erledigt. Ändern kannst du das in der Health-App unter Profil, Apps, Suya." = "C’est fait. Tu peux le modifier dans l’app Santé sous Profil, Apps, Suya.";
+"Erlaubnisse" = "Autorisations";
 "Erneut senden" = "Renvoyer";
 "Es läuft gerade keine Nachtaufnahme." = "Aucun enregistrement nocturne en cours.";
 "Freiwillig. Suya funktioniert ohne Spende genauso." = "Facultatif. Suya fonctionne tout aussi bien sans don.";
@@ -101,7 +102,6 @@
 "Gleich fragt Suya nach den nötigen Erlaubnissen. Jede kannst du überspringen und später in den Einstellungen ändern." = "Suya va maintenant demander les autorisations nécessaires. Tu peux en ignorer chacune et la modifier plus tard dans Réglages.";
 "Glocke" = "Cloche";
 "Harfe" = "Harpe";
-"Health hat nicht geantwortet: %@" = "Santé n’a pas répondu : %@";
 "Health verbinden" = "Connecter Santé";
 "Health-Berechtigung: %@" = "Autorisation Santé : %@";
 "Health-Zugriff erlauben" = "Autoriser l’accès à Santé";

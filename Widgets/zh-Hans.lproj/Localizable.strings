@@ -74,6 +74,7 @@
 "Die Wecker klingeln wie der iPhone-Wecker, auch bei Stummschaltung und im Schlaf-Fokus." = "闹钟会像 iPhone 闹钟一样响起，即使在静音模式和“睡眠”专注模式下。";
 "Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht." = "时间从夜间记录开始计算。此闹钟只在记录进行时响起——没有记录就不响。";
 "Diese Datei lässt sich nicht als Ton verwenden." = "此文件不能用作声音。";
+"Diese Erlaubnisse hast du beim Start übersprungen." = "你在开始时跳过了这些权限。";
 "Diese Nacht spenden" = "捐赠这一夜";
 "Du kannst jederzeit unter „Mehr“ widerrufen und mit deiner Spender-Nummer die Löschung verlangen." = "你可以随时在“更多”中撤回，并凭捐赠者编号要求删除。";
 "Du spendest Nächte seit %@." = "你自 %@ 起捐赠夜晚。";
@@ -83,7 +84,7 @@
 "Ein grobes Klangbild der Nacht (Spektrogramm, 10-mal pro Sekunde) und die Lautstärke je Sekunde. Daraus lässt sich Atem, Schnarchen und Bewegung erkennen, aber keine Sprache verstehen. Kein Ton, keine Aufnahmen." = "一幅粗略的夜间声音图（频谱图，每秒 10 次）以及每秒音量。能看出呼吸、打鼾和活动，但听不懂说话。不含声音，不含录音。";
 "Einmal" = "从不";
 "Erkannt mit Apples Geräuscherkennung direkt auf dem iPhone. Gezeigt wird nur, was während des Schlafs war. Zum Anhören wird jeder Moment automatisch lauter gemacht." = "由 Apple 的声音识别直接在你的 iPhone 上检测。只显示睡眠期间的声音。每个片段会自动放大以便收听。";
-"Erledigt. Ändern kannst du das in der Health-App unter Profil, Apps, Suya." = "完成。你可以在“健康”App 的“个人资料 → App → Suya”中更改。";
+"Erlaubnisse" = "权限";
 "Erneut senden" = "重新发送";
 "Es läuft gerade keine Nachtaufnahme." = "没有正在进行的夜间记录。";
 "Freiwillig. Suya funktioniert ohne Spende genauso." = "自愿参加。不捐赠 Suya 也照样可用。";
@@ -101,7 +102,6 @@
 "Gleich fragt Suya nach den nötigen Erlaubnissen. Jede kannst du überspringen und später in den Einstellungen ändern." = "接下来 Suya 会请求所需的权限。每一项都可以跳过，之后在“设置”中更改。";
 "Glocke" = "铃铛";
 "Harfe" = "竖琴";
-"Health hat nicht geantwortet: %@" = "“健康”未响应：%@";
 "Health verbinden" = "连接“健康”";
 "Health-Berechtigung: %@" = "“健康”权限：%@";
 "Health-Zugriff erlauben" = "允许访问“健康”";

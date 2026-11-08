@@ -74,6 +74,7 @@
 "Die Wecker klingeln wie der iPhone-Wecker, auch bei Stummschaltung und im Schlaf-Fokus." = "The alarms ring like the iPhone alarm, even in silent mode and with the Sleep Focus on.";
 "Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht." = "The time counts from the start of the night recording. This alarm only rings while a recording is running – without a recording it doesn't ring.";
 "Diese Datei lässt sich nicht als Ton verwenden." = "This file can't be used as a sound.";
+"Diese Erlaubnisse hast du beim Start übersprungen." = "You skipped these permissions at the start.";
 "Diese Nacht spenden" = "Donate this night";
 "Du kannst jederzeit unter „Mehr“ widerrufen und mit deiner Spender-Nummer die Löschung verlangen." = "You can withdraw at any time under “More” and request deletion with your donor number.";
 "Du spendest Nächte seit %@." = "You've been donating nights since %@.";
@@ -83,7 +84,7 @@
 "Ein grobes Klangbild der Nacht (Spektrogramm, 10-mal pro Sekunde) und die Lautstärke je Sekunde. Daraus lässt sich Atem, Schnarchen und Bewegung erkennen, aber keine Sprache verstehen. Kein Ton, keine Aufnahmen." = "A coarse sound picture of the night (spectrogram, 10 times per second) and the loudness per second. It shows breathing, snoring and movement, but speech can't be understood from it. No sound, no recordings.";
 "Einmal" = "Never";
 "Erkannt mit Apples Geräuscherkennung direkt auf dem iPhone. Gezeigt wird nur, was während des Schlafs war. Zum Anhören wird jeder Moment automatisch lauter gemacht." = "Detected with Apple's sound recognition right on your iPhone. Only sounds during sleep are shown. Each moment is made louder automatically for listening.";
-"Erledigt. Ändern kannst du das in der Health-App unter Profil, Apps, Suya." = "Done. You can change this in the Health app under Profile, Apps, Suya.";
+"Erlaubnisse" = "Permissions";
 "Erneut senden" = "Send again";
 "Es läuft gerade keine Nachtaufnahme." = "No night recording is running.";
 "Freiwillig. Suya funktioniert ohne Spende genauso." = "Voluntary. Suya works just the same without donating.";
@@ -101,7 +102,6 @@
 "Gleich fragt Suya nach den nötigen Erlaubnissen. Jede kannst du überspringen und später in den Einstellungen ändern." = "Next, Suya asks for the permissions it needs. You can skip any of them and change them later in Settings.";
 "Glocke" = "Bell";
 "Harfe" = "Harp";
-"Health hat nicht geantwortet: %@" = "Health did not respond: %@";
 "Health verbinden" = "Connect Health";
 "Health-Berechtigung: %@" = "Health permission: %@";
 "Health-Zugriff erlauben" = "Allow Health access";

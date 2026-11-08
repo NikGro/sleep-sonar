@@ -1,35 +1,55 @@
+import AlarmKit
+import AVFoundation
+import HealthKit
 import SwiftUI
 
-/// Einstellungen und Hilfe: Health-Zugriff, Kurzbefehle, Hinweise, Entwickler-Werkzeuge.
+/// Einstellungen und Hilfe: übersprungene Erlaubnisse, Datenspende, Hinweise, Rechtliches.
 struct MoreView: View {
-    @State private var healthNote: String?
+    enum Permission: Hashable { case microphone, health, alarm }
+    @State private var pending: [Permission] = []
+
+    /// noch nicht gefragte Erlaubnisse (abgelehnte lassen sich nur in den iOS-Einstellungen ändern)
+    private func refresh() {
+        var p: [Permission] = []
+        if AVAudioApplication.shared.recordPermission == .undetermined { p.append(.microphone) }
+        if HKHealthStore.isHealthDataAvailable(),
+           HKHealthStore().authorizationStatus(for: HKCategoryType(.sleepAnalysis)) == .notDetermined { p.append(.health) }
+        if #available(iOS 26.0, *), AlarmManager.shared.authorizationState == .notDetermined { p.append(.alarm) }
+        pending = p
+    }
+
+    private func ask(_ p: Permission) async {
+        switch p {
+        case .microphone: _ = await AVAudioApplication.requestRecordPermission()
+        case .health: try? await NightExport.requestAuthorization()
+        case .alarm: if #available(iOS 26.0, *) { _ = await AlarmBackend.authorize() }
+        }
+        refresh()
+    }
 
     var body: some View {
         NavigationStack {
             List {
-                Section {
-                    Button {
-                        Task {
-                            do {
-                                try await NightExport.requestAuthorization()
-                                healthNote = tr("Erledigt. Ändern kannst du das in der Health-App unter Profil, Apps, Suya.")
-                            } catch {
-                                healthNote = tr("Health hat nicht geantwortet: %@", error.localizedDescription)
+                // Knöpfe nur für Erlaubnisse, die im Onboarding übersprungen wurden (noch nicht gefragt)
+                if !pending.isEmpty {
+                    Section {
+                        ForEach(pending, id: \.self) { p in
+                            Button { Task { await ask(p) } } label: {
+                                switch p {
+                                case .microphone: Label(tr("Mikrofon erlauben"), systemImage: "mic")
+                                case .health: Label(tr("Health-Zugriff erlauben"), systemImage: "heart.text.square")
+                                case .alarm: Label(tr("Wecker erlauben"), systemImage: "alarm")
+                                }
                             }
                         }
-                    } label: {
-                        Label(tr("Health-Zugriff erlauben"), systemImage: "heart.text.square")
+                    } header: {
+                        ListHeader(tr("Erlaubnisse"))
+                    } footer: {
+                        Text(tr("Diese Erlaubnisse hast du beim Start übersprungen."))
+                            .foregroundStyle(Theme.mist)
                     }
-                    if let healthNote {
-                        Text(healthNote).font(.caption).foregroundStyle(Theme.mist)
-                    }
-                } header: {
-                    ListHeader("Apple Health")
-                } footer: {
-                    Text(tr("Suya trägt jede Nacht in Health ein und liest die Schlafphasen deiner Apple Watch zum Vergleich. Hat die Watch eine Nacht eingetragen, hat sie Vorrang."))
-                        .foregroundStyle(Theme.mist)
+                    .listRowBackground(Theme.raised)
                 }
-                .listRowBackground(Theme.raised)
 
                 Section {
                     DonationSection()
@@ -46,6 +66,7 @@ struct MoreView: View {
                     tip("bolt", tr("Über Nacht ans Ladekabel. Die Aufnahme braucht etwa so viel Strom wie Musik hören."))
                     tip("iphone.gen3", tr("Unterseite mit dem Mikrofon zu dir, etwa eine Armlänge entfernt."))
                     tip("hand.raised", tr("Suya sendet keinen Ton aus und stört andere Apps nicht."))
+                    tip("heart.text.square", tr("Suya trägt jede Nacht in Health ein und liest die Schlafphasen deiner Apple Watch zum Vergleich. Hat die Watch eine Nacht eingetragen, hat sie Vorrang."))
                 } header: {
                     ListHeader(tr("Tipps"))
                 }
@@ -69,7 +90,11 @@ struct MoreView: View {
                     NavigationLink { SoundCreditsView() } label: {
                         Label(tr("Quellen der Klänge"), systemImage: "music.note")
                     }
-                    LabeledContent(tr("Version"), value: Self.version)
+                    LabeledContent {
+                        Text(Self.version)
+                    } label: {
+                        Label(tr("Version"), systemImage: "number")
+                    }
                 } header: {
                     ListHeader(tr("Rechtliches"))
                 }
@@ -78,6 +103,7 @@ struct MoreView: View {
 
             }
             .nightBackground()
+            .onAppear(perform: refresh)
             .navigationTitle(tr("Mehr"))
             .toolbarTitleDisplayMode(.inlineLarge)
             .suyaTopEdge()

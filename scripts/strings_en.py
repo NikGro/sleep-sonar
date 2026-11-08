@@ -72,13 +72,11 @@ EN = {
 "Die Schlafphasen sind eine Schätzung aus Geräuschen und keine medizinische Messung. Bei Verdacht auf Schlafstörungen hilft ein Arzt oder ein Schlaflabor.": "The sleep stages are an estimate based on sounds, not a medical measurement. If you suspect a sleep disorder, see a doctor or a sleep lab.",
 "Die Schätzung ist noch in Entwicklung. Wach und Schlaf sind halbwegs verlässlich, Tief und REM noch grob. Kein Medizinprodukt.": "The estimate is still in development. Awake and asleep are fairly reliable, deep and REM are still rough. Not a medical device.",
 "Erkannt mit Apples Geräuscherkennung direkt auf dem iPhone. Gezeigt wird nur, was während des Schlafs war. Zum Anhören wird jeder Moment automatisch lauter gemacht.": "Detected with Apple's sound recognition right on your iPhone. Only sounds during sleep are shown. Each moment is made louder automatically for listening.",
-"Erledigt. Ändern kannst du das in der Health-App unter Profil, Apps, Suya.": "Done. You can change this in the Health app under Profile, Apps, Suya.",
 "Es läuft gerade keine Nachtaufnahme.": "No night recording is running.",
 "Für diese Nacht gibt es keine Watch-Schlafphasen in Health. Ist die Watch synchronisiert und der Health-Zugriff erlaubt?": "There are no Watch sleep stages in Health for this night. Is the Watch synced and Health access allowed?",
 "Geräusche der Nacht werden erkannt (%d %%)": "Detecting the night's sounds (%d %%)",
 "Geräusche im Schlaf": "Sounds during sleep",
 "Gestoppt": "Stopped",
-"Health hat nicht geantwortet: %@": "Health did not respond: %@",
 "Health-Berechtigung: %@": "Health permission: %@",
 "Health-Zugriff erlauben": "Allow Health access",
 "Heute Nacht": "Tonight",
@@ -333,6 +331,8 @@ EN = {
 "Noch %@ möglich": "Available for %@ more",
 "Wird vorbereitet und übertragen …": "Preparing and sending …",
 "Vor deiner Zustimmung aufgenommen – wird nicht automatisch gespendet. Du kannst sie von Hand spenden.": "Recorded before your consent – not donated automatically. You can donate it manually.",
+"Erlaubnisse": "Permissions",
+"Diese Erlaubnisse hast du beim Start übersprungen.": "You skipped these permissions at the start.",
 }
 # Schlüssel, die nicht über tr("…") im Code stehen (für die Vollständigkeitsprüfung)
 DYNAMIC = ["Aus", "Schlummern", "Klänge ausblenden", "Klänge abspielen", "Klänge sofort aus", "Wach", "REM", "Kern", "Tief", "Im Bett", "Schlafend", "Schnarchen", "Sprechen",
