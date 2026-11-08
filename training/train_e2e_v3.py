@@ -214,18 +214,37 @@ def quick_kappa(net, k, sound):
 
 curve = []
 CROP = int(os.environ.get("CROP", "80"))   # 4 Strecken x 3 Fassungen x 80 Epochen = gleicher Speicher wie vorher 8 x 120
-def train(own, iters=ITERS, crop=CROP, watch=()):
+def train(own, iters=ITERS, crop=CROP, watch=(), noisy=True, init=None, lr_fixed=None, stage=""):
     """own: Liste von Nacht-Schlüsseln aus homes, W_NIGHT-fach gewichtet.
-    watch: Testnächte für die Lernkurve - zurück kommt dann der Stand mit dem besten Mittelwert."""
+    watch: Testnächte für die Lernkurve - zurück kommt dann der Stand mit dem besten Mittelwert.
+    noisy=False: sauberes Lernen (Stufe 1, wie SoundSleepNet): 8 Strecken à 120 Epochen, nur Kreuzentropie.
+    init/lr_fixed: auf einem Stand weiterlernen mit fester Lernrate (Stufe 2, wie HomeSleepNet)."""
     best, best_state = -9.0, None
-    net = Net().to(dev); opt = torch.optim.AdamW(net.parameters(), lr=1.5e-3, weight_decay=1e-2)
-    sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=1.5e-3, total_steps=iters)
+    net = Net().to(dev)
+    if init is not None: net.load_state_dict(init)
+    if lr_fixed:
+        opt = torch.optim.Adam(net.parameters(), lr=lr_fixed); sched = None
+    else:
+        opt = torch.optim.AdamW(net.parameters(), lr=1.5e-3, weight_decay=1e-2)
+        sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=1.5e-3, total_steps=iters)
+    if not noisy: crop = int(os.environ.get("CROP1", "120"))
+    def look(step):
+        nonlocal best, best_state
+        ks = {f"{k}{'+klang' if snd else ''}": round(quick_kappa(net, k, snd), 3) for k in watch for snd in (False, True)}
+        m = float(np.mean(list(ks.values())))
+        curve.append(dict(stage=stage, step=step, mean=round(m, 3), **ks))
+        print(f"  LERNKURVE {stage} Schritt {step}: Mittel {m:.3f}  {ks}", flush=True)
+        if m > best:
+            best = m; best_state = {k: v.detach().clone().cpu() for k, v in net.state_dict().items()}
+            res[f"bester_schritt{stage}"] = step
+        res["lernkurve"] = curve; save()
+    if watch and init is not None: look(0)      # Ausgangsstand mitmessen: hilft Stufe 2 überhaupt?
     w = torch.tensor([1.5, 1.6, 0.6, 1.6], device=dev)
     lossf = nn.CrossEntropyLoss(weight=w, ignore_index=-1)
     p_night = W_NIGHT * len(own) / (W_NIGHT * len(own) + len(lab_data))
     for it in range(iters):
         net.train(); clean, aug1, aug2, yb = [], [], [], []
-        for _ in range(4):
+        for _ in range(4 if noisy else 8):
             key = None
             if own and np.random.rand() < p_night:
                 key = own[np.random.randint(len(own))]; raw, Y, _ = homes[key]
@@ -243,6 +262,8 @@ def train(own, iters=ITERS, crop=CROP, watch=()):
                 sp1, sp2 = [], []
                 clean.append(nn_(r, [])); aug1.append(nn_(vary(r, spans=sp1), sp1)); aug2.append(nn_(vary(r, spans=sp2), sp2))
                 del r
+            elif not noisy:
+                clean.append(gate(raw[s:s + L].to(dev)))
             else:
                 r = raw[s:s + L].to(dev)
                 clean.append(gate(r)); aug1.append(gate(vary(r))); aug2.append(gate(vary(r)))
@@ -251,28 +272,24 @@ def train(own, iters=ITERS, crop=CROP, watch=()):
         L = min(len(v) for v in yb)
         st = lambda vs: torch.stack([v[:L] for v in vs])
         yb = st(yb)
-        out = net(torch.cat([st(clean), st(aug1), st(aug2)]))   # alle drei in einem Durchgang (BatchNorm sieht alles)
-        oc, o1, o2 = out[:4], out[4:8], out[8:]
         ce = lambda o: lossf(o.reshape(-1, 4), yb.reshape(-1))
-        loss = ce(oc) + 0.5 * (ce(o1) + ce(o2))
-        # Konsistenz wie AugMix/HomeSleepNet: Jensen-Shannon über sauber + zwei Abwandlungen (je Epoche gemittelt)
-        P = [o.reshape(-1, 4).softmax(-1) for o in (oc, o1, o2)]
-        logM = torch.clamp((P[0] + P[1] + P[2]) / 3, 1e-7, 1).log()
-        cons = sum(nn.functional.kl_div(logM, p, reduction="batchmean") for p in P) / 3
-        loss = loss + W_CONS * cons
-        opt.zero_grad(); loss.backward(); nn.utils.clip_grad_norm_(net.parameters(), 1.0); opt.step(); sched.step()
+        if not noisy:
+            loss = ce(net(st(clean))); cons = torch.zeros(())
+        else:
+          out = net(torch.cat([st(clean), st(aug1), st(aug2)]))   # alle drei in einem Durchgang (BatchNorm sieht alles)
+          oc, o1, o2 = out[:4], out[4:8], out[8:]
+          loss = ce(oc) + 0.5 * (ce(o1) + ce(o2))
+          # Konsistenz wie AugMix/HomeSleepNet: Jensen-Shannon über sauber + zwei Abwandlungen (je Epoche gemittelt)
+          P = [o.reshape(-1, 4).softmax(-1) for o in (oc, o1, o2)]
+          logM = torch.clamp((P[0] + P[1] + P[2]) / 3, 1e-7, 1).log()
+          cons = sum(nn.functional.kl_div(logM, p, reduction="batchmean") for p in P) / 3
+          loss = loss + W_CONS * cons
+        opt.zero_grad(); loss.backward(); nn.utils.clip_grad_norm_(net.parameters(), 1.0); opt.step()
+        if sched: sched.step()
         if it % 250 == 0 or it == iters - 1:
             mem = torch.cuda.max_memory_allocated() / 2**30 if dev == "cuda" else 0
             print(f"  Schritt {it}/{iters}  Verlust {loss.item():.3f}  Konsistenz {cons.item():.3f}  GPU max {mem:.1f} GB  %.0f s" % (time.time() - t0), flush=True)
-        if watch and ((it + 1) % EVAL_EVERY == 0 or it == iters - 1):
-            ks = {f"{k}{'+klang' if snd else ''}": round(quick_kappa(net, k, snd), 3) for k in watch for snd in (False, True)}
-            m = float(np.mean(list(ks.values())))
-            curve.append(dict(step=it + 1, mean=round(m, 3), **ks))
-            print(f"  LERNKURVE Schritt {it + 1}: Mittel {m:.3f}  {ks}", flush=True)
-            if m > best:
-                best = m; best_state = {k: v.detach().clone().cpu() for k, v in net.state_dict().items()}
-                res["bester_schritt"] = it + 1
-            res["lernkurve"] = curve; save()
+        if watch and ((it + 1) % EVAL_EVERY == 0 or it == iters - 1): look(it + 1)
     if best_state is not None: net.load_state_dict(best_state)
     return net
 
@@ -305,13 +322,37 @@ def evaluate(tag, net, k):
     save()
 
 test = [k for k in os.environ.get("TEST", "").split(",") if k in homes]
+up500 = lambda n: max(500, int(-(-n // 500) * 500))
+if os.environ.get("STAGES") == "2":
+    # wie die Forscher: Stufe 1 sauber (SoundSleepNet), Stufe 2 darauf mit Geräuschen + Konsistenz (HomeSleepNet)
+    I1, I2 = int(os.environ.get("ITERS1", "8000")), int(os.environ.get("ITERS2", "4000"))
+    LR2 = float(os.environ.get("LR2", "2e-4"))
+    def state(n): return {k: v.detach().clone().cpu() for k, v in n.state_dict().items()}
+    if test:
+        own = [k for k in homes if k not in test]
+        n1 = train(own, iters=I1, watch=test, noisy=False, stage="_1")
+        print("STUFE 1 bester Stand bei Schritt", res.get("bester_schritt_1"), flush=True)
+        for k in test: evaluate("ungesehen_stufe1", n1, k)
+        n2 = train(own, iters=I2, watch=test, noisy=True, init=state(n1), lr_fixed=LR2, stage="_2")
+        print("STUFE 2 bester Stand bei Schritt", res.get("bester_schritt_2"), flush=True)
+        for k in test: evaluate("ungesehen_stufe2", n2, k)
+    if os.environ.get("FINAL") == "1":
+        s1 = up500(res.get("bester_schritt_1", I1)) if test else I1
+        s2 = up500(res["bester_schritt_2"]) if test and res.get("bester_schritt_2", I2) > 0 else (0 if test else I2)
+        print("ENDMODELL Stufe 1:", s1, "Schritte, Stufe 2:", s2, "Schritte", flush=True)
+        n1 = train(list(homes), iters=s1, noisy=False)
+        torch.save(n1.state_dict(), os.path.join(out, f"model_e2e_v3{TAG}_stufe1.pt"))
+        net = train(list(homes), iters=s2, noisy=True, init=state(n1), lr_fixed=LR2) if s2 else n1
+        torch.save(net.state_dict(), os.path.join(out, f"model_e2e_v3{TAG}.pt"))
+        for k in homes: evaluate("gelernt", net, k)
+    sys.exit(0)
 if test:
     net = train([k for k in homes if k not in test], watch=test)
     print("BESTER STAND bei Schritt", res.get("bester_schritt"), flush=True)
     for k in test: evaluate("ungesehen_bester_stand", net, k)
 if os.environ.get("FINAL") == "1":
     # Endmodell so lange lernen, wie es in der Lernkurve am besten war (auf 500 aufgerundet)
-    steps = int(-(-res.get("bester_schritt", ITERS) // 500) * 500) if test else ITERS
+    steps = up500(res.get("bester_schritt", ITERS)) if test else ITERS
     print("ENDMODELL mit", steps, "Schritten", flush=True)
     net = train(list(homes), iters=steps)
     torch.save(net.state_dict(), os.path.join(out, f"model_e2e_v3{TAG}.pt"))
