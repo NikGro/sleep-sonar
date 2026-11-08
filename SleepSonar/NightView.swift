@@ -12,6 +12,7 @@ struct NightView: View {
     @State private var message: String?
     @State private var demo: URL?
     @ObservedObject private var donation = DataDonation.shared
+    @ObservedObject private var uploader = DonationUploader.shared
     @State private var deleting: [URL] = []
 
     var body: some View {
@@ -36,7 +37,7 @@ struct NightView: View {
                                 NightAnalysisView(folder: url)
                             } label: {
                                 NightRow(url: url, summary: summaries.items[url], recording: false,
-                                         busy: exporting == url)
+                                         busy: exporting == url || uploader.active == url)
                             }
                         }
                     }

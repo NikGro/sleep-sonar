@@ -178,11 +178,14 @@ final class DonationUploader: ObservableObject {
         let count = max(1, (body.count + partSize - 1) / partSize)
         var lastCode = 0
         var networkError: URLError?
-        for i in 0..<count {
-            let chunk = body.subdata(in: (i * partSize)..<min(body.count, (i + 1) * partSize))
-            var done = false
-            for attempt in 0..<3 where !done {
-                if attempt > 0 { try? await Task.sleep(for: .seconds(Double(attempt) * 3)) }
+        var delivered = Set<Int>()   // Teile, die der Server schon hat (bleiben dort 24 h liegen)
+        // bei Unterbrechung weiter versuchen, solange die App offen ist: 8 Runden mit wachsender Pause (gut 6 min)
+        let pauses: [Double] = [0, 5, 10, 20, 30, 60, 90, 120]
+        rounds: for pause in pauses {
+            if pause > 0 { try? await Task.sleep(for: .seconds(pause)) }
+            networkError = nil
+            for i in 0..<count where !delivered.contains(i) {
+                let chunk = body.subdata(in: (i * partSize)..<min(body.count, (i + 1) * partSize))
                 var request = URLRequest(url: Self.server.appendingPathComponent("api/spende/teil"))
                 request.httpMethod = "POST"
                 request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
@@ -199,15 +202,20 @@ final class DonationUploader: ObservableObject {
                 do {
                     let (_, response) = try await session.upload(for: request, from: chunk)
                     lastCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-                    networkError = nil
-                    if lastCode == 201 || lastCode == 202 { done = true }
-                    else if [403, 429, 503, 507].contains(lastCode) { break }
+                    if lastCode == 201 { break rounds }
+                    if lastCode == 202 { delivered.insert(i); continue }
+                    if [403, 429, 503, 507].contains(lastCode) { break rounds }
+                    continue rounds          // anderer Fehler: nächste Runde
                 } catch let e as URLError {
                     networkError = e
-                } catch {}
+                    // nur Mobilfunk oder Datensparmodus: Warten lohnt nicht
+                    if e.networkUnavailableReason == .expensive || e.networkUnavailableReason == .constrained { break rounds }
+                    continue rounds
+                } catch {
+                    continue rounds
+                }
             }
-            if !done { break }
-            if lastCode == 201 { break }
+            if delivered.count == count { break }
         }
         if lastCode == 201 { return .sent }
         if let e = networkError {
