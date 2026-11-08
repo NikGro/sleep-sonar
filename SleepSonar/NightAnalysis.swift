@@ -472,8 +472,10 @@ struct DonationStatusSection: View {
             VStack(alignment: .leading, spacing: 8) {
                 SectionTitle(tr("Datenspende"))
                 Text(text).font(.callout).foregroundStyle(Theme.mist)
-                if !sending, state?.sent != nil, DonationUploader.canResend(folder) {
-                    Button(tr("Erneut senden")) { resend() }.font(.callout).tint(Theme.moon)
+                // gesendet → erneut senden; noch nicht gespendet (z. B. vor der Zustimmung) → nachträglich spenden
+                if !sending, DonationUploader.canResend(folder), state?.waiting == nil || state?.sent != nil {
+                    Button(state?.sent != nil ? tr("Erneut senden") : tr("Diese Nacht spenden")) { resend() }
+                        .font(.callout).tint(Theme.moon)
                 }
                 if sending { ProgressView().tint(Theme.moon) }
             }
