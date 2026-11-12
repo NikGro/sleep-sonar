@@ -82,7 +82,7 @@ struct BugReportView: View {
             .listRowBackground(Theme.raised)
 
             Section {
-                Toggle(tr("Technische Angaben mitsenden"), isOn: $includeTech)
+                Toggle(tr("Technische Angaben mitsenden"), isOn: $includeTech).tint(Theme.accent)
                 if includeTech {
                     ForEach(tech, id: \.label) { item in
                         LabeledContent(item.label, value: item.value)
