@@ -109,6 +109,23 @@ def augment(x):   # x: (B, T, 64, 300) normiertes Log-Mel
     x = torch.logaddexp(x + tilt, floor + 0.3 * torch.randn_like(x[:, :, :, :1]))
     return x + 0.05 * torch.randn_like(x)
 
+FAIR = os.environ.get("FAIR", "0") == "1"
+def person(k):
+    """Person einer Nacht: PERSONS="joanna=joanna;niklas=nacht,spende_" (Namensanfaenge), sonst alles eine Person"""
+    for part in os.environ.get("PERSONS", "").split(";"):
+        if "=" in part:
+            who, pre = part.split("=", 1)
+            if any(k.startswith(x) for x in pre.split(",") if x): return who
+    return "?"
+
+def pick(own):
+    """eine eigene Nacht ziehen; mit FAIR erst die Person, dann eine ihrer Naechte (jede Person gleich oft)"""
+    if FAIR and isinstance(own[0], list):
+        g = own[np.random.randint(len(own))]; return g[np.random.randint(len(g))]
+    return own[np.random.randint(len(own))]
+
+def n_own(own): return sum(len(g) for g in own) if own and isinstance(own[0], list) else len(own)
+
 def train(own, iters=2500, crop=120):
     """own: Liste (X, Y) eigener Naechte, W_NIGHT-fach gewichtet"""
     net = Net().to(dev); opt = torch.optim.AdamW(net.parameters(), lr=1.5e-3, weight_decay=1e-2)
@@ -116,12 +133,12 @@ def train(own, iters=2500, crop=120):
     w = torch.tensor([1.5, 1.6, 0.6, 1.6], device=dev)
     lossf = nn.CrossEntropyLoss(weight=w, ignore_index=-1)
     train_lab = [i for i in range(len(lab_data)) if i not in lab_test]
-    p_night = W_NIGHT * len(own) / (W_NIGHT * len(own) + len(train_lab))
+    p_night = W_NIGHT * n_own(own) / (W_NIGHT * n_own(own) + len(train_lab))
     for it in range(iters):
         net.train(); xb, yb, src = [], [], []
         for _ in range(4):
-            if own and np.random.rand() < p_night:
-                XO, YO = own[np.random.randint(len(own))]
+            if n_own(own) and np.random.rand() < p_night:
+                XO, YO = pick(own)
                 L = min(crop, len(YO)); s = np.random.randint(0, len(YO) - L + 1)
                 xb.append(XO[s:s + L]); yb.append(YO[s:s + L]); src.append(0)
             else:
@@ -145,12 +162,12 @@ def train_student(own, teachers, iters=2500, crop=120, alpha=0.5):
     w = torch.tensor([1.5, 1.6, 0.6, 1.6], device=dev)
     lossf = nn.CrossEntropyLoss(weight=w, ignore_index=-1)
     train_lab = [i for i in range(len(lab_data)) if i not in lab_test]
-    p_night = W_NIGHT * len(own) / (W_NIGHT * len(own) + len(train_lab))
+    p_night = W_NIGHT * n_own(own) / (W_NIGHT * n_own(own) + len(train_lab))
     for it in range(iters):
         net.train(); xb, yb, src = [], [], []
         for _ in range(4):
-            if own and np.random.rand() < p_night:
-                XO, YO = own[np.random.randint(len(own))]
+            if n_own(own) and np.random.rand() < p_night:
+                XO, YO = pick(own)
                 L = min(crop, len(YO)); s = np.random.randint(0, len(YO) - L + 1)
                 xb.append(XO[s:s + L]); yb.append(YO[s:s + L]); src.append(0)
             else:
@@ -211,11 +228,21 @@ def test_probs(tag, probs, names):
 def probs_of(net, names): return {k: predict(net, homes[k][0]) for k in names}
 
 def team(names, label):
-    """K Lehrer + ein Schueler auf den Naechten `names`; gibt (Lehrer, Schueler) zurueck"""
+    """K Lehrer + ein Schueler auf den Naechten `names`; gibt (Lehrer, Schueler) zurueck.
+    FAIR: jede Person gleich oft; Schritte so verlaengert, dass jede Nacht der Person mit den meisten Naechten
+    mindestens so oft drankommt wie ohne FAIR."""
+    own, iters = H(names), ITERS
+    if FAIR:
+        groups = {}
+        for k in names: groups.setdefault(person(k), []).append(k)
+        own = [H(v) for v in groups.values()]
+        factor = len(groups) * max(len(v) for v in groups.values()) / len(names)
+        iters = int(round(ITERS * max(1.0, factor)))
+        print(label, "fair je Person:", {p: v for p, v in groups.items()}, "Schritte:", iters, flush=True)
     teachers = []
     for sd in range(K):
-        seed(sd); teachers.append(train(H(names), iters=ITERS)); print(label, "Lehrer", sd + 1, "von", K, "fertig", flush=True)
-    seed(100); student = train_student(H(names), teachers, iters=ITERS)
+        seed(sd); teachers.append(train(own, iters=iters)); print(label, "Lehrer", sd + 1, "von", K, "fertig", flush=True)
+    seed(100); student = train_student(own, teachers, iters=iters)
     return teachers, student
 
 print("eigene Naechte und Spenden:", {k: len(v[2]) for k, v in homes.items()}, flush=True)
