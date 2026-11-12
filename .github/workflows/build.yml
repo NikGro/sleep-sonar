@@ -57,11 +57,15 @@ jobs:
           test -d build/dd/Build/Products/Release-iphoneos/SleepSonar.app
           cp -R build/dd/Build/Products/Release-iphoneos/SleepSonar.app build/
 
-      - name: Set version (patch = Build-Nummer)
+      - name: Set version (Jahr.Monat.laufende Nummer im Monat, z. B. 26.11.2)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           PL=build/SleepSonar.app/Info.plist
-          BASE=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$PL")
-          VERSION="$(echo "$BASE" | cut -d. -f1-2).${GITHUB_RUN_NUMBER}"
+          YM="$(TZ=Europe/Berlin date +%y).$(TZ=Europe/Berlin date +%-m)"
+          LAST=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[].tag_name' \
+                 | sed -n "s/^v${YM//./\\.}\.\([0-9]*\)$/\1/p" | sort -n | tail -1)
+          VERSION="$YM.$(( ${LAST:-0} + 1 ))"
           /usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString $VERSION" "$PL"
           /usr/libexec/PlistBuddy -c "Set CFBundleVersion ${GITHUB_RUN_NUMBER}" "$PL"
           for EX in build/SleepSonar.app/PlugIns/*.appex; do

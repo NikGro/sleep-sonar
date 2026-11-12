@@ -20,7 +20,7 @@ targets:
       path: SleepSonar/Info.plist
       properties:
         CFBundleDisplayName: Suya
-        CFBundleShortVersionString: "0.3.0"
+        CFBundleShortVersionString: "26.11.0"
         CFBundleVersion: "2"
         CFBundleDevelopmentRegion: en
         CFBundleLocalizations: [en, de, es, fr, it, pt-BR, nl, ja, ko, zh-Hans]
@@ -50,7 +50,7 @@ targets:
       path: Widgets/Info.plist
       properties:
         CFBundleDisplayName: Suya
-        CFBundleShortVersionString: "0.3.0"
+        CFBundleShortVersionString: "26.11.0"
         CFBundleVersion: "2"
         CFBundleDevelopmentRegion: en
         CFBundleLocalizations: [en, de, es, fr, it, pt-BR, nl, ja, ko, zh-Hans]
