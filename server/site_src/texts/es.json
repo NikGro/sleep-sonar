@@ -6,7 +6,7 @@
 "country_plain": "Alemania",
 "authoritative": "La <a href=\"{link}\" lang=\"de\">versión alemana</a> es la vinculante.",
 "p_title": "Política de privacidad",
-"p_sub": "para la app «Suya: Audio Sleep Tracker» y este sitio web · Actualizada: 8 de noviembre de 2026.",
+"p_sub": "para la app «Suya: Audio Sleep Tracker» y este sitio web · Actualizada: 12 de noviembre de 2026.",
 "short_label": "En resumen:",
 "short": "Suya analiza tu sueño en tu iPhone. Las grabaciones, los resultados y los datos de salud no salen de tu dispositivo, salvo que tú los compartas o elijas expresamente la <a href=\"{donation}\">donación de datos</a>. No hay cuentas, ni publicidad, ni rastreo, ni servicios de análisis de terceros.",
 "h_controller": "Responsable",
@@ -61,5 +61,7 @@
 "x_p": "Por la noche, Suya se pone a tu lado y escucha: a partir de la respiración, el movimiento y los sonidos estima tus fases del sueño, te despierta suavemente en sueño ligero y registra tu noche en Apple Salud, sin reloj en la muñeca.",
 "x_card_b": "Tus noches se quedan en tu iPhone.",
 "x_card": "Sin cuentas, sin publicidad, sin rastreo. Solo si lo eliges expresamente, donas una imagen sonora aproximada de tus noches, sin sonido, para que Suya sea más precisa para todos.",
-"x_muted": "Suya no es un producto sanitario."
+"x_muted": "Suya no es un producto sanitario.",
+"bug_h": "Informes de errores",
+"bug_p": "En «Más» → «Informar de un problema» puedes describirnos un error. Solo se envía lo que escribes (tu descripción y, de forma voluntaria, un dato de contacto para preguntas), además de datos técnicos que ves antes de enviar y puedes desactivar: versión de la app, versión de iOS, modelo de iPhone, idioma y el estado de los permisos y de la donación de datos. Sin grabaciones, sin datos de sueño, sin dirección IP. El informe se transmite cifrado (HTTPS) al mismo servidor propio en Hamburgo, se usa solo para corregir errores y se borra como muy tarde a los doce meses, o de inmediato si lo pides (contacto arriba). La base jurídica es tu consentimiento al enviarlo (art. 6.1.a RGPD)."
 }

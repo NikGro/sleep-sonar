@@ -212,6 +212,11 @@ struct DonationSection: View {
             }
             if let id = donation.donorID {
                 LabeledContent(tr("Spender-Nummer"), value: id)
+                    .contextMenu {
+                        Button { UIPasteboard.general.string = id; Haptics.success() } label: {
+                            Label(tr("Kopieren"), systemImage: "doc.on.doc")
+                        }
+                    }
                     .font(.callout)
                 if let when = donation.deletionRequested {
                     Text(donation.deletionSent

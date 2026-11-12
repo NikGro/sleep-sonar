@@ -6,7 +6,7 @@
 "country_plain": "Deutschland",
 "authoritative": "",
 "p_title": "Datenschutzerklärung",
-"p_sub": "für die App „Suya: Audio Sleep Tracker“ und diese Website · Stand: 8. November 2026",
+"p_sub": "für die App „Suya: Audio Sleep Tracker“ und diese Website · Stand: 12. November 2026",
 "short_label": "Kurz gesagt:",
 "short": "Suya wertet deinen Schlaf auf deinem iPhone aus. Aufnahmen, Auswertungen und Gesundheitsdaten verlassen dein Gerät nicht – außer du teilst sie selbst oder entscheidest dich ausdrücklich für die <a href=\"{donation}\">Datenspende</a>. Es gibt keine Konten, keine Werbung, kein Tracking und keine Analyse-Dienste von Dritten.",
 "h_controller": "Verantwortlicher",
@@ -61,5 +61,7 @@
 "x_p": "Suya legt sich nachts neben dich und hört zu: Aus Atmung, Bewegung und Geräuschen schätzt die App deine Schlafphasen, weckt dich sanft im leichten Schlaf und trägt deine Nacht in Apple Health ein – ganz ohne Uhr am Handgelenk.",
 "x_card_b": "Deine Nächte bleiben auf deinem iPhone.",
 "x_card": "Keine Konten, keine Werbung, kein Tracking. Nur wenn du dich ausdrücklich dafür entscheidest, spendest du ein grobes Klangbild deiner Nächte – ohne Ton –, damit Suya für alle genauer wird.",
-"x_muted": "Suya ist kein Medizinprodukt."
+"x_muted": "Suya ist kein Medizinprodukt.",
+"bug_h": "Fehlerberichte",
+"bug_p": "Über „Mehr“ → „Fehler melden“ kannst du uns einen Fehler schildern. Gesendet wird nur, was du eingibst (deine Beschreibung und, freiwillig, eine Kontaktangabe für Rückfragen), sowie technische Angaben, die du vor dem Senden siehst und abwählen kannst: App-Version, iOS-Version, iPhone-Modell, Sprache und der Stand der Erlaubnisse und der Datenspende. Keine Aufnahmen, keine Schlafdaten, keine IP-Adresse. Der Bericht wird verschlüsselt (HTTPS) an denselben eigenen Server in Hamburg übertragen, nur zur Fehlerbehebung genutzt und spätestens nach zwölf Monaten gelöscht; auf Wunsch sofort (Kontakt siehe oben). Rechtsgrundlage ist deine Einwilligung durch das Absenden (Art. 6 Abs. 1 lit. a DSGVO)."
 }

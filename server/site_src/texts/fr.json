@@ -6,7 +6,7 @@
 "country_plain": "Allemagne",
 "authoritative": "La <a href=\"{link}\" lang=\"de\">version allemande</a> fait foi.",
 "p_title": "Politique de confidentialité",
-"p_sub": "pour l’app « Suya: Audio Sleep Tracker » et ce site · Mise à jour : 8 novembre 2026.",
+"p_sub": "pour l’app « Suya: Audio Sleep Tracker » et ce site · Mise à jour : 12 novembre 2026.",
 "short_label": "En bref :",
 "short": "Suya analyse ton sommeil sur ton iPhone. Les enregistrements, les résultats et les données de santé ne quittent pas ton appareil – sauf si tu les partages toi-même ou si tu choisis expressément le <a href=\"{donation}\">don de données</a>. Pas de compte, pas de publicité, pas de suivi et pas de services d’analyse tiers.",
 "h_controller": "Responsable du traitement",
@@ -61,5 +61,7 @@
 "x_p": "La nuit, Suya se place à côté de toi et écoute : à partir de la respiration, des mouvements et des bruits, l’app estime tes phases de sommeil, te réveille en douceur en sommeil léger et inscrit ta nuit dans Apple Santé – sans montre au poignet.",
 "x_card_b": "Tes nuits restent sur ton iPhone.",
 "x_card": "Pas de compte, pas de publicité, pas de suivi. Seulement si tu le choisis expressément, tu donnes une image sonore grossière de tes nuits – sans son – pour rendre Suya plus précise pour tous.",
-"x_muted": "Suya n’est pas un dispositif médical."
+"x_muted": "Suya n’est pas un dispositif médical.",
+"bug_h": "Signalements de bugs",
+"bug_p": "Dans « Plus » → « Signaler un problème », tu peux nous décrire un bug. Seul ce que tu saisis est envoyé (ta description et, si tu le souhaites, un contact pour des questions), ainsi que des informations techniques que tu vois avant l’envoi et que tu peux désactiver : version de l’app, version d’iOS, modèle d’iPhone, langue et état des autorisations et du don de données. Aucun enregistrement, aucune donnée de sommeil, aucune adresse IP. Le signalement est transmis chiffré (HTTPS) au même serveur privé à Hambourg, utilisé uniquement pour corriger les bugs et supprimé au plus tard après douze mois, ou immédiatement sur demande (contact ci-dessus). La base légale est ton consentement par l’envoi (art. 6, par. 1, point a RGPD)."
 }

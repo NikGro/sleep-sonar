@@ -6,7 +6,7 @@
 "country_plain": "Germania",
 "authoritative": "Fa fede la <a href=\"{link}\" lang=\"de\">versione tedesca</a>.",
 "p_title": "Informativa sulla privacy",
-"p_sub": "per l’app «Suya: Audio Sleep Tracker» e questo sito · Aggiornata: 8 novembre 2026.",
+"p_sub": "per l’app «Suya: Audio Sleep Tracker» e questo sito · Aggiornata: 12 novembre 2026.",
 "short_label": "In breve:",
 "short": "Suya analizza il tuo sonno sul tuo iPhone. Registrazioni, risultati e dati sanitari non lasciano il tuo dispositivo – a meno che tu non li condivida o scelga espressamente la <a href=\"{donation}\">donazione di dati</a>. Niente account, niente pubblicità, niente tracciamento e nessun servizio di analisi di terzi.",
 "h_controller": "Titolare del trattamento",
@@ -61,5 +61,7 @@
 "x_p": "Di notte Suya si mette accanto a te e ascolta: da respiro, movimenti e rumori stima le tue fasi del sonno, ti sveglia dolcemente nel sonno leggero e registra la tua notte in Apple Salute – senza orologio al polso.",
 "x_card_b": "Le tue notti restano sul tuo iPhone.",
 "x_card": "Niente account, niente pubblicità, niente tracciamento. Solo se lo scegli espressamente, doni un’immagine sonora approssimativa delle tue notti – senza audio – per rendere Suya più precisa per tutti.",
-"x_muted": "Suya non è un dispositivo medico."
+"x_muted": "Suya non è un dispositivo medico.",
+"bug_h": "Segnalazioni di errori",
+"bug_p": "In «Altro» → «Segnala un problema» puoi descriverci un errore. Viene inviato solo ciò che scrivi (la tua descrizione e, se vuoi, un contatto per eventuali domande), più dati tecnici che vedi prima dell’invio e puoi disattivare: versione dell’app, versione di iOS, modello di iPhone, lingua e stato dei permessi e della donazione di dati. Nessuna registrazione, nessun dato sul sonno, nessun indirizzo IP. La segnalazione viene trasmessa cifrata (HTTPS) allo stesso server privato ad Amburgo, usata solo per correggere errori e cancellata al più tardi dopo dodici mesi, o subito su richiesta (contatto sopra). La base giuridica è il tuo consenso con l’invio (art. 6, par. 1, lett. a GDPR)."
 }

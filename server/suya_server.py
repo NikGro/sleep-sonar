@@ -32,6 +32,12 @@ PORT = int(os.environ.get("PORT", "8770"))
 MAX_BYTES = int(os.environ.get("MAX_BYTES", str(80 * 2**20)))
 KEEP_DAYS = int(os.environ.get("KEEP_DAYS", "183"))   # 6 Monate
 PER_DONOR_DAY = 4                                      # Nächte je Spender und Tag
+BUG_KEEP_DAYS = 365                                    # Fehlerberichte höchstens ein Jahr
+BUG_MAX = 32 * 1024                                    # Text + technische Angaben, kein Anhang
+BUG_PER_IP_HOUR = 10
+BUG_PER_DAY = 200
+bug_hits = {}
+bug_day = {"tag": "", "n": 0}
 PER_IP_HOUR = 300                                      # Anfragen je Adresse und Stunde (nur im Speicher)
 DAY_BYTES = 4 * 2**30                                  # höchstens 4 GB pro Tag insgesamt
 MIN_FREE = 30 * 2**30                                  # mindestens 30 GB frei lassen
@@ -105,6 +111,9 @@ def cleanup_loop():
                 p = os.path.join(nd, f)
                 if os.path.getmtime(p) < cut:
                     os.remove(p); log_event("abgelaufen", d)
+        bugs = os.path.join(ROOT, "fehler"); cut_b = time.time() - BUG_KEEP_DAYS * 86400
+        for f in (os.listdir(bugs) if os.path.isdir(bugs) else []):
+            if os.path.getmtime(os.path.join(bugs, f)) < cut_b: os.remove(os.path.join(bugs, f))
         time.sleep(86400)
 
 def length(h):
@@ -174,6 +183,7 @@ class H(BaseHTTPRequestHandler):
     # ---------- Schnittstelle ----------
     def do_POST(self):
         if self.limited(): return self.send(429, {"fehler": "zu viele Anfragen"})
+        if self.path.split("?")[0] == "/api/fehler": return self.bug_report()
         d = (self.headers.get("X-Spender") or "").upper()
         token = self.headers.get("X-Schluessel") or ""
         if not ID.match(d) or not TOKEN.match(token):
@@ -184,6 +194,39 @@ class H(BaseHTTPRequestHandler):
         if path == "/api/spende/loeschen": return self.delete(d, token)
         if path == "/api/attest/register": return self.register(d, token)
         self.send(404, {"fehler": "unbekannt"})
+
+    def bug_report(self):
+        """Fehlerbericht aus der App: nur Text, freiwillige Kontaktangabe und technische Angaben; keine IP auf der Platte"""
+        ip = self.headers.get("X-Forwarded-For", self.client_address[0]).split(",")[-1].strip()
+        now = time.time(); today = time.strftime("%Y-%m-%d", time.gmtime())
+        with lock:
+            hits = [t for t in bug_hits.get(ip, []) if now - t < 3600]; hits.append(now); bug_hits[ip] = hits
+            if len(bug_hits) > 10000: bug_hits.clear()
+            if bug_day["tag"] != today: bug_day.update(tag=today, n=0)
+            bug_day["n"] += 1
+            if len(hits) > BUG_PER_IP_HOUR or bug_day["n"] > BUG_PER_DAY:
+                return self.send(429, {"fehler": "zu viele Berichte, bitte später"})
+        n = length(self)
+        if n <= 0 or n > BUG_MAX: return self.send(413, {"fehler": "Bericht zu lang oder leer"})
+        if shutil.disk_usage(ROOT).free < MIN_FREE: return self.send(507, {"fehler": "Speicher voll"})
+        try:
+            raw = self.rfile.read(n); obj = json.loads(raw)
+        except Exception:
+            return self.send(400, {"fehler": "Bericht unlesbar"})
+        text = obj.get("text") if isinstance(obj, dict) else None
+        if not isinstance(text, str) or not text.strip(): return self.send(400, {"fehler": "Beschreibung fehlt"})
+        def clip(v, k):  # nur Zeichenketten, gekürzt
+            return v[:k] if isinstance(v, str) else ""
+        tech = obj.get("technik") if isinstance(obj.get("technik"), dict) else {}
+        report = {"zeit": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "text": clip(text, 8000),
+                  "kontakt": clip(obj.get("kontakt"), 200),
+                  "technik": {clip(k, 40): clip(v, 300) for k, v in list(tech.items())[:40] if isinstance(k, str)}}
+        rid = time.strftime("%Y%m%d-%H%M%S", time.gmtime()) + "-" + secrets.token_hex(3)
+        os.makedirs(os.path.join(ROOT, "fehler"), exist_ok=True)
+        with open(os.path.join(ROOT, "fehler", rid + ".json"), "w") as f:
+            json.dump(report, f, ensure_ascii=False, indent=1)
+        log_event("fehlerbericht " + rid, "-")
+        return self.send(201, {"ok": True, "nummer": rid})
 
     def fail(self, d, code, msg):
         """Fehler zurückgeben und (ohne IP) protokollieren – zur Fehlersuche"""

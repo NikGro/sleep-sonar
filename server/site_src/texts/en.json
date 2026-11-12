@@ -6,7 +6,7 @@
 "country_plain": "Germany",
 "authoritative": "The <a href=\"{link}\" lang=\"de\">German version</a> is authoritative.",
 "p_title": "Privacy Policy",
-"p_sub": "for the app “Suya: Audio Sleep Tracker” and this website · Last updated: 8 November 2026.",
+"p_sub": "for the app “Suya: Audio Sleep Tracker” and this website · Last updated: 12 November 2026.",
 "short_label": "In short:",
 "short": "Suya analyses your sleep on your iPhone. Recordings, results and health data never leave your device – unless you share them yourself or explicitly opt in to <a href=\"{donation}\">donating nights</a>. There are no accounts, no ads, no tracking and no third-party analytics.",
 "h_controller": "Controller",
@@ -61,5 +61,7 @@
 "x_p": "Suya lies next to you at night and listens: from breathing, movement and sounds it estimates your sleep stages, wakes you gently in light sleep and adds your night to Apple Health – no watch on your wrist needed.",
 "x_card_b": "Your nights stay on your iPhone.",
 "x_card": "No accounts, no ads, no tracking. Only if you explicitly choose to, you donate a coarse sound picture of your nights – without audio – to make Suya more accurate for everyone.",
-"x_muted": "Suya is not a medical device."
+"x_muted": "Suya is not a medical device.",
+"bug_h": "Bug reports",
+"bug_p": "Under “More” → “Report a problem” you can describe a bug to us. Only what you enter is sent (your description and, optionally, contact details for follow-up questions), plus technical details that you see before sending and can switch off: app version, iOS version, iPhone model, language and the status of permissions and data donation. No recordings, no sleep data, no IP address. The report is transmitted encrypted (HTTPS) to the same private server in Hamburg, used only to fix bugs and deleted after twelve months at the latest, or immediately on request (contact see above). The legal basis is your consent by sending it (Art. 6(1)(a) GDPR)."
 }

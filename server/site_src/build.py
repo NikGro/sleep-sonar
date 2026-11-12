@@ -93,14 +93,17 @@ def privacy(lang, T):
 <h2>4. {d("h_web")}</h2>
 <p>{d("web_p")}</p>
 
-<h2>5. {d("h_rights")}</h2>
+<h2>5. {d("bug_h")}</h2>
+<p>{d("bug_p")}</p>
+
+<h2>6. {d("h_rights")}</h2>
 <p>{d("rights_p1")}</p>
 <p>{d("rights_p2")}</p>
 
-<h2>6. {d("h_medical")}</h2>
+<h2>7. {d("h_medical")}</h2>
 <p>{d("medical_p")}</p>
 
-<h2>7. {d("h_changes")}</h2>
+<h2>8. {d("h_changes")}</h2>
 <p>{d("changes_p")}</p>"""
     return page(lang, T, "privacy", T["p_title"], b)
 

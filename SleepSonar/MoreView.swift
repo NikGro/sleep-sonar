@@ -9,6 +9,7 @@ struct MoreView: View {
     @State private var pending: [Permission] = []
     @State private var askingDonation = false
     @State private var confirmDonationDelete = false
+    @State private var reportingBug = false
 
     /// noch nicht gefragte Erlaubnisse (abgelehnte lassen sich nur in den iOS-Einstellungen ändern)
     private func refresh() {
@@ -83,6 +84,16 @@ struct MoreView: View {
                 .listRowBackground(Theme.raised)
 
                 Section {
+                    Button { reportingBug = true } label: {
+                        Label(tr("Fehler melden"), systemImage: "ladybug")
+                    }
+                } header: {
+                    ListHeader(tr("Sonstiges"))
+                }
+                .tint(Theme.moon)
+                .listRowBackground(Theme.raised)
+
+                Section {
                     Link(destination: URL(string: tr("https://suya.ng-lab.de/datenschutz"))!) {
                         Label(tr("Datenschutzerklärung"), systemImage: "hand.raised")
                     }
@@ -107,6 +118,7 @@ struct MoreView: View {
             .nightBackground()
             .onAppear(perform: refresh)
             .donationDialogs(asking: $askingDonation, confirmDelete: $confirmDonationDelete)
+            .sheet(isPresented: $reportingBug) { BugReportView() }
             .navigationTitle(tr("Mehr"))
             .toolbarTitleDisplayMode(.inlineLarge)
             .suyaTopEdge()
