@@ -29,6 +29,18 @@ mel = torchaudio.transforms.MelSpectrogram(16000, n_fft=1024, hop_length=1600, n
 
 MASK_SEC = {k: tuple(map(float, v.split("-"))) for k, v in (x.split(":") for x in os.environ.get("MASK_SEC", "").split(",") if x)}
 
+def norm_frames(M, masked):
+    """M: (64, Bilder) Roh-Log-Mel. Genau wie die App (LogMel.normalize): Bilder mit eigenen Klaengen werden durch
+    den Band-Median der uebrigen ersetzt, dann je Band den Median abziehen und durch die Streuung ALLER (schon
+    zentrierten) Werte teilen."""
+    if masked:
+        keep = torch.ones(M.shape[1], dtype=torch.bool, device=M.device)
+        for a, b in masked: keep[max(0, int(a)): max(0, int(b))] = False
+        if keep.sum() > M.shape[1] // 4:
+            M = M.clone(); M[:, ~keep] = M[:, keep].median(1, keepdim=True).values
+    M = M - M.median(1, keepdim=True).values
+    return M / (M.std() + 1e-6)
+
 def logmel(path, lab, skip=None):
     """skip: (von, bis) in Sekunden mit App-Klaengen – zaehlt wie in der App nicht fuer Median/Streuung"""
     x, sr = sf.read(path, dtype="float32")
@@ -38,9 +50,7 @@ def logmel(path, lab, skip=None):
         seg = torch.tensor(x[s:s + sr * 600], device=dev)
         M.append(torch.log(mel(seg) + 1e-10)[:, : len(seg) // 1600])
     M = torch.cat(M, 1)[:, : n * 300]
-    keep = torch.ones(M.shape[1], dtype=torch.bool, device=M.device)
-    if skip: keep[int(skip[0] * 10): int(skip[1] * 10)] = False
-    M = M - M[:, keep].median(1, keepdim=True).values; M = M / (M[:, keep].std() + 1e-6)
+    M = norm_frames(M, [(skip[0] * 10, skip[1] * 10)] if skip else [])
     return M.T.reshape(n, 300, 64).permute(0, 2, 1).contiguous(), lab[:n]
 
 lab_data = []
@@ -56,12 +66,6 @@ for f in sorted(glob.glob(os.path.join(homedir, "*.flac"))):
     X, y = logmel(f, np.load(f[:-5] + ".labels.npy").astype(np.int64), MASK_SEC.get(os.path.basename(f)[:-5]))
     homes[os.path.basename(f)[:-5]] = (X, torch.tensor(y, device=dev), y)
 # gespendete Naechte: "SUYA" · Version · Kopflaenge (UInt32 LE) · JSON · Mel (Float16, Bild fuer Bild je 64 Baender) · ...
-def norm_frames(M, masked):
-    """M: (64, Bilder) Roh-Log-Mel; masked: Bild-Bereiche mit App-Klaengen (zaehlen nicht fuer die Normierung)"""
-    keep = torch.ones(M.shape[1], dtype=torch.bool, device=M.device)
-    for a, b in masked: keep[int(a): int(b)] = False
-    return (M - M[:, keep].median(1, keepdim=True).values) / (M[:, keep].std() + 1e-6)
-
 for f in sorted(glob.glob(os.path.join(os.environ.get("DONATIONS", "-"), "*.suya"))):
     raw = zlib.decompress(open(f, "rb").read(), -15)
     assert raw[:4] == b"SUYA" and raw[4] == 1, f
