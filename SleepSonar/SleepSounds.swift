@@ -267,8 +267,10 @@ final class SleepSoundPlayer: ObservableObject {
             // Spektrum für das Leuchten in der Klänge-Ansicht
             let mixer = engine.mainMixerNode
             SoundSpectrum.shared.reset()
-            mixer.installTap(onBus: 0, bufferSize: 2048, format: mixer.outputFormat(forBus: 0)) { buffer, _ in
+            mixer.installTap(onBus: 0, bufferSize: 2048, format: mixer.outputFormat(forBus: 0)) { buffer, when in
                 SoundSpectrum.shared.push(buffer)
+                // was gerade abgespielt wird, für die spätere Echo-Unterdrückung (nur während einer Nachtaufnahme)
+                SoundReference.shared.push(buffer, hostTime: when.isHostTimeValid ? when.hostTime : mach_absolute_time())
             }
             var ok = true
             do {
@@ -351,6 +353,7 @@ final class SleepSoundPlayer: ObservableObject {
         engine?.mainMixerNode.removeTap(onBus: 0)
         engine?.stop()
         engine = nil
+        SoundReference.shared.endSegment()
         nodes = [:]
         if isPlaying && !quiet { PassiveNightEngine.shared.note(tr("Klänge aus")) }
         if isPlaying { PassiveNightEngine.shared.soundMark(on: false) }

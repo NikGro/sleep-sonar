@@ -94,6 +94,7 @@ final class PassiveNightEngine: ObservableObject {
             }
             recorder = rec
             folder = rec.folder
+            SoundReference.shared.setFolder(rec.folder)
             let m = MotionLogger { [weak self] activity, maxDelta, pitch, roll in
                 rec.appendMotion(activity: activity, maxDelta: maxDelta, pitch: pitch, roll: roll)
                 Task { @MainActor in
@@ -147,6 +148,7 @@ final class PassiveNightEngine: ObservableObject {
         engine = nil
         motion?.stop()
         motion = nil
+        SoundReference.shared.setFolder(nil)
         let short = recorder != nil && Date().timeIntervalSince(startDate ?? Date()) < Self.minimumSeconds
         if let recorder {
             logBattery()

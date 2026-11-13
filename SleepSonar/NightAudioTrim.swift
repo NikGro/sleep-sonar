@@ -42,6 +42,7 @@ enum NightAudioTrim {
                 try out.write(from: buf)
             }
             for f in NightExport.audioFiles(in: folder) { try FileManager.default.removeItem(at: f) }
+            for f in SoundReference.files(in: folder) { try? FileManager.default.removeItem(at: f) }
         }.value
         return before - audioBytes(folder)
     }
