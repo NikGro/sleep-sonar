@@ -251,27 +251,14 @@ struct MoonDisc: View {
 struct BreathLine: View {
     struct Sample: Equatable { var t: TimeInterval; var v: Double }
     static let window: TimeInterval = 30
+    /// Anzeige leicht verzögert, damit neue Werte sicher da sind (Audio kommt in Paketen)
+    static let delay: TimeInterval = 0.3
     let values: [Sample]
-    @State private var lag = LagTracker()
-
-    /// Audio kommt in Paketen. Die Anzeige läuft nur so weit hinterher, wie die Pakete gerade tatsächlich
-    /// auseinanderliegen (gemessen, langsam nachgeführt) – so wenig Verzögerung wie möglich, ohne Ruckeln.
-    final class LagTracker {
-        private var worst = 0.3
-        func delay(now: TimeInterval, newest: TimeInterval?) -> TimeInterval {
-            if let newest {
-                let behind = now - newest
-                worst = behind > worst ? behind : worst * 0.995 + max(behind, 0) * 0.005
-            }
-            return min(0.35, max(0.05, worst + 0.02))
-        }
-    }
 
     var body: some View {
         TimelineView(.animation) { tl in
             Canvas { ctx, size in
-                let now = tl.date.timeIntervalSinceReferenceDate
-                draw(ctx, size, now: now - lag.delay(now: now, newest: values.last?.t))
+                draw(ctx, size, now: tl.date.timeIntervalSinceReferenceDate - Self.delay)
             }
         }
     }
