@@ -256,7 +256,8 @@ final class PassiveNightEngine: ObservableObject {
 
     nonisolated private static func installTap(on input: AVAudioInputNode, format: AVAudioFormat,
                                                recorder: PassiveRecorder) {
-        input.installTap(onBus: 0, bufferSize: 2048, format: format)  // kleinere Pakete: Atemlinie näher an Echtzeit { buffer, when in
+        // kleinere Pakete: Atemlinie näher an Echtzeit
+        input.installTap(onBus: 0, bufferSize: 2048, format: format) { buffer, when in
             recorder.handle(buffer, hostTime: when.isHostTimeValid ? when.hostTime : mach_absolute_time())
         }
     }
