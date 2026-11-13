@@ -200,7 +200,7 @@ struct DonationSection: View {
                     .font(.callout)
                 if let last = donation.lastUpload, donation.uploads > 0 {
                     Text(tr("Gespendet: %d Nächte, zuletzt am %@.", donation.uploads, last.formatted(date: .abbreviated, time: .omitted)))
-                        .font(.caption).foregroundStyle(Theme.mist)
+                        .font(.callout)
                 }
                 // Widerrufen so leicht und gleich gestaltet wie Zustimmen
                 Button(tr("Spende widerrufen")) { donation.decline() }

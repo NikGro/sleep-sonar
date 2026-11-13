@@ -37,9 +37,13 @@ enum NightModel {
     enum Failure: Error { case noAudio, noModel }
 
     /// Rechnet die Nacht (dauert je nach iPhone etwa eine Minute). `progress`: 0 … 1
-    static func stages(folder: URL, progress: @escaping @Sendable (Double) -> Void = { _ in }) throws
+    static func stages(folder: URL, progress report: @escaping @Sendable (Double) -> Void = { _ in }) throws
         -> [SleepStaging.Stage] {
         if let c = cached(folder) { return c }
+        // Fortschritt auch für Liste und Detailansicht, egal wer die Nacht gerade rechnet
+        let progress: @Sendable (Double) -> Void = { p in report(p); AnalysisProgress.report(folder, p) }
+        AnalysisProgress.start(folder)
+        defer { AnalysisProgress.report(folder, 1) }
         // nie zwei Nächte gleichzeitig rechnen (Liste, Health-Abgleich, Umwandeln und Detailansicht können
         // gleichzeitig fragen; je Lauf mehrere hundert MB Speicher)
         computeLock.lock()

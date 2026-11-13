@@ -107,6 +107,7 @@ struct NightAnalysisView: View {
     @State private var error: String?
     @State private var soundProgress: Double?
     @State private var modelProgress: Double?
+    @ObservedObject private var analysis = AnalysisProgress.shared
 
     /// ein Zeitraum für alle Zeitstrahlen der Nacht (Suya und Watch)
     private func span(_ r: NightAnalysisResult) -> ClosedRange<Date> {
@@ -124,7 +125,7 @@ struct NightAnalysisView: View {
                     content(r)
                 } else {
                     VStack(spacing: 14) {
-                        if let p = modelProgress, p < 1 {
+                        if let p = modelProgress ?? analysis.value(folder), p < 1 {
                             ProgressView(value: p).tint(Theme.moon).frame(maxWidth: 220)
                             Text(tr("Das Modell hört die Nacht nach (%d %%). Das passiert einmal je Nacht auf dem iPhone.", Int(p * 100)))
                                 .font(.callout).foregroundStyle(Theme.mist)

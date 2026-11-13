@@ -230,13 +230,21 @@ private struct NightRow: View {
     let summary: NightSummary?
     let recording: Bool
     let busy: Bool
+    @ObservedObject private var analysis = AnalysisProgress.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center) {
                 Text(title).font(Theme.display(19, weight: .medium))
                 Spacer()
-                if busy {
+                if let p = analysis.value(url) {
+                    HStack(spacing: 8) {
+                        ProgressView(value: p).tint(Theme.moon).frame(width: 64)
+                        Text("\(Int(p * 100)) %").font(.callout.monospacedDigit()).foregroundStyle(Theme.mist)
+                    }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(tr("Wird ausgewertet, %d Prozent", Int(p * 100)))
+                } else if busy {
                     ProgressView().tint(Theme.moon)
                 } else if let score = summary?.score {
                     HStack(spacing: 8) {

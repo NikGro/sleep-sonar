@@ -355,6 +355,7 @@ EN = {
 "Der Server hat den Bericht nicht angenommen (Fehler %@).": "The server did not accept the report (error %@).",
 "Keine Verbindung zum Server. Bitte prüf das Internet und versuch es noch einmal.": "No connection to the server. Please check your internet and try again.",
 "Absturzprotokolle": "Crash logs",
+"Wird ausgewertet, %d Prozent": "Analyzing, %d percent",
 }
 # Schlüssel, die nicht über tr("…") im Code stehen (für die Vollständigkeitsprüfung)
 DYNAMIC = ["Aus", "Schlummern", "Klänge ausblenden", "Klänge abspielen", "Klänge sofort aus", "Wach", "REM", "Kern", "Tief", "Im Bett", "Schlafend", "Schnarchen", "Sprechen",
