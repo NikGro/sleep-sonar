@@ -122,6 +122,9 @@ private struct AlarmRow: View {
 struct AlarmEditView: View {
     @State var item: AlarmItem
     let isNew: Bool
+    /// Stand beim Öffnen; wer das Blatt nach unten wegwischt, behält seine Änderungen (nur ✕ verwirft)
+    @State private var original: AlarmItem?
+    @State private var discard = false
     @Environment(\.dismiss) private var dismiss
     @AppStorage("alarm.durationHintHidden") private var hideDurationHint = false
     @State private var showDurationHint = false
@@ -204,7 +207,7 @@ struct AlarmEditView: View {
             .toolbar {
                 // runde Glas-Knöpfe wie in der Uhr-App (gleich breit → Titel genau mittig)
                 ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: { Image(systemName: "xmark") }
+                    Button { discard = true; dismiss() } label: { Image(systemName: "xmark") }
                         .accessibilityLabel(tr("Abbrechen"))
                 }
                 // Titel selbst mittig setzen (die Systemtitelzeile rückte ihn neben die unterschiedlich
@@ -219,13 +222,19 @@ struct AlarmEditView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
                         SmartAlarm.shared.save(item)
+                        original = item
                         Haptics.success()
                         dismiss()
                     } label: { Image(systemName: "checkmark") }
                     .accessibilityLabel(tr("Sichern"))
                 }
             }
-            .onDisappear { SoundPreview.shared.stop() }
+            .onAppear { if original == nil { original = item } }
+            .onDisappear {
+                SoundPreview.shared.stop()
+                // weggewischt statt ✕: Änderungen an einem bestehenden Wecker nicht verlieren
+                if !discard, !isNew, let original, item != original { SmartAlarm.shared.save(item) }
+            }
             .onChange(of: item.mode) {
                 Haptics.select()
                 if item.mode == .duration && !hideDurationHint { showDurationHint = true }
