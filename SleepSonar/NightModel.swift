@@ -157,12 +157,17 @@ extension NightModel {
             }
         }
         var out: [Range<Int>] = []
+        /// nur gültige, endliche Bereiche (ein kaputter Eintrag darf die Auswertung nicht abstürzen lassen)
+        func append(_ from: Double, _ to: Double) {
+            guard from.isFinite, to.isFinite, to > from, abs(to) < 1e7 else { return }
+            out.append(Int(from * 10)..<Int(to * 10))
+        }
         var on: Double?
         for (s, isOn) in marks.sorted(by: { $0.0 < $1.0 }) {
             if isOn { if on == nil { on = s } }
-            else if let o = on { out.append(Int((o - 2) * 10)..<Int((s + 35) * 10)); on = nil }
+            else if let o = on { append(o - 2, s + 35); on = nil }
         }
-        if let o = on { out.append(Int((o - 2) * 10)..<Int((o + 3 * 3600) * 10)) }   // „aus“ fehlt: höchstens 3 h
+        if let o = on { append(o - 2, o + 3 * 3600) }   // „aus“ fehlt: höchstens 3 h
         return out
     }
 }

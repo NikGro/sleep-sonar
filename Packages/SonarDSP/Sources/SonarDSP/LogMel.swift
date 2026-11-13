@@ -108,7 +108,11 @@ public struct LogMel: Sendable {
         guard !masked.isEmpty else { return normalize(frames, epochs: n) }
         let T = frames.count
         var keep = [Bool](repeating: true, count: T)
-        for r in masked { for t in max(0, r.lowerBound)..<min(T, max(0, r.upperBound)) { keep[t] = false } }
+        for r in masked {
+            let lo = max(0, r.lowerBound), hi = min(T, r.upperBound)
+            guard lo < hi else { continue }    // Klang außerhalb der Aufnahme (z. B. erst danach eingeschaltet)
+            for t in lo..<hi { keep[t] = false }
+        }
         let rest = (0..<T).filter { keep[$0] }
         guard rest.count > T / 4 else { return normalize(frames, epochs: n) }
         var med = [Float](repeating: 0, count: bands)

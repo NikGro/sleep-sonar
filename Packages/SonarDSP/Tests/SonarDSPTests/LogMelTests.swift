@@ -35,4 +35,14 @@ final class LogMelTests: XCTestCase {
         let mean = night.values.reduce(0, +) / Float(night.values.count)
         XCTAssertEqual(mean, -0.06450903415679932, accuracy: 1e-3)
     }
+
+    /// Klang-Bereiche außerhalb der Aufnahme (z. B. erst nach dem Ende eingeschaltet) dürfen nicht abstürzen
+    func testMaskOutsideRecording() {
+        let frames = (0..<6000).map { t in (0..<64).map { b in Float((t * 7 + b * 3) % 11) } }
+        let plain = LogMel.normalize(frames, epochs: 20)
+        let outside = LogMel.normalize(frames, epochs: 20, masked: [7000..<9000, -500..<(-10), 6000..<6000])
+        XCTAssertEqual(plain, outside)
+        let partly = LogMel.normalize(frames, epochs: 20, masked: [5500..<9000])
+        XCTAssertEqual(partly.count, plain.count)
+    }
 }
