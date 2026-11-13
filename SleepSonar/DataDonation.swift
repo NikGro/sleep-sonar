@@ -198,8 +198,8 @@ struct DonationSection: View {
             case .granted:
                 Text(tr("Du spendest Nächte seit %@.", donation.date?.formatted(date: .abbreviated, time: .omitted) ?? ""))
                     .font(.callout)
-                if let last = donation.lastUpload, donation.uploads > 0 {
-                    Text(tr("Gespendet: %d Nächte, zuletzt am %@.", donation.uploads, last.formatted(date: .abbreviated, time: .omitted)))
+                if donation.uploads > 0 {
+                    Text(tr("Gespendet: %d Nächte", donation.uploads))
                         .font(.callout)
                 }
                 // Widerrufen so leicht und gleich gestaltet wie Zustimmen

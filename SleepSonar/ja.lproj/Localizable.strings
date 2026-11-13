@@ -109,7 +109,7 @@
 "Geräusche der Nacht werden erkannt (%d %%)" = "夜の音を検出中（%d %%）";
 "Geräusche im Schlaf" = "睡眠中の音";
 "Gespendet am %@." = "%@に寄付しました。";
-"Gespendet: %d Nächte, zuletzt am %@." = "寄付済み：%d夜、最終 %@。";
+"Gespendet: %d Nächte" = "提供済み：%d夜";
 "Gestoppt" = "停止しました";
 "Gewitter" = "雷雨";
 "Gitarre" = "ギター";

@@ -109,7 +109,7 @@
 "Geräusche der Nacht werden erkannt (%d %%)" = "Detecting the night's sounds (%d %%)";
 "Geräusche im Schlaf" = "Sounds during sleep";
 "Gespendet am %@." = "Donated on %@.";
-"Gespendet: %d Nächte, zuletzt am %@." = "Donated: %d nights, last on %@.";
+"Gespendet: %d Nächte" = "Donated: %d nights";
 "Gestoppt" = "Stopped";
 "Gewitter" = "Thunderstorm";
 "Gitarre" = "Guitar";

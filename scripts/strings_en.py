@@ -287,7 +287,6 @@ EN = {
 "Rechtliches": "Legal",
 "Alle Einzelheiten in der Datenschutzerklärung": "All details in the privacy policy",
 "Die Schlafphasen deiner Apple Watch für dieselbe Zeit und wann Suyas Einschlafklänge liefen – ohne Uhrzeit, nur ab Aufnahmebeginn gezählt.": "Your Apple Watch sleep stages for the same time and when Suya's sleep sounds were playing – no time of day, only counted from the start of the recording.",
-"Gespendet: %d Nächte, zuletzt am %@.": "Donated: %d nights, last on %@.",
 "Löschung am %@ beantragt und vom Server bestätigt.": "Deletion requested on %@ and confirmed by the server.",
 "Löschung am %@ beantragt. Sie wird gesendet, sobald das iPhone online ist.": "Deletion requested on %@. It will be sent as soon as the iPhone is online.",
 "Nur Nächte ab deiner Zustimmung, mit mindestens 5 Stunden Aufnahme und Schlafphasen der Watch.": "Only nights after your consent, with at least 5 hours of recording and Watch sleep stages.",
@@ -356,6 +355,7 @@ EN = {
 "Keine Verbindung zum Server. Bitte prüf das Internet und versuch es noch einmal.": "No connection to the server. Please check your internet and try again.",
 "Absturzprotokolle": "Crash logs",
 "Wird ausgewertet, %d Prozent": "Analyzing, %d percent",
+"Gespendet: %d Nächte": "Donated: %d nights",
 }
 # Schlüssel, die nicht über tr("…") im Code stehen (für die Vollständigkeitsprüfung)
 DYNAMIC = ["Aus", "Schlummern", "Klänge ausblenden", "Klänge abspielen", "Klänge sofort aus", "Wach", "REM", "Kern", "Tief", "Im Bett", "Schlafend", "Schnarchen", "Sprechen",
