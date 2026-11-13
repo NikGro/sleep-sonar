@@ -14,6 +14,7 @@
 "%d-mal" = "%d回";
 "Abbrechen" = "キャンセル";
 "Abspielen" = "再生";
+"Absturzprotokolle" = "クラッシュログ";
 "Akku %.0f %%, %@" = "バッテリー %.0f %%、%@";
 "Alle %d anzeigen" = "%d件すべて表示";
 "Alle Einzelheiten in der Datenschutzerklärung" = "詳しくはプライバシーポリシーへ";

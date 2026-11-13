@@ -354,6 +354,7 @@ EN = {
 "Gerade wurden zu viele Berichte gesendet. Bitte versuch es später noch einmal.": "Too many reports were sent just now. Please try again later.",
 "Der Server hat den Bericht nicht angenommen (Fehler %@).": "The server did not accept the report (error %@).",
 "Keine Verbindung zum Server. Bitte prüf das Internet und versuch es noch einmal.": "No connection to the server. Please check your internet and try again.",
+"Absturzprotokolle": "Crash logs",
 }
 # Schlüssel, die nicht über tr("…") im Code stehen (für die Vollständigkeitsprüfung)
 DYNAMIC = ["Aus", "Schlummern", "Klänge ausblenden", "Klänge abspielen", "Klänge sofort aus", "Wach", "REM", "Kern", "Tief", "Im Bett", "Schlafend", "Schnarchen", "Sprechen",

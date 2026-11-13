@@ -33,7 +33,7 @@ MAX_BYTES = int(os.environ.get("MAX_BYTES", str(80 * 2**20)))
 KEEP_DAYS = int(os.environ.get("KEEP_DAYS", "183"))   # 6 Monate
 PER_DONOR_DAY = 4                                      # Nächte je Spender und Tag
 BUG_KEEP_DAYS = 365                                    # Fehlerberichte höchstens ein Jahr
-BUG_MAX = 32 * 1024                                    # Text + technische Angaben, kein Anhang
+BUG_MAX = 400 * 1024                                   # Text, technische Angaben, bis zu 5 Absturzprotokolle
 BUG_PER_IP_HOUR = 10
 BUG_PER_DAY = 200
 bug_hits = {}
@@ -217,10 +217,14 @@ class H(BaseHTTPRequestHandler):
         if not isinstance(text, str) or not text.strip(): return self.send(400, {"fehler": "Beschreibung fehlt"})
         def clip(v, k):  # nur Zeichenketten, gekürzt
             return v[:k] if isinstance(v, str) else ""
+        def readable(t):  # Absturzprotokoll (JSON von MetricKit) lesbar ablegen, sonst als Text
+            try: return json.loads(t)
+            except Exception: return t
         tech = obj.get("technik") if isinstance(obj.get("technik"), dict) else {}
         report = {"zeit": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "text": clip(text, 8000),
                   "kontakt": clip(obj.get("kontakt"), 200),
-                  "technik": {clip(k, 40): clip(v, 300) for k, v in list(tech.items())[:40] if isinstance(k, str)}}
+                  "technik": {clip(k, 40): clip(v, 300) for k, v in list(tech.items())[:40] if isinstance(k, str)},
+                  "absturz": [readable(clip(c, 64 * 1024)) for c in (obj.get("absturz") or [])[:5]] if isinstance(obj.get("absturz"), list) else []}
         rid = time.strftime("%Y%m%d-%H%M%S", time.gmtime()) + "-" + secrets.token_hex(3)
         os.makedirs(os.path.join(ROOT, "fehler"), exist_ok=True)
         with open(os.path.join(ROOT, "fehler", rid + ".json"), "w") as f:

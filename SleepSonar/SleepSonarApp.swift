@@ -11,6 +11,7 @@ struct SleepSonarApp: App {
 
     init() {
         BackgroundAnalysis.register()
+        CrashLog.shared.start()   // Absturzprotokolle von iOS für „Fehler melden“ bereithalten
         SmartAlarm.shared.watchSnooze()
         // „Ausblenden“ in der Live-Aktivität
         FadeSoundsAction.run = { await MainActor.run { SleepSoundPlayer.shared.stop(fade: true) } }

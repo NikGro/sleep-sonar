@@ -173,6 +173,7 @@ enum BugReport {
         let nights = (try? FileManager.default.contentsOfDirectory(at: NightStore.nightsFolder, includingPropertiesForKeys: nil))?
             .filter(\.hasDirectoryPath).count ?? 0
         items.append(Item(key: "naechte", label: tr("Nächte"), value: "\(nights)"))
+        items.append(Item(key: "absturzprotokolle", label: tr("Absturzprotokolle"), value: "\(CrashLog.list().count)"))
         if let free = try? URL(fileURLWithPath: NSHomeDirectory())
             .resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]).volumeAvailableCapacityForImportantUsage {
             items.append(Item(key: "speicher_frei", label: tr("Freier Speicher"),
@@ -182,13 +183,14 @@ enum BugReport {
     }
 
     static func send(text: String, contact: String, tech: [Item]) async -> Outcome {
-        var request = URLRequest(url: DonationUploader.server.appendingPathComponent("api/fehler"), timeoutInterval: 30)
+        var request = URLRequest(url: DonationUploader.server.appendingPathComponent("api/fehler"), timeoutInterval: 60)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let body: [String: Any] = [
             "text": String(text.prefix(8000)),
             "kontakt": String(contact.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200)),
             "technik": Dictionary(uniqueKeysWithValues: tech.map { ($0.key, $0.value) }),
+            "absturz": tech.isEmpty ? [] : CrashLog.recent(),   // nur mit „Technische Angaben mitsenden“
         ]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
         do {
