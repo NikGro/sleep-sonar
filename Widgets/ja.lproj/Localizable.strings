@@ -43,13 +43,16 @@
 "Ausblenden, wenn du schläfst" = "眠ったらフェードアウト";
 "Ausschalten nach" = "次の時間後にオフ";
 "Auswertung" = "分析";
+"Autofahrt" = "ドライブ";
 "Bach" = "小川";
 "Bearbeiten" = "編集";
 "Beenden" = "終了";
 "Beendet die laufende Nachtaufnahme von Suya." = "実行中のSuyaの夜間記録を終了します。";
+"Bergbach" = "山の渓流";
 "Beschreibung" = "説明";
 "Bezeichnung" = "ラベル";
 "Bildschirm sperren ist okay. Die App nur nicht wegwischen." = "画面をロックしても大丈夫です。アプリを上にスワイプして閉じないでください。";
+"Blätterrauschen" = "木の葉のざわめき";
 "Boot" = "ボート";
 "Braunes Rauschen" = "ブラウンノイズ";
 "Café" = "カフェ";
@@ -100,6 +103,7 @@
 "Es läuft gerade keine Nachtaufnahme." = "夜間記録は実行されていません。";
 "Fehler melden" = "問題を報告";
 "Fertig" = "完了";
+"Flugzeug" = "飛行機";
 "Freier Speicher" = "空き容量";
 "Freiwillig. Suya funktioniert ohne Spende genauso." = "任意です。寄付しなくてもSuyaは同じように使えます。";
 "Für die Nachtaufnahme braucht Suya das Mikrofon. Die Aufnahmen bleiben auf deinem iPhone, bis du sie selbst teilst." = "Suyaは夜間記録にマイクを使います。録音はあなたが自分で共有するまでiPhone内に残ります。";
@@ -110,7 +114,6 @@
 "Gerade wurden zu viele Berichte gesendet. Bitte versuch es später noch einmal." = "報告が多すぎます。しばらくしてからもう一度お試しください。";
 "Geräusche der Nacht werden erkannt (%d %%)" = "夜の音を検出中（%d %%）";
 "Geräusche im Schlaf" = "睡眠中の音";
-"Gespendet" = "提供済み";
 "Gespendet am %@." = "%@に寄付しました。";
 "Gespendet: %d Nächte" = "提供済み：%d夜";
 "Gestoppt" = "停止しました";
@@ -122,6 +125,7 @@
 "Health verbinden" = "ヘルスケアと連携";
 "Health-Berechtigung: %@" = "ヘルスケアの許可：%@";
 "Health-Zugriff erlauben" = "ヘルスケアへのアクセスを許可";
+"Herzschlag" = "心音";
 "Heute Nacht" = "今夜";
 "Hier nur zum Probehören. Für die Nacht startest du die Klänge mit der Aufnahme unter „Heute Nacht“ – sie helfen beim Einschlafen und enden mit der Aufnahme." = "試聴のみです。夜は「今夜」で記録と一緒にサウンドを開始してください。寝つきを助け、記録と一緒に終わります。";
 "Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur ein grobes Klangbild, aus dem sich keine Sprache verstehen lässt." = "推定をみんなのためにより正確にします。音声ではなく、会話を聞き取れないおおまかな音の画像だけです。";
@@ -141,6 +145,7 @@
 "Keine Verbindung zum Server. Bitte prüf das Internet und versuch es noch einmal." = "サーバーに接続できません。インターネット接続を確認して、もう一度お試しください。";
 "Kern" = "コア";
 "Klangbild wird erstellt" = "音の画像を作成中";
+"Klangschalen" = "シンギングボウル";
 "Klassisch" = "クラシック";
 "Klingelt genau zur eingestellten Zeit." = "設定時刻ちょうどに鳴ります。";
 "Klänge" = "サウンド";
@@ -152,6 +157,8 @@
 "Kontakt (freiwillig)" = "連絡先（任意）";
 "Kopieren" = "コピー";
 "Kürzer als 5 Stunden – wird nicht gespendet." = "5時間未満のため寄付しません。";
+"Lagerfeuer" = "焚き火";
+"Landregen" = "しとしと雨";
 "Lautstärke" = "音量";
 "Leg dein iPhone neben das Bett" = "iPhoneをベッドのそばに置いてください";
 "Letzte 30 Sekunden" = "直近30秒";
@@ -182,6 +189,7 @@
 "Nachtaufnahme gestartet (nur Mikrofon)" = "夜間記録を開始しました（マイクのみ）";
 "Nachtaufnahme gestartet. Gute Nacht!" = "夜間記録を開始しました。おやすみなさい！";
 "Nachtaufnahme läuft" = "夜間記録中";
+"Nachtwald" = "夜の森";
 "Nein, danke" = "いいえ、結構です";
 "Nein, normaler Weckton" = "いいえ、通常のアラーム音";
 "Neuer Wecker" = "新規アラーム";
@@ -214,6 +222,8 @@
 "REM" = "レム";
 "Rechtliches" = "法的情報";
 "Regen" = "雨";
+"Regen am Fenster" = "窓に当たる雨";
+"Regen aufs Zelt" = "テントに降る雨";
 "Rosa Rauschen" = "ピンクノイズ";
 "Routenwechsel (Grund %@), Eingang: %@" = "経路変更（理由 %@）、入力：%@";
 "Ruhe" = "落ち着き";
@@ -232,6 +242,9 @@
 "Schlummern beenden" = "スヌーズを終了";
 "Schlummert bis %@" = "%@までスヌーズ";
 "Schnarchen" = "いびき";
+"Schneesturm" = "吹雪";
+"Schnurrende Katze" = "喉を鳴らす猫";
+"Seeufer" = "湖のほとり";
 "Senden" = "送信";
 "Seufzen und Quengeln" = "ため息とぐずり";
 "Sicherheit %d Prozent" = "確信度%dパーセント";
@@ -274,6 +287,7 @@
 "Ton-Test" = "サウンドテスト";
 "Ton-Test starten" = "サウンドテストを開始";
 "Täglich" = "毎日";
+"Uhr-Ticken" = "時計の音";
 "Uhrzeit" = "時刻";
 "Unterbrechung (Anruf/Wecker/Siri?)" = "中断（電話/アラーム/Siri？）";
 "Unterbrechung beendet" = "中断が終わりました";
@@ -292,6 +306,7 @@
 "Was ist passiert, und was hast du davor gemacht?" = "何が起きましたか？その直前に何をしましたか？";
 "Was zuerst eintritt, blendet die Klänge über 30 Sekunden aus. Spätestens mit dem Ende der Aufnahme sind sie aus." = "先に起きたほうで、サウンドを30秒かけてフェードアウトします。遅くとも記録の終了時に止まります。";
 "Was übertragen wird" = "送信される内容";
+"Wasserfall" = "滝";
 "Watch" = "Watch";
 "Watch %d" = "Watch %d";
 "Wecken nach" = "起床の上限";

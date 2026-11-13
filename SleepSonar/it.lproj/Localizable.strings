@@ -43,13 +43,16 @@
 "Ausblenden, wenn du schläfst" = "Dissolvenza quando dormi";
 "Ausschalten nach" = "Spegni dopo";
 "Auswertung" = "Analisi";
+"Autofahrt" = "Viaggio in auto";
 "Bach" = "Ruscello";
 "Bearbeiten" = "Modifica";
 "Beenden" = "Fine";
 "Beendet die laufende Nachtaufnahme von Suya." = "Termina la registrazione notturna di Suya in corso.";
+"Bergbach" = "Torrente di montagna";
 "Beschreibung" = "Descrizione";
 "Bezeichnung" = "Etichetta";
 "Bildschirm sperren ist okay. Die App nur nicht wegwischen." = "Puoi bloccare lo schermo. Basta non chiudere l’app scorrendola via.";
+"Blätterrauschen" = "Fruscio delle foglie";
 "Boot" = "Barca";
 "Braunes Rauschen" = "Rumore marrone";
 "Café" = "Caffè";
@@ -100,6 +103,7 @@
 "Es läuft gerade keine Nachtaufnahme." = "Nessuna registrazione notturna in corso.";
 "Fehler melden" = "Segnala un problema";
 "Fertig" = "Fine";
+"Flugzeug" = "Aereo";
 "Freier Speicher" = "Spazio libero";
 "Freiwillig. Suya funktioniert ohne Spende genauso." = "Facoltativo. Suya funziona allo stesso modo anche senza donazione.";
 "Für die Nachtaufnahme braucht Suya das Mikrofon. Die Aufnahmen bleiben auf deinem iPhone, bis du sie selbst teilst." = "Suya ha bisogno del microfono per la registrazione notturna. Le registrazioni restano sul tuo iPhone finché non le condividi tu.";
@@ -110,7 +114,6 @@
 "Gerade wurden zu viele Berichte gesendet. Bitte versuch es später noch einmal." = "Sono state inviate troppe segnalazioni. Riprova più tardi.";
 "Geräusche der Nacht werden erkannt (%d %%)" = "Rilevamento dei suoni della notte (%d %%)";
 "Geräusche im Schlaf" = "Suoni durante il sonno";
-"Gespendet" = "Donata";
 "Gespendet am %@." = "Donata il %@.";
 "Gespendet: %d Nächte" = "Donate: %d notti";
 "Gestoppt" = "Fermato";
@@ -122,6 +125,7 @@
 "Health verbinden" = "Collega Salute";
 "Health-Berechtigung: %@" = "Permesso Salute: %@";
 "Health-Zugriff erlauben" = "Consenti l’accesso a Salute";
+"Herzschlag" = "Battito cardiaco";
 "Heute Nacht" = "Stanotte";
 "Hier nur zum Probehören. Für die Nacht startest du die Klänge mit der Aufnahme unter „Heute Nacht“ – sie helfen beim Einschlafen und enden mit der Aufnahme." = "Solo ascolto. Per la notte avvia i suoni con la registrazione in «Stanotte»: ti aiutano ad addormentarti e finiscono con la registrazione.";
 "Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur ein grobes Klangbild, aus dem sich keine Sprache verstehen lässt." = "Aiuta a rendere la stima più precisa per tutti. Nessun suono, solo un’immagine sonora approssimativa in cui il parlato non si capisce.";
@@ -141,6 +145,7 @@
 "Keine Verbindung zum Server. Bitte prüf das Internet und versuch es noch einmal." = "Nessuna connessione al server. Controlla internet e riprova.";
 "Kern" = "Principale";
 "Klangbild wird erstellt" = "Creazione dell’immagine sonora";
+"Klangschalen" = "Campane tibetane";
 "Klassisch" = "Classico";
 "Klingelt genau zur eingestellten Zeit." = "Suona esattamente all’orario impostato.";
 "Klänge" = "Suoni";
@@ -152,6 +157,8 @@
 "Kontakt (freiwillig)" = "Contatto (facoltativo)";
 "Kopieren" = "Copia";
 "Kürzer als 5 Stunden – wird nicht gespendet." = "Meno di 5 ore – non viene donata.";
+"Lagerfeuer" = "Falò";
+"Landregen" = "Pioggia leggera";
 "Lautstärke" = "Volume";
 "Leg dein iPhone neben das Bett" = "Metti l’iPhone accanto al letto";
 "Letzte 30 Sekunden" = "Ultimi 30 secondi";
@@ -182,6 +189,7 @@
 "Nachtaufnahme gestartet (nur Mikrofon)" = "Registrazione notturna avviata (solo microfono)";
 "Nachtaufnahme gestartet. Gute Nacht!" = "Registrazione notturna avviata. Buonanotte!";
 "Nachtaufnahme läuft" = "Registrazione notturna in corso";
+"Nachtwald" = "Bosco di notte";
 "Nein, danke" = "No, grazie";
 "Nein, normaler Weckton" = "No, il normale suono della sveglia";
 "Neuer Wecker" = "Nuova sveglia";
@@ -214,6 +222,8 @@
 "REM" = "REM";
 "Rechtliches" = "Informazioni legali";
 "Regen" = "Pioggia";
+"Regen am Fenster" = "Pioggia sulla finestra";
+"Regen aufs Zelt" = "Pioggia sulla tenda";
 "Rosa Rauschen" = "Rumore rosa";
 "Routenwechsel (Grund %@), Eingang: %@" = "Cambio di percorso (motivo %@), ingresso: %@";
 "Ruhe" = "Tranquillità";
@@ -232,6 +242,9 @@
 "Schlummern beenden" = "Termina posticipo";
 "Schlummert bis %@" = "Posticipato fino alle %@";
 "Schnarchen" = "Russare";
+"Schneesturm" = "Bufera di neve";
+"Schnurrende Katze" = "Gatto che fa le fusa";
+"Seeufer" = "Riva del lago";
 "Senden" = "Invia";
 "Seufzen und Quengeln" = "Sospiri e lamenti";
 "Sicherheit %d Prozent" = "Affidabilità %d per cento";
@@ -274,6 +287,7 @@
 "Ton-Test" = "Test del suono";
 "Ton-Test starten" = "Avvia test del suono";
 "Täglich" = "Ogni giorno";
+"Uhr-Ticken" = "Ticchettio dell’orologio";
 "Uhrzeit" = "Ora";
 "Unterbrechung (Anruf/Wecker/Siri?)" = "Interruzione (chiamata/sveglia/Siri?)";
 "Unterbrechung beendet" = "Interruzione terminata";
@@ -292,6 +306,7 @@
 "Was ist passiert, und was hast du davor gemacht?" = "Cosa è successo e cosa hai fatto subito prima?";
 "Was zuerst eintritt, blendet die Klänge über 30 Sekunden aus. Spätestens mit dem Ende der Aufnahme sind sie aus." = "Ciò che avviene prima dissolve i suoni in 30 secondi. Si fermano al più tardi alla fine della registrazione.";
 "Was übertragen wird" = "Cosa viene inviato";
+"Wasserfall" = "Cascata";
 "Watch" = "Watch";
 "Watch %d" = "Watch %d";
 "Wecken nach" = "Sveglia al più tardi";

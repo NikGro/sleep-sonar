@@ -43,13 +43,16 @@
 "Ausblenden, wenn du schläfst" = "入睡后淡出";
 "Ausschalten nach" = "之后关闭";
 "Auswertung" = "分析";
+"Autofahrt" = "坐车";
 "Bach" = "溪流";
 "Bearbeiten" = "编辑";
 "Beenden" = "结束";
 "Beendet die laufende Nachtaufnahme von Suya." = "结束正在进行的 Suya 夜间记录。";
+"Bergbach" = "山间溪流";
 "Beschreibung" = "描述";
 "Bezeichnung" = "标签";
 "Bildschirm sperren ist okay. Die App nur nicht wegwischen." = "可以锁定屏幕。只是不要上滑关闭 App。";
+"Blätterrauschen" = "树叶沙沙";
 "Boot" = "船";
 "Braunes Rauschen" = "棕噪音";
 "Café" = "咖啡馆";
@@ -100,6 +103,7 @@
 "Es läuft gerade keine Nachtaufnahme." = "没有正在进行的夜间记录。";
 "Fehler melden" = "报告问题";
 "Fertig" = "完成";
+"Flugzeug" = "飞机";
 "Freier Speicher" = "可用空间";
 "Freiwillig. Suya funktioniert ohne Spende genauso." = "自愿参加。不捐赠 Suya 也照样可用。";
 "Für die Nachtaufnahme braucht Suya das Mikrofon. Die Aufnahmen bleiben auf deinem iPhone, bis du sie selbst teilst." = "Suya 需要麦克风进行夜间记录。录音会留在你的 iPhone 上，直到你自己分享。";
@@ -110,7 +114,6 @@
 "Gerade wurden zu viele Berichte gesendet. Bitte versuch es später noch einmal." = "刚才发送的报告太多。请稍后再试。";
 "Geräusche der Nacht werden erkannt (%d %%)" = "正在识别夜间声音（%d %%）";
 "Geräusche im Schlaf" = "睡眠期间的声音";
-"Gespendet" = "已捐赠";
 "Gespendet am %@." = "已于 %@ 捐赠。";
 "Gespendet: %d Nächte" = "已捐赠：%d 晚";
 "Gestoppt" = "已停止";
@@ -122,6 +125,7 @@
 "Health verbinden" = "连接“健康”";
 "Health-Berechtigung: %@" = "“健康”权限：%@";
 "Health-Zugriff erlauben" = "允许访问“健康”";
+"Herzschlag" = "心跳";
 "Heute Nacht" = "今晚";
 "Hier nur zum Probehören. Für die Nacht startest du die Klänge mit der Aufnahme unter „Heute Nacht“ – sie helfen beim Einschlafen und enden mit der Aufnahme." = "仅供试听。夜间请在“今晚”中随记录一起开启声音——它们帮助入睡，并随记录结束。";
 "Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur ein grobes Klangbild, aus dem sich keine Sprache verstehen lässt." = "帮助让估计对所有人更准确。不含声音，只有一幅听不懂说话的粗略声音图。";
@@ -141,6 +145,7 @@
 "Keine Verbindung zum Server. Bitte prüf das Internet und versuch es noch einmal." = "无法连接服务器。请检查网络后重试。";
 "Kern" = "核心";
 "Klangbild wird erstellt" = "正在生成声音图";
+"Klangschalen" = "颂钵";
 "Klassisch" = "经典";
 "Klingelt genau zur eingestellten Zeit." = "在设定时间准时响起。";
 "Klänge" = "声音";
@@ -152,6 +157,8 @@
 "Kontakt (freiwillig)" = "联系方式（可选）";
 "Kopieren" = "拷贝";
 "Kürzer als 5 Stunden – wird nicht gespendet." = "不足 5 小时——不会捐赠。";
+"Lagerfeuer" = "篝火";
+"Landregen" = "绵绵细雨";
 "Lautstärke" = "音量";
 "Leg dein iPhone neben das Bett" = "把 iPhone 放在床边";
 "Letzte 30 Sekunden" = "最近 30 秒";
@@ -182,6 +189,7 @@
 "Nachtaufnahme gestartet (nur Mikrofon)" = "夜间记录已开始（仅麦克风）";
 "Nachtaufnahme gestartet. Gute Nacht!" = "夜间记录已开始。晚安！";
 "Nachtaufnahme läuft" = "夜间记录进行中";
+"Nachtwald" = "夜晚森林";
 "Nein, danke" = "不了，谢谢";
 "Nein, normaler Weckton" = "不，普通闹钟铃声";
 "Neuer Wecker" = "新建闹钟";
@@ -214,6 +222,8 @@
 "REM" = "快速眼动";
 "Rechtliches" = "法律信息";
 "Regen" = "雨";
+"Regen am Fenster" = "窗外雨声";
+"Regen aufs Zelt" = "帐篷上的雨";
 "Rosa Rauschen" = "粉红噪音";
 "Routenwechsel (Grund %@), Eingang: %@" = "线路变化（原因 %@），输入：%@";
 "Ruhe" = "安稳度";
@@ -232,6 +242,9 @@
 "Schlummern beenden" = "结束稍后提醒";
 "Schlummert bis %@" = "稍后提醒至 %@";
 "Schnarchen" = "打鼾";
+"Schneesturm" = "暴风雪";
+"Schnurrende Katze" = "呼噜的猫";
+"Seeufer" = "湖畔";
 "Senden" = "发送";
 "Seufzen und Quengeln" = "叹气和哼唧";
 "Sicherheit %d Prozent" = "置信度百分之%d";
@@ -274,6 +287,7 @@
 "Ton-Test" = "声音测试";
 "Ton-Test starten" = "开始声音测试";
 "Täglich" = "每天";
+"Uhr-Ticken" = "时钟滴答";
 "Uhrzeit" = "时间";
 "Unterbrechung (Anruf/Wecker/Siri?)" = "中断（来电/闹钟/Siri？）";
 "Unterbrechung beendet" = "中断结束";
@@ -292,6 +306,7 @@
 "Was ist passiert, und was hast du davor gemacht?" = "发生了什么？之前你做了什么？";
 "Was zuerst eintritt, blendet die Klänge über 30 Sekunden aus. Spätestens mit dem Ende der Aufnahme sind sie aus." = "先发生的那个会在 30 秒内淡出声音。最晚在记录结束时停止。";
 "Was übertragen wird" = "发送什么";
+"Wasserfall" = "瀑布";
 "Watch" = "Watch";
 "Watch %d" = "Watch %d";
 "Wecken nach" = "最晚唤醒";

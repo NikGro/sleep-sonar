@@ -43,13 +43,16 @@
 "Ausblenden, wenn du schläfst" = "Uitfaden als je slaapt";
 "Ausschalten nach" = "Uitzetten na";
 "Auswertung" = "Analyse";
+"Autofahrt" = "Autorit";
 "Bach" = "Beekje";
 "Bearbeiten" = "Wijzig";
 "Beenden" = "Einde";
 "Beendet die laufende Nachtaufnahme von Suya." = "Stopt de lopende nachtopname van Suya.";
+"Bergbach" = "Bergbeek";
 "Beschreibung" = "Beschrijving";
 "Bezeichnung" = "Label";
 "Bildschirm sperren ist okay. Die App nur nicht wegwischen." = "Je mag het scherm vergrendelen. Veeg de app alleen niet weg.";
+"Blätterrauschen" = "Ruisende bladeren";
 "Boot" = "Boot";
 "Braunes Rauschen" = "Bruine ruis";
 "Café" = "Café";
@@ -100,6 +103,7 @@
 "Es läuft gerade keine Nachtaufnahme." = "Er loopt geen nachtopname.";
 "Fehler melden" = "Probleem melden";
 "Fertig" = "Klaar";
+"Flugzeug" = "Vliegtuig";
 "Freier Speicher" = "Vrije opslag";
 "Freiwillig. Suya funktioniert ohne Spende genauso." = "Vrijwillig. Suya werkt zonder donatie precies hetzelfde.";
 "Für die Nachtaufnahme braucht Suya das Mikrofon. Die Aufnahmen bleiben auf deinem iPhone, bis du sie selbst teilst." = "Suya heeft de microfoon nodig voor de nachtopname. Opnamen blijven op je iPhone tot je ze zelf deelt.";
@@ -110,7 +114,6 @@
 "Gerade wurden zu viele Berichte gesendet. Bitte versuch es später noch einmal." = "Er zijn net te veel meldingen verstuurd. Probeer het later opnieuw.";
 "Geräusche der Nacht werden erkannt (%d %%)" = "Geluiden van de nacht herkennen (%d %%)";
 "Geräusche im Schlaf" = "Geluiden tijdens de slaap";
-"Gespendet" = "Gedoneerd";
 "Gespendet am %@." = "Gedoneerd op %@.";
 "Gespendet: %d Nächte" = "Gedoneerd: %d nachten";
 "Gestoppt" = "Gestopt";
@@ -122,6 +125,7 @@
 "Health verbinden" = "Gezondheid koppelen";
 "Health-Berechtigung: %@" = "Toestemming Gezondheid: %@";
 "Health-Zugriff erlauben" = "Toegang tot Gezondheid toestaan";
+"Herzschlag" = "Hartslag";
 "Heute Nacht" = "Vannacht";
 "Hier nur zum Probehören. Für die Nacht startest du die Klänge mit der Aufnahme unter „Heute Nacht“ – sie helfen beim Einschlafen und enden mit der Aufnahme." = "Alleen beluisteren. Start de geluiden voor de nacht met de opname onder ‘Vannacht’ – ze helpen bij het inslapen en stoppen met de opname.";
 "Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur ein grobes Klangbild, aus dem sich keine Sprache verstehen lässt." = "Helpt de schatting voor iedereen nauwkeuriger te maken. Geen geluid, alleen een grof klankbeeld waaruit geen spraak te verstaan is.";
@@ -141,6 +145,7 @@
 "Keine Verbindung zum Server. Bitte prüf das Internet und versuch es noch einmal." = "Geen verbinding met de server. Controleer je internet en probeer het opnieuw.";
 "Kern" = "Kern";
 "Klangbild wird erstellt" = "Klankbeeld wordt gemaakt";
+"Klangschalen" = "Klankschalen";
 "Klassisch" = "Klassiek";
 "Klingelt genau zur eingestellten Zeit." = "Gaat precies op de ingestelde tijd af.";
 "Klänge" = "Geluiden";
@@ -152,6 +157,8 @@
 "Kontakt (freiwillig)" = "Contact (optioneel)";
 "Kopieren" = "Kopiëren";
 "Kürzer als 5 Stunden – wird nicht gespendet." = "Korter dan 5 uur – wordt niet gedoneerd.";
+"Lagerfeuer" = "Kampvuur";
+"Landregen" = "Motregen";
 "Lautstärke" = "Volume";
 "Leg dein iPhone neben das Bett" = "Leg je iPhone naast je bed";
 "Letzte 30 Sekunden" = "Laatste 30 seconden";
@@ -182,6 +189,7 @@
 "Nachtaufnahme gestartet (nur Mikrofon)" = "Nachtopname gestart (alleen microfoon)";
 "Nachtaufnahme gestartet. Gute Nacht!" = "Nachtopname gestart. Welterusten!";
 "Nachtaufnahme läuft" = "Nachtopname loopt";
+"Nachtwald" = "Bos bij nacht";
 "Nein, danke" = "Nee, bedankt";
 "Nein, normaler Weckton" = "Nee, de gewone wektoon";
 "Neuer Wecker" = "Nieuwe wekker";
@@ -214,6 +222,8 @@
 "REM" = "REM";
 "Rechtliches" = "Juridisch";
 "Regen" = "Regen";
+"Regen am Fenster" = "Regen tegen het raam";
+"Regen aufs Zelt" = "Regen op de tent";
 "Rosa Rauschen" = "Roze ruis";
 "Routenwechsel (Grund %@), Eingang: %@" = "Routewijziging (reden %@), invoer: %@";
 "Ruhe" = "Rust";
@@ -232,6 +242,9 @@
 "Schlummern beenden" = "Sluimeren beëindigen";
 "Schlummert bis %@" = "Sluimert tot %@";
 "Schnarchen" = "Snurken";
+"Schneesturm" = "Sneeuwstorm";
+"Schnurrende Katze" = "Spinnende kat";
+"Seeufer" = "Meeroever";
 "Senden" = "Versturen";
 "Seufzen und Quengeln" = "Zuchten en jammeren";
 "Sicherheit %d Prozent" = "Zekerheid %d procent";
@@ -274,6 +287,7 @@
 "Ton-Test" = "Toontest";
 "Ton-Test starten" = "Toontest starten";
 "Täglich" = "Elke dag";
+"Uhr-Ticken" = "Tikkende klok";
 "Uhrzeit" = "Tijd";
 "Unterbrechung (Anruf/Wecker/Siri?)" = "Onderbreking (oproep/wekker/Siri?)";
 "Unterbrechung beendet" = "Onderbreking afgelopen";
@@ -292,6 +306,7 @@
 "Was ist passiert, und was hast du davor gemacht?" = "Wat is er gebeurd, en wat deed je vlak daarvoor?";
 "Was zuerst eintritt, blendet die Klänge über 30 Sekunden aus. Spätestens mit dem Ende der Aufnahme sind sie aus." = "Wat het eerst gebeurt, laat de geluiden in 30 seconden uitfaden. Ze stoppen uiterlijk als de opname eindigt.";
 "Was übertragen wird" = "Wat er wordt verzonden";
+"Wasserfall" = "Waterval";
 "Watch" = "Watch";
 "Watch %d" = "Watch %d";
 "Wecken nach" = "Wakker uiterlijk";

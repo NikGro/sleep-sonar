@@ -7,7 +7,12 @@ import SwiftUI
 /// Naturklänge: echte Aufnahmen (CC0, gemeinfrei, CC BY; Quellen siehe `credit`).
 /// Ventilator und Rauschen: selbst erzeugt.
 enum SleepSound: String, CaseIterable, Identifiable, Codable {
-    case regen, gewitter, wellen, bach, wind, kamin, voegel, sommernacht, zug, boot, cafe, stadt
+    // Reihenfolge = Anzeige im Klänge-Tab (Rohwerte bleiben, gespeicherte Mischungen hängen daran)
+    case regen, landregen, fensterregen, zeltregen, gewitter
+    case wellen, see, bach, bergbach, wasserfall
+    case wind, laubwald, schneesturm, kamin, lagerfeuer
+    case voegel, sommernacht, nachtwald, katze, herzschlag, uhr, klangschalen
+    case zug, boot, flugzeug, auto, cafe, stadt
     case ventilator, weiss, rosa, braun
     var id: String { rawValue }
     var name: String {
@@ -24,6 +29,22 @@ enum SleepSound: String, CaseIterable, Identifiable, Codable {
         case .boot: tr("Boot")
         case .cafe: tr("Café")
         case .stadt: tr("Stadt")
+        case .landregen: tr("Landregen")
+        case .fensterregen: tr("Regen am Fenster")
+        case .zeltregen: tr("Regen aufs Zelt")
+        case .see: tr("Seeufer")
+        case .bergbach: tr("Bergbach")
+        case .wasserfall: tr("Wasserfall")
+        case .laubwald: tr("Blätterrauschen")
+        case .schneesturm: tr("Schneesturm")
+        case .lagerfeuer: tr("Lagerfeuer")
+        case .nachtwald: tr("Nachtwald")
+        case .katze: tr("Schnurrende Katze")
+        case .herzschlag: tr("Herzschlag")
+        case .uhr: tr("Uhr-Ticken")
+        case .klangschalen: tr("Klangschalen")
+        case .flugzeug: tr("Flugzeug")
+        case .auto: tr("Autofahrt")
         case .ventilator: tr("Ventilator")
         case .weiss: tr("Weißes Rauschen")
         case .rosa: tr("Rosa Rauschen")
@@ -44,6 +65,22 @@ enum SleepSound: String, CaseIterable, Identifiable, Codable {
         case .boot: "sailboat"
         case .cafe: "cup.and.saucer"
         case .stadt: "building.2"
+        case .landregen: "cloud.drizzle"
+        case .fensterregen: "window.vertical.closed"
+        case .zeltregen: "tent"
+        case .see: "humidity"
+        case .bergbach: "mountain.2"
+        case .wasserfall: "drop.fill"
+        case .laubwald: "leaf"
+        case .schneesturm: "wind.snow"
+        case .lagerfeuer: "flame.fill"
+        case .nachtwald: "tree"
+        case .katze: "cat"
+        case .herzschlag: "heart"
+        case .uhr: "clock"
+        case .klangschalen: "bell"
+        case .flugzeug: "airplane"
+        case .auto: "car"
         case .ventilator: "fan"
         case .weiss: "waveform"
         case .rosa: "waveform.path"
@@ -65,6 +102,22 @@ enum SleepSound: String, CaseIterable, Identifiable, Codable {
         case .boot: "Falcet, freesound.org · CC0"
         case .cafe: "stephan, soundbible.com · gemeinfrei"
         case .stadt: "gezortenplotz, freesound.org · CC BY"
+        case .lagerfeuer: "HECKFRICKER, freesound.org · CC0"
+        case .zeltregen: "pulswelle, freesound.org · CC0"
+        case .fensterregen: "nicoproson, freesound.org · CC0"
+        case .landregen: "richwise, freesound.org · CC0"
+        case .bergbach: "INNORECORDS, freesound.org · CC0"
+        case .wasserfall: "Antonio_Lai, freesound.org · CC0"
+        case .see: "TheFlyFishingFilmmaker, freesound.org · CC0"
+        case .nachtwald: "lucasdbap, freesound.org · CC0"
+        case .schneesturm: "DBlover, freesound.org · CC0"
+        case .laubwald: "klankbeeld, freesound.org · CC BY 4.0"
+        case .katze: "Luftrum, freesound.org · CC BY 4.0"
+        case .herzschlag: "patobottos, freesound.org · CC0"
+        case .uhr: "Rollo145, freesound.org · CC BY 3.0"
+        case .flugzeug: "Vurca, freesound.org · CC0"
+        case .auto: "Kinoton, freesound.org · CC0"
+        case .klangschalen: "phluidbox, freesound.org · CC0"
         default: nil
         }
     }

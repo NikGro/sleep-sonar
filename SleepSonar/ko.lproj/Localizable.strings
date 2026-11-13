@@ -43,13 +43,16 @@
 "Ausblenden, wenn du schläfst" = "잠들면 페이드아웃";
 "Ausschalten nach" = "다음 시간 후 끄기";
 "Auswertung" = "분석";
+"Autofahrt" = "자동차 여행";
 "Bach" = "시냇물";
 "Bearbeiten" = "편집";
 "Beenden" = "끝";
 "Beendet die laufende Nachtaufnahme von Suya." = "실행 중인 Suya 밤 기록을 종료합니다.";
+"Bergbach" = "산속 시냇물";
 "Beschreibung" = "설명";
 "Bezeichnung" = "레이블";
 "Bildschirm sperren ist okay. Die App nur nicht wegwischen." = "화면을 잠가도 괜찮아요. 앱을 쓸어 올려 닫지만 마세요.";
+"Blätterrauschen" = "나뭇잎 소리";
 "Boot" = "배";
 "Braunes Rauschen" = "브라운 노이즈";
 "Café" = "카페";
@@ -100,6 +103,7 @@
 "Es läuft gerade keine Nachtaufnahme." = "실행 중인 밤 기록이 없습니다.";
 "Fehler melden" = "문제 신고";
 "Fertig" = "완료";
+"Flugzeug" = "비행기";
 "Freier Speicher" = "여유 공간";
 "Freiwillig. Suya funktioniert ohne Spende genauso." = "자발적입니다. 기증하지 않아도 Suya는 똑같이 작동합니다.";
 "Für die Nachtaufnahme braucht Suya das Mikrofon. Die Aufnahmen bleiben auf deinem iPhone, bis du sie selbst teilst." = "Suya는 밤 기록에 마이크가 필요합니다. 녹음은 직접 공유하기 전까지 iPhone에 남습니다.";
@@ -110,7 +114,6 @@
 "Gerade wurden zu viele Berichte gesendet. Bitte versuch es später noch einmal." = "방금 신고가 너무 많이 전송되었습니다. 나중에 다시 시도해 주세요.";
 "Geräusche der Nacht werden erkannt (%d %%)" = "밤의 소리 감지 중(%d %%)";
 "Geräusche im Schlaf" = "수면 중의 소리";
-"Gespendet" = "기증함";
 "Gespendet am %@." = "%@에 기증했습니다.";
 "Gespendet: %d Nächte" = "기증함: %d밤";
 "Gestoppt" = "정지됨";
@@ -122,6 +125,7 @@
 "Health verbinden" = "건강 앱 연결";
 "Health-Berechtigung: %@" = "건강 앱 권한: %@";
 "Health-Zugriff erlauben" = "건강 앱 접근 허용";
+"Herzschlag" = "심장 박동";
 "Heute Nacht" = "오늘 밤";
 "Hier nur zum Probehören. Für die Nacht startest du die Klänge mit der Aufnahme unter „Heute Nacht“ – sie helfen beim Einschlafen und enden mit der Aufnahme." = "미리 듣기 전용입니다. 밤에는 ‘오늘 밤’에서 기록과 함께 소리를 시작하세요. 잠드는 것을 돕고 기록과 함께 끝납니다.";
 "Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur ein grobes Klangbild, aus dem sich keine Sprache verstehen lässt." = "모두를 위해 추정을 더 정확하게 만드는 데 도움이 됩니다. 소리가 아닌, 말소리를 알아들을 수 없는 대략적인 소리 그림만 보냅니다.";
@@ -141,6 +145,7 @@
 "Keine Verbindung zum Server. Bitte prüf das Internet und versuch es noch einmal." = "서버에 연결할 수 없습니다. 인터넷을 확인하고 다시 시도해 주세요.";
 "Kern" = "코어";
 "Klangbild wird erstellt" = "소리 그림 만드는 중";
+"Klangschalen" = "싱잉볼";
 "Klassisch" = "클래식";
 "Klingelt genau zur eingestellten Zeit." = "설정한 시간에 정확히 울립니다.";
 "Klänge" = "사운드";
@@ -152,6 +157,8 @@
 "Kontakt (freiwillig)" = "연락처(선택)";
 "Kopieren" = "복사";
 "Kürzer als 5 Stunden – wird nicht gespendet." = "5시간 미만이라 기증하지 않습니다.";
+"Lagerfeuer" = "모닥불";
+"Landregen" = "잔잔한 비";
 "Lautstärke" = "음량";
 "Leg dein iPhone neben das Bett" = "iPhone을 침대 옆에 두세요";
 "Letzte 30 Sekunden" = "최근 30초";
@@ -182,6 +189,7 @@
 "Nachtaufnahme gestartet (nur Mikrofon)" = "밤 기록 시작됨(마이크만)";
 "Nachtaufnahme gestartet. Gute Nacht!" = "밤 기록을 시작했습니다. 잘 자요!";
 "Nachtaufnahme läuft" = "밤 기록 중";
+"Nachtwald" = "밤의 숲";
 "Nein, danke" = "아니요, 괜찮습니다";
 "Nein, normaler Weckton" = "아니요, 일반 알람음";
 "Neuer Wecker" = "새로운 알람";
@@ -214,6 +222,8 @@
 "REM" = "렘";
 "Rechtliches" = "법적 고지";
 "Regen" = "비";
+"Regen am Fenster" = "창문에 내리는 비";
+"Regen aufs Zelt" = "텐트 위의 비";
 "Rosa Rauschen" = "핑크 노이즈";
 "Routenwechsel (Grund %@), Eingang: %@" = "경로 변경(이유 %@), 입력: %@";
 "Ruhe" = "평온함";
@@ -232,6 +242,9 @@
 "Schlummern beenden" = "다시 알림 끝내기";
 "Schlummert bis %@" = "%@까지 다시 알림";
 "Schnarchen" = "코골이";
+"Schneesturm" = "눈보라";
+"Schnurrende Katze" = "골골대는 고양이";
+"Seeufer" = "호숫가";
 "Senden" = "보내기";
 "Seufzen und Quengeln" = "한숨과 칭얼거림";
 "Sicherheit %d Prozent" = "신뢰도 %d퍼센트";
@@ -274,6 +287,7 @@
 "Ton-Test" = "사운드 테스트";
 "Ton-Test starten" = "사운드 테스트 시작";
 "Täglich" = "매일";
+"Uhr-Ticken" = "시계 초침";
 "Uhrzeit" = "시간";
 "Unterbrechung (Anruf/Wecker/Siri?)" = "중단(전화/알람/Siri?)";
 "Unterbrechung beendet" = "중단 끝남";
@@ -292,6 +306,7 @@
 "Was ist passiert, und was hast du davor gemacht?" = "무슨 일이 있었고, 바로 전에 무엇을 했나요?";
 "Was zuerst eintritt, blendet die Klänge über 30 Sekunden aus. Spätestens mit dem Ende der Aufnahme sind sie aus." = "먼저 일어나는 쪽에서 사운드를 30초 동안 페이드아웃합니다. 늦어도 기록이 끝날 때 멈춥니다.";
 "Was übertragen wird" = "전송되는 내용";
+"Wasserfall" = "폭포";
 "Watch" = "Watch";
 "Watch %d" = "Watch %d";
 "Wecken nach" = "늦어도 기상";

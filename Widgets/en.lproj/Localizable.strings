@@ -43,13 +43,16 @@
 "Ausblenden, wenn du schläfst" = "Fade out when you're asleep";
 "Ausschalten nach" = "Turn off after";
 "Auswertung" = "Analysis";
+"Autofahrt" = "Car ride";
 "Bach" = "Stream";
 "Bearbeiten" = "Edit";
 "Beenden" = "End";
 "Beendet die laufende Nachtaufnahme von Suya." = "Stops Suya's running night recording.";
+"Bergbach" = "Mountain stream";
 "Beschreibung" = "Description";
 "Bezeichnung" = "Label";
 "Bildschirm sperren ist okay. Die App nur nicht wegwischen." = "Locking the screen is fine. Just don't swipe the app away.";
+"Blätterrauschen" = "Rustling leaves";
 "Boot" = "Boat";
 "Braunes Rauschen" = "Brown noise";
 "Café" = "Café";
@@ -100,6 +103,7 @@
 "Es läuft gerade keine Nachtaufnahme." = "No night recording is running.";
 "Fehler melden" = "Report a problem";
 "Fertig" = "Done";
+"Flugzeug" = "Airplane";
 "Freier Speicher" = "Free storage";
 "Freiwillig. Suya funktioniert ohne Spende genauso." = "Voluntary. Suya works just the same without donating.";
 "Für die Nachtaufnahme braucht Suya das Mikrofon. Die Aufnahmen bleiben auf deinem iPhone, bis du sie selbst teilst." = "Suya needs the microphone for the night recording. Recordings stay on your iPhone until you share them yourself.";
@@ -110,7 +114,6 @@
 "Gerade wurden zu viele Berichte gesendet. Bitte versuch es später noch einmal." = "Too many reports were sent just now. Please try again later.";
 "Geräusche der Nacht werden erkannt (%d %%)" = "Detecting the night's sounds (%d %%)";
 "Geräusche im Schlaf" = "Sounds during sleep";
-"Gespendet" = "Donated";
 "Gespendet am %@." = "Donated on %@.";
 "Gespendet: %d Nächte" = "Donated: %d nights";
 "Gestoppt" = "Stopped";
@@ -122,6 +125,7 @@
 "Health verbinden" = "Connect Health";
 "Health-Berechtigung: %@" = "Health permission: %@";
 "Health-Zugriff erlauben" = "Allow Health access";
+"Herzschlag" = "Heartbeat";
 "Heute Nacht" = "Tonight";
 "Hier nur zum Probehören. Für die Nacht startest du die Klänge mit der Aufnahme unter „Heute Nacht“ – sie helfen beim Einschlafen und enden mit der Aufnahme." = "Preview only. For the night, start the sounds with the recording under “Tonight” – they help you fall asleep and end with the recording.";
 "Hilft, die Schätzung für alle genauer zu machen. Kein Ton, nur ein grobes Klangbild, aus dem sich keine Sprache verstehen lässt." = "Helps make the estimate more accurate for everyone. No sound, only a coarse sound picture from which speech can't be understood.";
@@ -141,6 +145,7 @@
 "Keine Verbindung zum Server. Bitte prüf das Internet und versuch es noch einmal." = "No connection to the server. Please check your internet and try again.";
 "Kern" = "Core";
 "Klangbild wird erstellt" = "Creating sound picture";
+"Klangschalen" = "Singing bowls";
 "Klassisch" = "Classic";
 "Klingelt genau zur eingestellten Zeit." = "Rings exactly at the set time.";
 "Klänge" = "Sounds";
@@ -152,6 +157,8 @@
 "Kontakt (freiwillig)" = "Contact (optional)";
 "Kopieren" = "Copy";
 "Kürzer als 5 Stunden – wird nicht gespendet." = "Shorter than 5 hours – won't be donated.";
+"Lagerfeuer" = "Campfire";
+"Landregen" = "Steady rain";
 "Lautstärke" = "Volume";
 "Leg dein iPhone neben das Bett" = "Put your iPhone next to your bed";
 "Letzte 30 Sekunden" = "Last 30 seconds";
@@ -182,6 +189,7 @@
 "Nachtaufnahme gestartet (nur Mikrofon)" = "Night recording started (microphone only)";
 "Nachtaufnahme gestartet. Gute Nacht!" = "Night recording started. Good night!";
 "Nachtaufnahme läuft" = "Night recording running";
+"Nachtwald" = "Forest at night";
 "Nein, danke" = "No, thanks";
 "Nein, normaler Weckton" = "No, the normal alarm tone";
 "Neuer Wecker" = "New Alarm";
@@ -214,6 +222,8 @@
 "REM" = "REM";
 "Rechtliches" = "Legal";
 "Regen" = "Rain";
+"Regen am Fenster" = "Rain on the window";
+"Regen aufs Zelt" = "Rain on a tent";
 "Rosa Rauschen" = "Pink noise";
 "Routenwechsel (Grund %@), Eingang: %@" = "Route change (reason %@), input: %@";
 "Ruhe" = "Restfulness";
@@ -232,6 +242,9 @@
 "Schlummern beenden" = "End snooze";
 "Schlummert bis %@" = "Snoozing until %@";
 "Schnarchen" = "Snoring";
+"Schneesturm" = "Snowstorm";
+"Schnurrende Katze" = "Purring cat";
+"Seeufer" = "Lakeshore";
 "Senden" = "Send";
 "Seufzen und Quengeln" = "Sighing and whimpering";
 "Sicherheit %d Prozent" = "Confidence %d percent";
@@ -274,6 +287,7 @@
 "Ton-Test" = "Sound test";
 "Ton-Test starten" = "Start sound test";
 "Täglich" = "Every day";
+"Uhr-Ticken" = "Ticking clock";
 "Uhrzeit" = "Time";
 "Unterbrechung (Anruf/Wecker/Siri?)" = "Interruption (call/alarm/Siri?)";
 "Unterbrechung beendet" = "Interruption ended";
@@ -292,6 +306,7 @@
 "Was ist passiert, und was hast du davor gemacht?" = "What happened, and what did you do right before?";
 "Was zuerst eintritt, blendet die Klänge über 30 Sekunden aus. Spätestens mit dem Ende der Aufnahme sind sie aus." = "Whichever comes first fades the sounds out over 30 seconds. They stop at the latest when the recording ends.";
 "Was übertragen wird" = "What is sent";
+"Wasserfall" = "Waterfall";
 "Watch" = "Watch";
 "Watch %d" = "Watch %d";
 "Wecken nach" = "Wake by";
