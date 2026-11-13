@@ -5,28 +5,64 @@ struct TonightView: View {
     @ObservedObject private var rec = PassiveNightEngine.shared
     @State private var confirmStop = false
     @State private var showDetails = false
+    @Environment(\.verticalSizeClass) private var verticalSize
+
+    /// iPhone quer (z. B. im Dock) während der Aufnahme: alles auf einen Blick, ohne Leisten und ohne Scrollen
+    private var landscape: Bool { verticalSize == .compact && rec.isRunning }
 
     var body: some View {
         NavigationStack {
-            GeometryReader { g in
-                ScrollView {
-                    VStack(spacing: 28) {
-                        if rec.isRunning { running } else { ready }
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, rec.isRunning ? 12 : 16)
-                    .padding(.bottom, rec.isRunning ? 28 : 0)
-                    // vor dem Start: mittig zwischen Titel und Tab-Leiste
-                    .frame(maxWidth: .infinity, minHeight: rec.isRunning ? nil : g.size.height)
-                }
+            if landscape {
+                landscapeRunning
+                    .nightBackground()
+                    .toolbar(.hidden, for: .navigationBar)
+                    .toolbar(.hidden, for: .tabBar)
+                    .persistentSystemOverlays(.hidden)
+            } else {
+                portrait
             }
-            // vor dem Start passt alles auf den Bildschirm: nicht federn (Titel bleibt groß)
-            .scrollDisabled(!rec.isRunning)
-            .nightBackground()
-            .navigationTitle(tr("Heute Nacht"))
-            .toolbarTitleDisplayMode(.inlineLarge)   // großer Titel in einer Zeile mit den Knöpfen
-            .suyaTopEdge()
         }
+    }
+
+    private var portrait: some View {
+        GeometryReader { g in
+            ScrollView {
+                VStack(spacing: 28) {
+                    if rec.isRunning { running } else { ready }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, rec.isRunning ? 12 : 16)
+                .padding(.bottom, rec.isRunning ? 28 : 0)
+                // vor dem Start: mittig zwischen Titel und Tab-Leiste
+                .frame(maxWidth: .infinity, minHeight: rec.isRunning ? nil : g.size.height)
+            }
+        }
+        // vor dem Start passt alles auf den Bildschirm: nicht federn (Titel bleibt groß)
+        .scrollDisabled(!rec.isRunning)
+        .nightBackground()
+        .navigationTitle(tr("Heute Nacht"))
+        .toolbarTitleDisplayMode(.inlineLarge)   // großer Titel in einer Zeile mit den Knöpfen
+        .suyaTopEdge()
+    }
+
+    // MARK: Während der Nacht, quer
+
+    private var landscapeRunning: some View {
+        HStack(alignment: .center, spacing: 36) {
+            VStack(spacing: 18) {
+                clock(top: 0, size: 52)
+                breath(height: 96)
+            }
+            .frame(maxWidth: .infinity)
+            VStack(spacing: 16) {
+                SoundsCard()
+                stopButton
+            }
+            .frame(maxWidth: 320)
+        }
+        .padding(.horizontal, 28)
+        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: Vor dem Schlafen
@@ -73,56 +109,13 @@ struct TonightView: View {
 
     private var running: some View {
         VStack(spacing: 28) {
-            if let start = rec.startDate {
-                TimelineView(.periodic(from: .now, by: 1)) { ctx in
-                    VStack(spacing: 4) {
-                        Text(Self.clock(ctx.date.timeIntervalSince(start)))
-                            .font(Theme.display(56, weight: .light).monospacedDigit())
-                        Text(tr("seit %@ Uhr", start.formatted(date: .omitted, time: .shortened)))
-                            .font(.callout)
-                            .foregroundStyle(Theme.mist)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 32)
-                    .accessibilityElement(children: .combine)
-                }
-            }
+            clock(top: 32, size: 56)
 
-            VStack(alignment: .leading, spacing: 10) {
-                BreathLine(values: rec.recentBreath)
-                    .frame(height: 120)
-                    .accessibilityLabel(tr("Atemlinie der letzten 30 Sekunden"))
-                HStack {
-                    Text(tr("Letzte 30 Sekunden"))
-                    Spacer()
-                    Text(Self.statusText(rec))
-                }
-                .font(.caption)
-                .foregroundStyle(Theme.mist)
-            }
+            breath(height: 120)
 
             SoundsCard()
 
-            // Hervorgehoben in Mondweiß; erstes Tippen färbt ihn rot mit „Wirklich beenden?“,
-            // zweites Tippen beendet. Ohne zweites Tippen kehrt er nach 4 s zurück.
-            Button {
-                if confirmStop {
-                    rec.stop()
-                    Haptics.warning()
-                    confirmStop = false
-                } else {
-                    Haptics.tap()
-                    confirmStop = true
-                    Task {
-                        try? await Task.sleep(for: .seconds(4))
-                        confirmStop = false
-                    }
-                }
-            } label: {
-                Text(confirmStop ? tr("Wirklich beenden?") : tr("Aufnahme beenden"))
-            }
-            .buttonStyle(StopButtonStyle(confirming: confirmStop))
-            .animation(.snappy(duration: 0.2), value: confirmStop)
+            stopButton
 
             DisclosureGroup(isExpanded: $showDetails) {
                 VStack(spacing: 10) {
@@ -141,6 +134,61 @@ struct TonightView: View {
                 Text(tr("Technische Details")).font(.callout).foregroundStyle(Theme.mist)
             }
         }
+    }
+
+    @ViewBuilder private func clock(top: CGFloat, size: CGFloat) -> some View {
+        if let start = rec.startDate {
+            TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                VStack(spacing: 4) {
+                    Text(Self.clock(ctx.date.timeIntervalSince(start)))
+                        .font(Theme.display(size, weight: .light).monospacedDigit())
+                    Text(tr("seit %@ Uhr", start.formatted(date: .omitted, time: .shortened)))
+                        .font(.callout)
+                        .foregroundStyle(Theme.mist)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, top)
+                .accessibilityElement(children: .combine)
+            }
+        }
+    }
+
+    private func breath(height: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            BreathLine(values: rec.recentBreath)
+                .frame(height: height)
+                .accessibilityLabel(tr("Atemlinie der letzten 30 Sekunden"))
+            HStack {
+                Text(tr("Letzte 30 Sekunden"))
+                Spacer()
+                Text(Self.statusText(rec))
+            }
+            .font(.caption)
+            .foregroundStyle(Theme.mist)
+        }
+    }
+
+    private var stopButton: some View {
+        // Hervorgehoben in Mondweiß; erstes Tippen färbt ihn rot mit „Wirklich beenden?“,
+        // zweites Tippen beendet. Ohne zweites Tippen kehrt er nach 4 s zurück.
+        Button {
+            if confirmStop {
+                rec.stop()
+                Haptics.warning()
+                confirmStop = false
+            } else {
+                Haptics.tap()
+                confirmStop = true
+                Task {
+                    try? await Task.sleep(for: .seconds(4))
+                    confirmStop = false
+                }
+            }
+        } label: {
+            Text(confirmStop ? tr("Wirklich beenden?") : tr("Aufnahme beenden"))
+        }
+        .buttonStyle(StopButtonStyle(confirming: confirmStop))
+        .animation(.snappy(duration: 0.2), value: confirmStop)
     }
 
     private func detail(_ k: String, _ v: String) -> some View {
