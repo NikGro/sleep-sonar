@@ -36,6 +36,7 @@
 "Aufnahme läuft wieder" = "기록이 다시 실행 중";
 "Aufnahme stand still" = "기록이 멈춰 있었습니다";
 "Aufnahme starten" = "기록 시작";
+"Aufnahme zu kurz" = "녹음이 너무 짧습니다";
 "Aufnahme, Auswertung und Geräusche dieser Nacht werden vom iPhone gelöscht. Einträge in Health bleiben." = "이 밤의 기록, 분석, 소리가 iPhone에서 삭제됩니다. 건강 앱 항목은 남습니다.";
 "Aus" = "정지";
 "Ausblenden" = "페이드아웃";
@@ -104,10 +105,12 @@
 "Für die Nachtaufnahme braucht Suya das Mikrofon. Die Aufnahmen bleiben auf deinem iPhone, bis du sie selbst teilst." = "Suya는 밤 기록에 마이크가 필요합니다. 녹음은 직접 공유하기 전까지 iPhone에 남습니다.";
 "Für diese Nacht gibt es keine Auswertung (der Ton fehlt oder das Modell konnte nicht rechnen)." = "이 밤의 분석이 없습니다(오디오가 없거나 모델을 실행할 수 없었습니다).";
 "Für diese Nacht gibt es keine Watch-Schlafphasen in Health. Ist die Watch synchronisiert und der Health-Zugriff erlaubt?" = "이 밤의 Watch 수면 단계가 건강 앱에 없습니다. Watch가 동기화되었고 건강 앱 접근이 허용되었나요?";
+"Für eine Auswertung braucht Suya mindestens etwa elf Minuten. Diese Aufnahme wurde nicht gespeichert." = "분석하려면 최소 약 11분이 필요합니다. 이 녹음은 저장되지 않았습니다.";
 "Gekürzt und als nahtlose Schleife bearbeitet, teils über das Projekt Blanket. Ventilator und Rauschen hat Suya selbst erzeugt." = "짧게 줄여 끊김 없는 루프로 편집했습니다(일부는 Blanket 프로젝트 경유). 선풍기와 노이즈 소리는 Suya가 생성합니다.";
 "Gerade wurden zu viele Berichte gesendet. Bitte versuch es später noch einmal." = "방금 신고가 너무 많이 전송되었습니다. 나중에 다시 시도해 주세요.";
 "Geräusche der Nacht werden erkannt (%d %%)" = "밤의 소리 감지 중(%d %%)";
 "Geräusche im Schlaf" = "수면 중의 소리";
+"Gespendet" = "기증함";
 "Gespendet am %@." = "%@에 기증했습니다.";
 "Gespendet: %d Nächte" = "기증함: %d밤";
 "Gestoppt" = "정지됨";
@@ -197,6 +200,7 @@
 "Nächte" = "밤";
 "Nächte spenden …" = "밤 기증하기…";
 "Nächte spenden?" = "밤을 기증할까요?";
+"OK" = "확인";
 "Ob iOS eine eigene Lautstärke und eigene Töne für Wecker zulässt, hängt von der iOS-Version ab. Der Test stellt in 30 s einen Wecker mit einer leisen Spieluhr. Sperre dafür das iPhone: Bei eingeschaltetem Bildschirm spielt iOS Wecker anderer Apps nur kurz an." = "알람에 자체 음량과 사운드를 쓸 수 있는지는 iOS 버전에 따라 다릅니다. 테스트는 30초 뒤 조용한 오르골 알람을 설정합니다. iPhone을 잠그세요. 화면이 켜져 있으면 iOS는 다른 앱의 알람을 잠깐만 재생합니다.";
 "Ohne Mikrofon kann Suya keine Nacht aufnehmen." = "마이크가 없으면 Suya는 밤을 기록할 수 없습니다.";
 "Ohne Schlafphasen der Watch – wird nicht gespendet." = "Watch 수면 단계가 없어 기증하지 않습니다.";

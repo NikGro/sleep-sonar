@@ -25,6 +25,10 @@ final class PassiveNightEngine: ObservableObject {
     @Published private(set) var events: [String] = []
     @Published private(set) var errorMessage: String?
     @Published private(set) var folder: URL?
+    /// zuletzt beendete Aufnahme war zu kurz zum Auswerten (und wurde verworfen) – Hinweis in „Heute Nacht“
+    @Published var tooShort = false
+    /// darunter kann das Modell nichts schätzen (mindestens 20 Abschnitte à 30 s, etwas Puffer)
+    static let minimumSeconds: TimeInterval = 11 * 60
     @Published private(set) var inputName = ""
 
     private var engine: AVAudioEngine?
@@ -143,12 +147,19 @@ final class PassiveNightEngine: ObservableObject {
         engine = nil
         motion?.stop()
         motion = nil
+        let short = recorder != nil && Date().timeIntervalSince(startDate ?? Date()) < Self.minimumSeconds
         if let recorder {
             logBattery()
             log(tr("Gestoppt"))
             recorder.finish()
         }
         recorder = nil
+        // zu kurz zum Auswerten: keine Nacht in der Übersicht anlegen
+        if short, let f = folder {
+            try? FileManager.default.removeItem(at: f)
+            folder = nil
+            tooShort = true
+        }
         isRunning = false
         SleepSoundPlayer.shared.recordingStopped()
         endActivity()
@@ -245,7 +256,7 @@ final class PassiveNightEngine: ObservableObject {
 
     nonisolated private static func installTap(on input: AVAudioInputNode, format: AVAudioFormat,
                                                recorder: PassiveRecorder) {
-        input.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, when in
+        input.installTap(onBus: 0, bufferSize: 2048, format: format)  // kleinere Pakete: Atemlinie näher an Echtzeit { buffer, when in
             recorder.handle(buffer, hostTime: when.isHostTimeValid ? when.hostTime : mach_absolute_time())
         }
     }

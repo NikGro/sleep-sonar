@@ -356,6 +356,10 @@ EN = {
 "Absturzprotokolle": "Crash logs",
 "Wird ausgewertet, %d Prozent": "Analyzing, %d percent",
 "Gespendet: %d Nächte": "Donated: %d nights",
+"Gespendet": "Donated",
+"Aufnahme zu kurz": "Recording too short",
+"OK": "OK",
+"Für eine Auswertung braucht Suya mindestens etwa elf Minuten. Diese Aufnahme wurde nicht gespeichert.": "Suya needs at least about eleven minutes for an analysis. This recording was not saved.",
 }
 # Schlüssel, die nicht über tr("…") im Code stehen (für die Vollständigkeitsprüfung)
 DYNAMIC = ["Aus", "Schlummern", "Klänge ausblenden", "Klänge abspielen", "Klänge sofort aus", "Wach", "REM", "Kern", "Tief", "Im Bett", "Schlafend", "Schnarchen", "Sprechen",

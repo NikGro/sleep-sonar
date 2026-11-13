@@ -36,6 +36,7 @@
 "Aufnahme läuft wieder" = "Opname loopt weer";
 "Aufnahme stand still" = "Opname was vastgelopen";
 "Aufnahme starten" = "Opname starten";
+"Aufnahme zu kurz" = "Opname te kort";
 "Aufnahme, Auswertung und Geräusche dieser Nacht werden vom iPhone gelöscht. Einträge in Health bleiben." = "De opname, analyse en geluiden van deze nacht worden van de iPhone verwijderd. Gegevens in Gezondheid blijven bewaard.";
 "Aus" = "Stop";
 "Ausblenden" = "Uitfaden";
@@ -104,10 +105,12 @@
 "Für die Nachtaufnahme braucht Suya das Mikrofon. Die Aufnahmen bleiben auf deinem iPhone, bis du sie selbst teilst." = "Suya heeft de microfoon nodig voor de nachtopname. Opnamen blijven op je iPhone tot je ze zelf deelt.";
 "Für diese Nacht gibt es keine Auswertung (der Ton fehlt oder das Modell konnte nicht rechnen)." = "Er is geen analyse voor deze nacht (de audio ontbreekt of het model kon niet draaien).";
 "Für diese Nacht gibt es keine Watch-Schlafphasen in Health. Ist die Watch synchronisiert und der Health-Zugriff erlaubt?" = "Er zijn geen slaapfasen van de Watch in Gezondheid voor deze nacht. Is de Watch gesynchroniseerd en is toegang tot Gezondheid toegestaan?";
+"Für eine Auswertung braucht Suya mindestens etwa elf Minuten. Diese Aufnahme wurde nicht gespeichert." = "Voor een analyse heeft Suya minstens ongeveer elf minuten nodig. Deze opname is niet bewaard.";
 "Gekürzt und als nahtlose Schleife bearbeitet, teils über das Projekt Blanket. Ventilator und Rauschen hat Suya selbst erzeugt." = "Ingekort en bewerkt tot naadloze loops, deels via het project Blanket. Ventilator- en ruisgeluiden zijn door Suya gemaakt.";
 "Gerade wurden zu viele Berichte gesendet. Bitte versuch es später noch einmal." = "Er zijn net te veel meldingen verstuurd. Probeer het later opnieuw.";
 "Geräusche der Nacht werden erkannt (%d %%)" = "Geluiden van de nacht herkennen (%d %%)";
 "Geräusche im Schlaf" = "Geluiden tijdens de slaap";
+"Gespendet" = "Gedoneerd";
 "Gespendet am %@." = "Gedoneerd op %@.";
 "Gespendet: %d Nächte" = "Gedoneerd: %d nachten";
 "Gestoppt" = "Gestopt";
@@ -197,6 +200,7 @@
 "Nächte" = "Nachten";
 "Nächte spenden …" = "Nachten doneren …";
 "Nächte spenden?" = "Nachten doneren?";
+"OK" = "OK";
 "Ob iOS eine eigene Lautstärke und eigene Töne für Wecker zulässt, hängt von der iOS-Version ab. Der Test stellt in 30 s einen Wecker mit einer leisen Spieluhr. Sperre dafür das iPhone: Bei eingeschaltetem Bildschirm spielt iOS Wecker anderer Apps nur kurz an." = "Of iOS een eigen volume en eigen tonen voor wekkers toestaat, hangt af van de iOS-versie. De test zet over 30 s een wekker met een zacht speeldoosje. Vergrendel je iPhone: met het scherm aan speelt iOS wekkers van andere apps maar kort af.";
 "Ohne Mikrofon kann Suya keine Nacht aufnehmen." = "Zonder microfoon kan Suya geen nacht opnemen.";
 "Ohne Schlafphasen der Watch – wird nicht gespendet." = "Geen slaapfasen van de Watch – wordt niet gedoneerd.";

@@ -26,6 +26,7 @@ targets:
         CFBundleLocalizations: [en, de, es, fr, it, pt-BR, nl, ja, ko, zh-Hans]
         UILaunchScreen: {}
         NSSupportsLiveActivities: true
+        CADisableMinimumFrameDurationOnPhone: true   # ProMotion: Atemlinie mit bis zu 120 Hz
         UIBackgroundModes: [audio, processing]
         BGTaskSchedulerPermittedIdentifiers: [de.nikgro.sleepsonar.sounds]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]

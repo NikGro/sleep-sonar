@@ -22,6 +22,11 @@ struct TonightView: View {
                 portrait
             }
         }
+        .alert(tr("Aufnahme zu kurz"), isPresented: $rec.tooShort) {
+            Button(tr("OK"), role: .cancel) {}
+        } message: {
+            Text(tr("Für eine Auswertung braucht Suya mindestens etwa elf Minuten. Diese Aufnahme wurde nicht gespeichert."))
+        }
     }
 
     private var portrait: some View {
@@ -48,20 +53,15 @@ struct TonightView: View {
     // MARK: Während der Nacht, quer
 
     private var landscapeRunning: some View {
-        HStack(alignment: .center, spacing: 36) {
-            VStack(spacing: 18) {
-                clock(top: 0, size: 52)
-                breath(height: 96)
-            }
-            .frame(maxWidth: .infinity)
-            VStack(spacing: 16) {
-                SoundsCard()
-                stopButton
-            }
-            .frame(maxWidth: 320)
+        VStack(spacing: 12) {
+            clock(top: 0, size: 40)
+            breath(height: 60)
+            SoundsCard()
+            stopButton
         }
+        .frame(maxWidth: 560)
         .padding(.horizontal, 28)
-        .padding(.vertical, 16)
+        .padding(.vertical, 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -208,7 +208,7 @@ struct TonightView: View {
 
     static func clock(_ t: TimeInterval) -> String {
         let s = max(0, Int(t))
-        return String(format: "%d:%02d", s / 3600, (s / 60) % 60)
+        return String(format: "%d:%02d:%02d", s / 3600, (s / 60) % 60, s % 60)
     }
 }
 
@@ -251,14 +251,27 @@ struct MoonDisc: View {
 struct BreathLine: View {
     struct Sample: Equatable { var t: TimeInterval; var v: Double }
     static let window: TimeInterval = 30
-    /// Anzeige leicht verzögert, damit neue Werte sicher da sind (Audio kommt in Paketen)
-    static let delay: TimeInterval = 0.3
     let values: [Sample]
+    @State private var lag = LagTracker()
+
+    /// Audio kommt in Paketen. Die Anzeige läuft nur so weit hinterher, wie die Pakete gerade tatsächlich
+    /// auseinanderliegen (gemessen, langsam nachgeführt) – so wenig Verzögerung wie möglich, ohne Ruckeln.
+    final class LagTracker {
+        private var worst = 0.3
+        func delay(now: TimeInterval, newest: TimeInterval?) -> TimeInterval {
+            if let newest {
+                let behind = now - newest
+                worst = behind > worst ? behind : worst * 0.995 + max(behind, 0) * 0.005
+            }
+            return min(0.35, max(0.05, worst + 0.02))
+        }
+    }
 
     var body: some View {
         TimelineView(.animation) { tl in
             Canvas { ctx, size in
-                draw(ctx, size, now: tl.date.timeIntervalSinceReferenceDate - Self.delay)
+                let now = tl.date.timeIntervalSinceReferenceDate
+                draw(ctx, size, now: now - lag.delay(now: now, newest: values.last?.t))
             }
         }
     }

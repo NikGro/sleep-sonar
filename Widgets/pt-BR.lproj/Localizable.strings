@@ -36,6 +36,7 @@
 "Aufnahme läuft wieder" = "A gravação voltou a funcionar";
 "Aufnahme stand still" = "A gravação tinha parado";
 "Aufnahme starten" = "Iniciar gravação";
+"Aufnahme zu kurz" = "Gravação muito curta";
 "Aufnahme, Auswertung und Geräusche dieser Nacht werden vom iPhone gelöscht. Einträge in Health bleiben." = "A gravação, a análise e os sons desta noite serão excluídos do iPhone. Os registros no Saúde permanecem.";
 "Aus" = "Parar";
 "Ausblenden" = "Diminuir";
@@ -104,10 +105,12 @@
 "Für die Nachtaufnahme braucht Suya das Mikrofon. Die Aufnahmen bleiben auf deinem iPhone, bis du sie selbst teilst." = "O Suya precisa do microfone para a gravação noturna. As gravações ficam no seu iPhone até você mesmo compartilhá-las.";
 "Für diese Nacht gibt es keine Auswertung (der Ton fehlt oder das Modell konnte nicht rechnen)." = "Não há análise para esta noite (o áudio está faltando ou o modelo não conseguiu rodar).";
 "Für diese Nacht gibt es keine Watch-Schlafphasen in Health. Ist die Watch synchronisiert und der Health-Zugriff erlaubt?" = "Não há fases do sono do Watch no Saúde para esta noite. O Watch está sincronizado e o acesso ao Saúde permitido?";
+"Für eine Auswertung braucht Suya mindestens etwa elf Minuten. Diese Aufnahme wurde nicht gespeichert." = "O Suya precisa de pelo menos cerca de onze minutos para uma análise. Esta gravação não foi salva.";
 "Gekürzt und als nahtlose Schleife bearbeitet, teils über das Projekt Blanket. Ventilator und Rauschen hat Suya selbst erzeugt." = "Encurtados e editados em loops contínuos, em parte pelo projeto Blanket. Os sons de ventilador e ruído são gerados pelo Suya.";
 "Gerade wurden zu viele Berichte gesendet. Bitte versuch es später noch einmal." = "Muitos relatórios foram enviados agora. Tente de novo mais tarde.";
 "Geräusche der Nacht werden erkannt (%d %%)" = "Detectando os sons da noite (%d %%)";
 "Geräusche im Schlaf" = "Sons durante o sono";
+"Gespendet" = "Doada";
 "Gespendet am %@." = "Doada em %@.";
 "Gespendet: %d Nächte" = "Doadas: %d noites";
 "Gestoppt" = "Parado";
@@ -197,6 +200,7 @@
 "Nächte" = "Noites";
 "Nächte spenden …" = "Doar noites …";
 "Nächte spenden?" = "Doar noites?";
+"OK" = "OK";
 "Ob iOS eine eigene Lautstärke und eigene Töne für Wecker zulässt, hängt von der iOS-Version ab. Der Test stellt in 30 s einen Wecker mit einer leisen Spieluhr. Sperre dafür das iPhone: Bei eingeschaltetem Bildschirm spielt iOS Wecker anderer Apps nur kurz an." = "Se o iOS permite volume e sons próprios para alarmes depende da versão do iOS. O teste define um alarme com uma caixinha de música suave em 30 s. Bloqueie o iPhone: com a tela ligada, o iOS só toca brevemente alarmes de outros apps.";
 "Ohne Mikrofon kann Suya keine Nacht aufnehmen." = "Sem o microfone, o Suya não pode gravar uma noite.";
 "Ohne Schlafphasen der Watch – wird nicht gespendet." = "Sem fases do sono do Watch – não será doada.";

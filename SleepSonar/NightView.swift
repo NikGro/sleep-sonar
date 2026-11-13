@@ -37,7 +37,8 @@ struct NightView: View {
                                 NightAnalysisView(folder: url)
                             } label: {
                                 NightRow(url: url, summary: summaries.items[url], recording: false,
-                                         busy: exporting == url || uploader.active == url)
+                                         busy: exporting == url || uploader.active == url,
+                                         donated: NightDonationState.existing(url)?.sent != nil)
                             }
                         }
                     }
@@ -230,12 +231,19 @@ private struct NightRow: View {
     let summary: NightSummary?
     let recording: Bool
     let busy: Bool
+    var donated = false
     @ObservedObject private var analysis = AnalysisProgress.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center) {
                 Text(title).font(Theme.display(19, weight: .medium))
+                if donated {
+                    Image(systemName: "icloud.and.arrow.up")
+                        .font(.footnote)
+                        .foregroundStyle(Theme.mist)
+                        .accessibilityLabel(tr("Gespendet"))
+                }
                 Spacer()
                 if let p = analysis.value(url) {
                     HStack(spacing: 8) {
