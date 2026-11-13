@@ -172,7 +172,11 @@ struct AlarmEditView: View {
                     Toggle(tr("Im leichten Schlaf wecken"), isOn: $item.smart).tint(Theme.accent)
                     if item.smart {
                         Picker(tr("Zeitraum"), selection: $item.windowMinutes) {
-                            ForEach(windows, id: \.self) { Text(tr("%d min", $0)).tag($0) }
+                            // der gespeicherte Wert muss in der Liste stehen, sonst zeigt das Menü nichts an
+                            // (z. B. auf die Dauer gekürzt oder aus einer älteren Version)
+                            ForEach(Array(Set(windows + [item.windowMinutes])).sorted(), id: \.self) {
+                                Text(tr("%d min", $0)).tag($0)
+                            }
                         }
                     }
                 } footer: {
