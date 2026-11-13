@@ -21,7 +21,7 @@ struct SoundsView: View {
                         Text(tr("Antippen zum Mischen, zur Seite ziehen für die Lautstärke."))
                             .font(.caption).foregroundStyle(Theme.mist)
                         LazyVGrid(columns: columns, spacing: 12) {
-                            ForEach(SleepSound.allCases) { SoundTile(sound: $0, player: player) }
+                            ForEach(SleepSound.shown) { SoundTile(sound: $0, player: player) }
                         }
                     }
                     nightSection
@@ -38,7 +38,7 @@ struct SoundsView: View {
             .onAppear {
                 player.preload(player.active)
                 if DemoScreens.screen == "soundsPlaying", !player.isPlaying {
-                    player.volumes[SleepSound.allCases[0]] = 0.6
+                    player.volumes[SleepSound.shown[0]] = 0.6
                     player.togglePreview()
                 }
             }
@@ -290,7 +290,7 @@ struct SoundCreditsView: View {
     var body: some View {
         List {
             Section {
-                ForEach(SleepSound.allCases.filter { $0.credit != nil }) { s in
+                ForEach(SleepSound.shown.filter { $0.credit != nil }) { s in
                     VStack(alignment: .leading, spacing: 2) {
                         Text(s.name).foregroundStyle(Theme.moon)
                         Text(s.credit ?? "").font(.caption).foregroundStyle(Theme.mist)

@@ -15,6 +15,10 @@ enum SleepSound: String, CaseIterable, Identifiable, Codable {
     case zug, boot, flugzeug, auto, cafe, stadt
     case ventilator, weiss, rosa, braun
     var id: String { rawValue }
+    /// aus der Auswahl genommen (bleiben als Fall bestehen, damit gespeicherte Mischungen lesbar bleiben)
+    var retired: Bool { [.landregen, .bergbach, .ventilator, .nachtwald, .herzschlag].contains(self) }
+    /// was im Klänge-Tab angeboten wird
+    static var shown: [SleepSound] { allCases.filter { !$0.retired } }
     var name: String {
         switch self {
         case .regen: tr("Regen")
@@ -105,16 +109,12 @@ enum SleepSound: String, CaseIterable, Identifiable, Codable {
         case .lagerfeuer: "HECKFRICKER, freesound.org · CC0"
         case .zeltregen: "pulswelle, freesound.org · CC0"
         case .fensterregen: "nicoproson, freesound.org · CC0"
-        case .landregen: "richwise, freesound.org · CC0"
-        case .bergbach: "INNORECORDS, freesound.org · CC0"
-        case .wasserfall: "Antonio_Lai, freesound.org · CC0"
+        case .wasserfall: "chromakei, freesound.org · CC0"
         case .see: "TheFlyFishingFilmmaker, freesound.org · CC0"
-        case .nachtwald: "lucasdbap, freesound.org · CC0"
         case .schneesturm: "DBlover, freesound.org · CC0"
         case .laubwald: "klankbeeld, freesound.org · CC BY 4.0"
         case .katze: "Luftrum, freesound.org · CC BY 4.0"
-        case .herzschlag: "patobottos, freesound.org · CC0"
-        case .uhr: "Rollo145, freesound.org · CC BY 3.0"
+        case .uhr: "klankbeeld, freesound.org · CC BY 4.0"
         case .flugzeug: "Vurca, freesound.org · CC0"
         case .auto: "Kinoton, freesound.org · CC0"
         case .klangschalen: "phluidbox, freesound.org · CC0"
@@ -188,7 +188,7 @@ final class SleepSoundPlayer: ObservableObject {
         }
     }
 
-    var active: [SleepSound] { SleepSound.allCases.filter { (volumes[$0] ?? 0) > 0.01 } }
+    var active: [SleepSound] { SleepSound.shown.filter { (volumes[$0] ?? 0) > 0.01 } }
 
     var activeNames: String { active.map(\.name).joined(separator: " + ") }
 
