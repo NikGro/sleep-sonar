@@ -398,13 +398,14 @@ final class NightLiveActivity {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
             return tr("Live-Aktivitäten sind aus (Einstellungen → Suya → Live-Aktivitäten)")
         }
-        // Reste einer abgebrochenen Nacht aufräumen
-        Task { await Self.endAll(except: nil) }
         do {
             let activity = try NightActivity.request(
                 attributes: NightActivityAttributes(start: start),
                 content: .init(state: .init(handled: false), staleDate: nil))
             activityID = activity.id
+            // Reste einer abgebrochenen Nacht aufräumen (nicht die gerade gestartete)
+            let id = activity.id
+            Task { await Self.endAll(except: id) }
             update(sounds: sounds)
             return tr("Live-Aktivität gestartet")
         } catch {
