@@ -57,8 +57,10 @@ as you are in light sleep – and rings like the iPhone alarm, even in silent mo
 <tr>
 <td>
 <h3>Privacy first</h3>
-Everything is analysed on the iPhone. After 24 hours the audio is deleted; only a coarse sound image
-remains, from which speech cannot be understood.<br><br>
+Everything is analysed on the iPhone and stays there (not in iCloud or computer backups). After 24 hours
+the full audio is deleted. What remains: short clips of the detected sounds (snoring, talking, coughing –
+these can contain speech) and, for 7 days, a coarse sound image from which speech cannot be understood.
+You can delete clips or whole nights at any time.<br><br>
 <b>Voluntary data donation:</b> if you like, you can donate single nights (sound image and sleep stages,
 no recordings) to a private server in Hamburg, Germany, to make the model better – withdraw and delete
 at any time in the app.<br><br>

@@ -82,6 +82,7 @@
 "Die Schlafphasen sind eine Schätzung aus Geräuschen und keine medizinische Messung. Bei Verdacht auf Schlafstörungen hilft ein Arzt oder ein Schlaflabor." = "睡眠段階は音からの推定であり、医療的な測定ではありません。睡眠障害が疑われる場合は医師や睡眠外来に相談してください。";
 "Die Schätzung ist noch in Entwicklung. Wach und Schlaf sind halbwegs verlässlich, Tief und REM noch grob. Kein Medizinprodukt." = "推定はまだ開発中です。覚醒と睡眠はかなり信頼できますが、深い睡眠とレム睡眠はまだ大まかです。医療機器ではありません。";
 "Die Spende wird damit auch widerrufen." = "これで寄付も取り消されます。";
+"Die Spender-Nummer %@ stammt von einem anderen iPhone und lässt sich von hier nicht löschen. Schreib uns über das Impressum – sonst wird alles nach 6 Monaten automatisch gelöscht." = "ドナー番号 %@ は別の iPhone のもので、ここからは削除できません。インプリントからご連絡ください。連絡がない場合も、6か月後にすべて自動的に削除されます。";
 "Die Wecker klingeln wie der iPhone-Wecker, auch bei Stummschaltung und im Schlaf-Fokus." = "アラームはサイレントモードや睡眠集中モードでも、iPhoneのアラームと同じように鳴ります。";
 "Die Zeit läuft ab Beginn der Nachtaufnahme. Dieser Wecker klingelt nur, wenn eine Aufnahme läuft – ohne Aufnahme klingelt er nicht." = "時間は夜間記録の開始から数えます。このアラームは記録中のみ鳴ります。記録していないときは鳴りません。";
 "Die Übertragung wurde unterbrochen. Suya versucht es beim nächsten Öffnen wieder." = "転送が中断されました。次に開いたときにSuyaがもう一度試します。";

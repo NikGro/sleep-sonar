@@ -28,11 +28,12 @@ final class DataDonation: ObservableObject {
         // Zustimmung zu einem älteren Text gilt nicht für einen neuen
         state = (s == .granted && version != Self.textVersion) ? .undecided : s
         date = d.object(forKey: "donation.date") as? Date
-        donorID = d.string(forKey: "donation.id")
+        donorID = Self.loadDonorID(d)
         deletionRequested = d.object(forKey: "donation.deletion") as? Date
         deletionSent = d.bool(forKey: "donation.deletionSent")
         uploads = d.integer(forKey: "donation.uploads")
         lastUpload = d.object(forKey: "donation.lastUpload") as? Date
+        if state == .granted { ensureDonorID() }   // z. B. nach Wechsel auf ein neues iPhone
     }
 
     /// geheimer Schlüssel dieser Installation: nur wer ihn hat, kann für die Spender-Nummer hochladen oder löschen
@@ -42,6 +43,42 @@ final class DataDonation: ObservableObject {
         let k = d.string(forKey: "donation.key") ?? (UUID().uuidString + "-" + UUID().uuidString.prefix(8))
         if Keychain.set("donation.key", k) { d.removeObject(forKey: "donation.key") } else { d.set(k, forKey: "donation.key") }
         return k
+    }
+
+    /// Spender-Nummer liegt wie der Schlüssel nur in diesem iPhone (Schlüsselbund, „nur dieses Gerät“).
+    /// Früher in UserDefaults: auf demselben Gerät (Schlüssel vorhanden) wird sie umgezogen; kommt sie aus
+    /// einem Backup auf ein neues iPhone (Schlüssel fehlt), wäre sie dort ausgesperrt → neue Nummer, die alte
+    /// bleibt zum Nachlesen (Löschung dann über das Impressum).
+    private static func loadDonorID(_ d: UserDefaults) -> String? {
+        if let id = Keychain.get("donation.id") { return id }
+        guard let old = d.string(forKey: "donation.id") else { return nil }
+        d.removeObject(forKey: "donation.id")
+        if Keychain.get("donation.key") != nil || d.string(forKey: "donation.key") != nil {
+            _ = Keychain.set("donation.id", old)
+            return old
+        }
+        d.set(old, forKey: "donation.previousID")
+        d.removeObject(forKey: "attest.registered")
+        return nil
+    }
+
+    /// Nummer aus einem früheren iPhone (nur Anzeige)
+    var previousDonorID: String? { d.string(forKey: "donation.previousID") }
+
+    /// Server kennt den Schlüssel dieser Nummer nicht (mehr): neu anfangen, alte Nummer merken
+    func replaceDonorID() {
+        if let id = donorID { d.set(id, forKey: "donation.previousID") }
+        Keychain.delete("donation.id"); Keychain.delete("donation.key")
+        AppAttestClient.reset()
+        donorID = nil
+        ensureDonorID()
+    }
+
+    private func ensureDonorID() {
+        guard donorID == nil else { return }
+        let id = String(UUID().uuidString.prefix(8))
+        _ = Keychain.set("donation.id", id)
+        donorID = id
     }
 
     func countUpload() {
@@ -62,13 +99,22 @@ final class DataDonation: ObservableObject {
         }
     }
 
+    /// Löschung ging nicht, weil dieses iPhone den Schlüssel der Nummer nicht hat (Nummer aus einem Backup)
+    @Published private(set) var deletionImpossible = UserDefaults.standard.bool(forKey: "donation.deletionImpossible")
+
+    func markDeletionImpossible() {
+        deletionImpossible = true; d.set(true, forKey: "donation.deletionImpossible")
+        // nicht endlos wiederholen; die Nummer gibt es auf diesem iPhone nicht mehr
+        deletionSent = true; d.set(true, forKey: "donation.deletionSent")
+        if let id = donorID { d.set(id, forKey: "donation.previousID") }
+        Keychain.delete("donation.id"); Keychain.delete("donation.key"); donorID = nil
+    }
+
     var shouldAsk: Bool { state == .undecided }
 
     func grant() {
-        if donorID == nil {
-            donorID = String(UUID().uuidString.prefix(8))
-            d.set(donorID, forKey: "donation.id")
-        }
+        ensureDonorID()
+        deletionImpossible = false; d.set(false, forKey: "donation.deletionImpossible")
         // nach einer erledigten Löschung neu anfangen; eine noch offene Löschung bleibt stehen und geht zuerst raus
         if deletionSent {
             deletionRequested = nil; deletionSent = false
@@ -218,7 +264,10 @@ struct DonationSection: View {
                         }
                     }
                     .font(.callout)
-                if let when = donation.deletionRequested {
+                if donation.deletionImpossible {
+                    Text(tr("Die Spender-Nummer %@ stammt von einem anderen iPhone und lässt sich von hier nicht löschen. Schreib uns über das Impressum – sonst wird alles nach 6 Monaten automatisch gelöscht.", donation.previousDonorID ?? "?"))
+                        .font(.caption).foregroundStyle(Theme.mist)
+                } else if let when = donation.deletionRequested {
                     Text(donation.deletionSent
                          ? tr("Löschung am %@ beantragt und vom Server bestätigt.", when.formatted(date: .abbreviated, time: .omitted))
                          : tr("Löschung am %@ beantragt. Sie wird gesendet, sobald das iPhone online ist.", when.formatted(date: .abbreviated, time: .omitted)))

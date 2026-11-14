@@ -51,17 +51,37 @@ final class DonationUploader: ObservableObject {
         }
     }
 
+    /// Darf weiter gespendet werden? Vor jeder Nacht und jedem Teil geprüft: ein Widerruf oder eine
+    /// Löschanfrage stoppt eine laufende Übertragung sofort.
+    private var mayDonate: Bool {
+        let d = DataDonation.shared
+        return d.state == .granted && d.deletionRequested == nil
+    }
+
     func run() async {
         guard !running else { return }
         running = true
-        defer { running = false }
+        let d = DataDonation.shared
+        let deletionPending = d.deletionRequested != nil && !d.deletionSent
+        await runOnce()
+        running = false
+        // während des Laufs widerrufen und Löschung verlangt: gleich senden, nicht erst beim nächsten Öffnen
+        // (nur einmal – ging sie schon in diesem Lauf nicht raus, folgt der nächste Versuch beim nächsten Öffnen)
+        if !deletionPending, d.deletionRequested != nil, !d.deletionSent { await run() }
+    }
+
+    private func runOnce() async {
         let donation = DataDonation.shared
         guard let donor = donation.donorID else { return }
         let key = donation.secretKey
 
         // 1) offene Löschanfrage zuerst
         if donation.deletionRequested != nil, !donation.deletionSent {
-            if await sendDeletion(donor: donor, key: key) { donation.markDeletionSent() }
+            switch await sendDeletion(donor: donor, key: key) {
+            case 200: donation.markDeletionSent()
+            case 409: donation.markDeletionImpossible()   // Schlüssel passt nicht (anderes iPhone): Weg über das Impressum
+            default: break                                 // offline o. Ä.: beim nächsten Mal
+            }
             return
         }
         guard donation.state == .granted else { return }
@@ -74,6 +94,7 @@ final class DonationUploader: ObservableObject {
         let engine = PassiveNightEngine.shared
         let cutoff = Date().addingTimeInterval(-14 * 86400)
         for folder in dirs.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) where folder.hasDirectoryPath {
+            guard mayDonate else { return }
             if engine.isRunning && engine.folder == folder { continue }
             let created = (try? folder.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
             guard created > cutoff, var state = NightDonationState.load(folder), !state.done else { continue }
@@ -128,7 +149,10 @@ final class DonationUploader: ObservableObject {
         case .later(let why): state.waiting = why
         case .stop: break
         }
-        state.save(folder)
+        if FileManager.default.fileExists(atPath: folder.path) { state.save(folder) }
+        if donation.deletionRequested != nil, !donation.deletionSent {
+            Task { await self.run() }   // nach dem Ende von `running` die Löschung senden
+        }
     }
 
     /// Kann diese Nacht (erneut) gespendet werden? Spektrogramm oder Ton muss noch da sein.
@@ -201,6 +225,7 @@ final class DonationUploader: ObservableObject {
         let partSize = 4 * 1024 * 1024
         let count = max(1, (body.count + partSize - 1) / partSize)
         var lastCode = 0
+        var lastBody = ""
         var networkError: URLError?
         var delivered = Set<Int>()   // Teile, die der Server schon hat (bleiben dort 24 h liegen)
         // bei Unterbrechung weiter versuchen, solange die App offen ist: 8 Runden mit wachsender Pause (gut 6 min)
@@ -210,6 +235,8 @@ final class DonationUploader: ObservableObject {
             if pause > 0 { try? await Task.sleep(for: .seconds(pause)) }
             networkError = nil
             for i in 0..<count where !delivered.contains(i) {
+                // widerrufen, Löschung verlangt oder Nacht gelöscht: sofort aufhören
+                guard mayDonate, FileManager.default.fileExists(atPath: folder.path) else { return .stop }
                 let chunk = body.subdata(in: (i * partSize)..<min(body.count, (i + 1) * partSize))
                 var request = URLRequest(url: Self.server.appendingPathComponent("api/spende/teil"))
                 request.httpMethod = "POST"
@@ -225,8 +252,9 @@ final class DonationUploader: ObservableObject {
                     request.setValue(v, forHTTPHeaderField: k)
                 }
                 do {
-                    let (_, response) = try await session.upload(for: request, from: chunk)
+                    let (respData, response) = try await session.upload(for: request, from: chunk)
                     lastCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+                    lastBody = String(data: respData, encoding: .utf8) ?? ""
                     if lastCode == 201 { break rounds }
                     if lastCode == 202 { delivered.insert(i); report(tr("Wird übertragen"), Double(delivered.count) / Double(count)); continue }
                     if [403, 429, 503, 507].contains(lastCode) { break rounds }
@@ -256,12 +284,16 @@ final class DonationUploader: ObservableObject {
         }
         switch lastCode {
         case 429, 503, 507: state.waiting = NightDonationState.waitServer; state.save(folder); return .stop
-        case 403: state.waiting = NightDonationState.rejected; state.save(folder); return .stop
+        case 403:
+            // Server kennt diesen Schlüssel nicht (z. B. Nummer aus einem Backup): neue Nummer, beim nächsten Mal neu
+            if lastBody.contains("Schlüssel passt nicht") { DataDonation.shared.replaceDonorID() }
+            state.waiting = NightDonationState.rejected; state.save(folder); return .stop
         default: return .later(NightDonationState.interrupted)
         }
     }
 
-    private func sendDeletion(donor: String, key: String) async -> Bool {
+    /// HTTP-Status der Löschanfrage (0 = keine Verbindung, 409 = Schlüssel passt nicht zur Nummer)
+    private func sendDeletion(donor: String, key: String) async -> Int {
         var request = URLRequest(url: Self.server.appendingPathComponent("api/spende/loeschen"))
         request.httpMethod = "POST"
         request.setValue(donor, forHTTPHeaderField: "X-Spender")
@@ -270,8 +302,11 @@ final class DonationUploader: ObservableObject {
             request.setValue(v, forHTTPHeaderField: k)
         }
         // Löschen auch über Mobilfunk
-        guard let (_, response) = try? await URLSession.shared.data(for: request) else { return false }
-        return (response as? HTTPURLResponse)?.statusCode == 200
+        guard let (body, response) = try? await URLSession.shared.data(for: request) else { return 0 }
+        let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+        // 403 heißt Schlüssel falsch oder Echtheitsprüfung fehlgeschlagen – nur Ersteres ist endgültig
+        if code == 403, String(data: body, encoding: .utf8)?.contains("Schlüssel passt nicht") == true { return 409 }
+        return code
     }
 
     /// Schlafphasen der Watch (nicht Suyas eigene Einträge): 0 Wach, 1 REM, 2 Kern, 3 Tief, −1 unbekannt.

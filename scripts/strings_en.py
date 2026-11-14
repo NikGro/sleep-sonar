@@ -375,6 +375,7 @@ EN = {
 "Klangschalen": "Singing bowls",
 "Flugzeug": "Airplane",
 "Autofahrt": "Car ride",
+"Die Spender-Nummer %@ stammt von einem anderen iPhone und lässt sich von hier nicht löschen. Schreib uns über das Impressum – sonst wird alles nach 6 Monaten automatisch gelöscht.": "Donor number %@ comes from another iPhone and can't be deleted from here. Contact us via the imprint – otherwise everything is deleted automatically after 6 months.",
 }
 # Schlüssel, die nicht über tr("…") im Code stehen (für die Vollständigkeitsprüfung)
 DYNAMIC = ["Aus", "Schlummern", "Klänge ausblenden", "Klänge abspielen", "Klänge sofort aus", "Wach", "REM", "Kern", "Tief", "Im Bett", "Schlafend", "Schnarchen", "Sprechen",
