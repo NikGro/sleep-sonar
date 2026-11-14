@@ -339,22 +339,20 @@ final class SmartAlarm: ObservableObject {
         do {
             // schon früh (im leichten Schlaf) geweckt: die späteste Zeit dieses Mal überspringen
             if let done = rang[a.id], done > Date() {
-                if a.mode == .time, !a.repeatDays.isEmpty, let next = latest(a, after: done) {
-                    try await AlarmBackend.schedule(a, at: next)
-                } else {
-                    AlarmBackend.cancel(for: a.id)
-                }
+                try await skipToday(a, latest: done.addingTimeInterval(-60))
                 return
             }
             switch a.mode {
             case .time:
                 try await AlarmBackend.schedule(a, at: nil)
+                AlarmBackend.cancelExtras(for: a.id)   // Regel gilt wieder vollständig
                 if a.repeatDays.isEmpty, let at = latest(a), let i = items.firstIndex(where: { $0.id == a.id }) {
                     items[i].onceFor = at
                     persist()
                 }
             case .duration:
                 // ab Beginn der Nachtaufnahme; ohne Aufnahme kein Wecker
+                AlarmBackend.cancelExtras(for: a.id)
                 if let at = latest(a) {
                     try await AlarmBackend.schedule(a, at: at)
                 } else {
@@ -444,16 +442,50 @@ final class SmartAlarm: ObservableObject {
         // nach laufenden Stell-Vorgängen, damit keiner diesen Wecker gleich wieder überschreibt
         await queue?.value
         guard let a = items.first(where: { $0.id == a.id }), a.enabled else { return }
+        let f = Date.FormatStyle(date: .omitted, time: .shortened)
+        do {
+            // erst den frühen Wecker zusätzlich stellen – der zur spätesten Zeit bleibt, bis das geklappt hat
+            try await AlarmBackend.scheduleExtra(a, at: Date().addingTimeInterval(3))
+        } catch {
+            problem = tr("Wecker konnte nicht gestellt werden: %@", error.localizedDescription)
+            return
+        }
         rang[a.id] = latest.addingTimeInterval(60)
         smartRing[a.id] = Date()
-        let f = Date.FormatStyle(date: .omitted, time: .shortened)
         PassiveNightEngine.shared.note(tr("Wecker „%@“ klingelt im leichten Schlaf, %d min vor %@",
                                           a.title, max(0, Int(latest.timeIntervalSinceNow / 60)), latest.formatted(f)))
-        do {
-            try await AlarmBackend.schedule(a, at: Date().addingTimeInterval(3))
-        } catch {
-            rang[a.id] = nil
+        // die späteste Zeit heute überspringen, alle folgenden Termine sofort festlegen –
+        // ohne dass die App danach noch einmal geöffnet werden muss
+        do { try await skipToday(a, latest: latest) } catch {
             problem = tr("Wecker konnte nicht gestellt werden: %@", error.localizedDescription)
+        }
+    }
+
+    /// Nach dem Früh-Wecken: den Termin zur spätesten Zeit `latest` auslassen, alles danach bleibt.
+    /// Wiederholende Wecker: Wochenregel ohne den heutigen Wochentag plus einmalige Wecker für
+    /// denselben Wochentag in den folgenden Wochen. Einmalige und Schlafdauer-Wecker: Systemwecker abbestellen.
+    @available(iOS 26.0, *)
+    private func skipToday(_ a: AlarmItem, latest: Date) async throws {
+        guard a.mode == .time, !a.repeatDays.isEmpty else {
+            AlarmBackend.cancelMain(for: a.id)
+            return
+        }
+        let cal = Calendar.current
+        let today = cal.component(.weekday, from: latest)
+        let others = a.repeatDays.subtracting([today])
+        if others.isEmpty {
+            AlarmBackend.cancelMain(for: a.id)
+        } else {
+            try await AlarmBackend.schedule(a, at: nil, days: others)
+        }
+        // derselbe Wochentag in den nächsten vier Wochen, falls die App so lange nicht geöffnet wird
+        // (danach stellt das nächste Öffnen die volle Wochenregel wieder her und räumt diese ab)
+        if a.repeatDays.contains(today) {
+            for week in 1...4 {
+                if let next = cal.date(byAdding: .day, value: 7 * week, to: latest) {
+                    try await AlarmBackend.scheduleExtra(a, at: next)
+                }
+            }
         }
     }
 
@@ -518,8 +550,10 @@ enum AlarmBackend {
 
     /// Klingelt, schlummert oder pausiert der Systemwecker dieses Weckers gerade?
     static func isActive(_ id: UUID) -> Bool {
-        guard let kit = kitID(for: id) else { return false }
-        return ((try? AlarmManager.shared.alarms) ?? []).contains { $0.id == kit && $0.state != .scheduled }
+        var mine = Set((UserDefaults.standard.dictionary(forKey: extraKey) as? [String: [String: Double]] ?? [:])[id.uuidString]?
+            .keys.compactMap(UUID.init) ?? [])
+        if let kit = kitID(for: id) { mine.insert(kit) }
+        return ((try? AlarmManager.shared.alarms) ?? []).contains { mine.contains($0.id) && $0.state != .scheduled }
     }
 
     /// Klingelt gerade ein Suya-Wecker (ohne Schlummern)?
@@ -551,17 +585,61 @@ enum AlarmBackend {
         }
     }
 
-    /// Stellt den Wecker neu: `at` = einmalig zu diesem Zeitpunkt, sonst nach Uhrzeit/Wiederholung.
-    static func schedule(_ a: AlarmItem, at: Date?) async throws {
-        cancel(for: a.id)
-        let rule: Alarm.Schedule
-        if let at {
-            rule = .fixed(at)
-        } else {
-            let days: [Locale.Weekday] = a.repeatDays.sorted().compactMap(weekday)
-            rule = .relative(.init(time: .init(hour: a.wakeMinutes / 60, minute: a.wakeMinutes % 60),
-                                   repeats: days.isEmpty ? .never : .weekly(days)))
+    /// Stellt den Wecker neu: `at` = einmalig zu diesem Zeitpunkt, sonst nach Uhrzeit/Wiederholung
+    /// (`days` ersetzt dabei die Wochentage des Weckers, z. B. ohne den heutigen).
+    /// Erst wird der neue Systemwecker gestellt, dann der alte abbestellt – schlägt das Stellen fehl,
+    /// bleibt der alte Wecker bestehen.
+    static func schedule(_ a: AlarmItem, at: Date?, days: Set<Int>? = nil) async throws {
+        let kitID = try await add(a, rule: rule(a, at: at, days: days))
+        var map = UserDefaults.standard.dictionary(forKey: key) as? [String: String] ?? [:]
+        let old = map[a.id.uuidString].flatMap(UUID.init)
+        map[a.id.uuidString] = kitID.uuidString
+        UserDefaults.standard.set(map, forKey: key)
+        pending.remove(kitID)
+        if let old, old != kitID { try? AlarmManager.shared.cancel(id: old) }
+        cancelBackup(for: a.id)
+    }
+
+    /// Zusätzlicher einmaliger Systemwecker neben der Regel (Wecken im leichten Schlaf, Termin der nächsten
+    /// Woche nach dem Früh-Wecken). Wird mit der nächsten normalen Regel wieder abbestellt.
+    static func scheduleExtra(_ a: AlarmItem, at: Date) async throws {
+        // schon gestellt (z. B. erneutes Anwenden derselben Regel): nicht doppelt
+        let known = (UserDefaults.standard.dictionary(forKey: extraKey) as? [String: [String: Double]] ?? [:])[a.id.uuidString] ?? [:]
+        if known.values.contains(where: { abs($0 - 3600 - at.timeIntervalSince1970) < 1 }) { return }
+        let kitID = try await add(a, rule: .fixed(at))
+        var extras = UserDefaults.standard.dictionary(forKey: extraKey) as? [String: [String: Double]] ?? [:]
+        extras[a.id.uuidString, default: [:]][kitID.uuidString] = at.addingTimeInterval(3600).timeIntervalSince1970
+        UserDefaults.standard.set(extras, forKey: extraKey)
+        pending.remove(kitID)
+    }
+
+    /// Zusatzwecker eines Weckers abbestellen (nicht, solange einer klingelt oder schlummert)
+    static func cancelExtras(for id: UUID) {
+        var extras = UserDefaults.standard.dictionary(forKey: extraKey) as? [String: [String: Double]] ?? [:]
+        guard let mine = extras[id.uuidString] else { return }
+        let alarms = (try? AlarmManager.shared.alarms) ?? []
+        var left: [String: Double] = [:]
+        for (s, until) in mine {
+            guard let kit = UUID(uuidString: s) else { continue }
+            if alarms.contains(where: { $0.id == kit && $0.state != .scheduled }) { left[s] = until; continue }
+            try? AlarmManager.shared.cancel(id: kit)
         }
+        extras[id.uuidString] = left.isEmpty ? nil : left
+        UserDefaults.standard.set(extras, forKey: extraKey)
+    }
+
+    private static let extraKey = "alarm.extraIDs"
+    /// gerade gestellt, aber noch nicht eingetragen – `reconcile()` darf sie nicht abbestellen
+    nonisolated(unsafe) private static var pending: Set<UUID> = []
+
+    private static func rule(_ a: AlarmItem, at: Date?, days: Set<Int>?) -> Alarm.Schedule {
+        if let at { return .fixed(at) }
+        let list: [Locale.Weekday] = (days ?? a.repeatDays).sorted().compactMap(weekday)
+        return .relative(.init(time: .init(hour: a.wakeMinutes / 60, minute: a.wakeMinutes % 60),
+                               repeats: list.isEmpty ? .never : .weekly(list)))
+    }
+
+    private static func add(_ a: AlarmItem, rule: Alarm.Schedule) async throws -> UUID {
         let stop = AlarmButton(text: LocalizedStringResource("Aus"), textColor: .white, systemImageName: "sun.max")
         let alert: AlarmPresentation.Alert
         if a.snooze {
@@ -585,10 +663,14 @@ enum AlarmBackend {
             attributes: attributes,
             sound: sound)
         let kitID = UUID()
-        _ = try await AlarmManager.shared.schedule(id: kitID, configuration: config)
-        var map = UserDefaults.standard.dictionary(forKey: key) as? [String: String] ?? [:]
-        map[a.id.uuidString] = kitID.uuidString
-        UserDefaults.standard.set(map, forKey: key)
+        pending.insert(kitID)
+        do {
+            _ = try await AlarmManager.shared.schedule(id: kitID, configuration: config)
+        } catch {
+            pending.remove(kitID)
+            throw error
+        }
+        return kitID
     }
 
     /// Ersatzwecker aus Version 0.3.66–0.3.76 entfernen
@@ -611,8 +693,17 @@ enum AlarmBackend {
     static func reconcile() {
         let mapped = ((UserDefaults.standard.dictionary(forKey: key) as? [String: String]) ?? [:]).values
             .compactMap(UUID.init)
-        var keep = Set(mapped)
+        var keep = Set(mapped).union(pending)
         if let t = UserDefaults.standard.string(forKey: AlarmSoundTest.kitKey).flatMap(UUID.init) { keep.insert(t) }
+        // Zusatzwecker behalten, solange sie gelten; abgelaufene Einträge vergessen
+        var extras = UserDefaults.standard.dictionary(forKey: extraKey) as? [String: [String: Double]] ?? [:]
+        let now = Date().timeIntervalSince1970
+        for (item, list) in extras {
+            let live = list.filter { $0.value > now }
+            extras[item] = live.isEmpty ? nil : live
+            keep.formUnion(live.keys.compactMap(UUID.init))
+        }
+        UserDefaults.standard.set(extras, forKey: extraKey)
         for al in (try? AlarmManager.shared.alarms) ?? [] where !keep.contains(al.id) && al.state == .scheduled {
             try? AlarmManager.shared.cancel(id: al.id)
         }
@@ -620,6 +711,15 @@ enum AlarmBackend {
 
     static func cancel(for id: UUID) {
         cancelBackup(for: id)
+        cancelExtras(for: id)
+        var map = UserDefaults.standard.dictionary(forKey: key) as? [String: String] ?? [:]
+        if let s = map[id.uuidString], let kit = UUID(uuidString: s) { try? AlarmManager.shared.cancel(id: kit) }
+        map[id.uuidString] = nil
+        UserDefaults.standard.set(map, forKey: key)
+    }
+
+    /// nur die Regel abbestellen, Zusatzwecker bleiben
+    static func cancelMain(for id: UUID) {
         var map = UserDefaults.standard.dictionary(forKey: key) as? [String: String] ?? [:]
         if let s = map[id.uuidString], let kit = UUID(uuidString: s) { try? AlarmManager.shared.cancel(id: kit) }
         map[id.uuidString] = nil
