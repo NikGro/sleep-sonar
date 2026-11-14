@@ -11,7 +11,7 @@ No watch, no wristband, no cloud.</p>
 
 <table>
 <tr>
-<td width="230"><img src="docs/screenshots/tonight.jpg" width="210" alt="Tonight"></td>
+<td width="230"><img src="docs/screenshots/tonight-en.jpg" width="210" alt="Tonight"></td>
 <td>
 <h3>Just lie down</h3>
 Plug in your iPhone, place it next to the bed and start recording. Suya only listens – no watch, no
@@ -27,10 +27,10 @@ right on the device, nothing goes to a cloud. Plus a sleep score from duration, 
 sleep and awakenings. Stages can be written to <b>Apple Health</b>; with an Apple Watch you see both
 estimates side by side.
 </td>
-<td width="230"><img src="docs/screenshots/night.jpg" width="210" alt="Night details"></td>
+<td width="230"><img src="docs/screenshots/night-en.jpg" width="210" alt="Night details"></td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/nights.jpg" width="210" alt="Nights"></td>
+<td><img src="docs/screenshots/nights-en.jpg" width="210" alt="Nights"></td>
 <td>
 <h3>All your nights at a glance</h3>
 Every night with its sleep score and a mini timeline. Long-press to delete, export or donate a night;
@@ -44,10 +44,10 @@ Rain on the window, campfire, ocean waves, snowstorm, singing bowls and more –
 mixable, with a timer and a gentle fade-out as soon as you fall asleep. Time with sounds playing is left
 out of the analysis.
 </td>
-<td><img src="docs/screenshots/sounds.jpg" width="210" alt="Sleep sounds"></td>
+<td><img src="docs/screenshots/sounds-en.jpg" width="210" alt="Sleep sounds"></td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/alarms.jpg" width="210" alt="Alarms"></td>
+<td><img src="docs/screenshots/alarms-en.jpg" width="210" alt="Alarms"></td>
 <td>
 <h3>Wake up in light sleep</h3>
 Alarms by time or by sleep duration. While recording, Suya wakes you within your chosen window as soon
@@ -67,7 +67,7 @@ at any time in the app.<br><br>
 Available in 10 languages: English, German, Spanish, French, Italian, Portuguese, Dutch, Japanese,
 Korean and Chinese.
 </td>
-<td><img src="docs/screenshots/more.jpg" width="210" alt="More"></td>
+<td><img src="docs/screenshots/more-en.jpg" width="210" alt="More"></td>
 </tr>
 </table>
 
