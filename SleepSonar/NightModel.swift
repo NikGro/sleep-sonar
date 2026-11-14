@@ -17,14 +17,14 @@ enum NightModel {
     private static let computeLock = NSRecursiveLock()
 
     static func cached(_ folder: URL) -> [SleepStaging.Stage]? {
-        guard let data = try? Data(contentsOf: folder.appendingPathComponent("model.json")),
+        guard let data = try? Data(contentsOf: Night(folder).url(.model)),
               let c = try? JSONDecoder().decode(Cache.self, from: data), c.version == version else { return nil }
         return c.stages.compactMap { $0.wholeNumberValue.flatMap(SleepStaging.Stage.init) }
     }
 
     /// gespeichertes Ergebnis auch eines älteren Modells (für Nächte, deren Ton schon gelöscht ist)
     static func cachedAnyVersion(_ folder: URL) -> [SleepStaging.Stage]? {
-        guard let data = try? Data(contentsOf: folder.appendingPathComponent("model.json")),
+        guard let data = try? Data(contentsOf: Night(folder).url(.model)),
               let c = try? JSONDecoder().decode(Cache.self, from: data) else { return nil }
         return c.stages.compactMap { $0.wholeNumberValue.flatMap(SleepStaging.Stage.init) }
     }
@@ -39,7 +39,7 @@ enum NightModel {
     /// Versuche je Nacht: vor dem Rechnen hochgezählt, nach Erfolg entfernt. So bleibt auch ein Absturz
     /// mitten in der Auswertung gezählt, und eine kaputte Nacht bringt die App nicht bei jedem Start zum Absturz.
     static let maxAttempts = 3
-    private static func attemptsURL(_ folder: URL) -> URL { folder.appendingPathComponent("analysis_attempts") }
+    private static func attemptsURL(_ folder: URL) -> URL { Night(folder).url(.analysisAttempts) }
     /// gezählt je App-Version: nach einem Update (vielleicht mit Fehlerbehebung) neue Versuche
     static func attempts(_ folder: URL) -> Int {
         guard let text = try? String(contentsOf: attemptsURL(folder), encoding: .utf8) else { return 0 }
@@ -62,11 +62,11 @@ enum NightModel {
         computeLock.lock()
         defer { computeLock.unlock() }
         if let c = cached(folder) { return c }   // inzwischen von einem anderen Aufruf gerechnet
-        let files = NightExport.audioFiles(in: folder)
+        let files = Night(folder).audioFiles
         guard !files.isEmpty else { throw Failure.noAudio }
         let tries = attempts(folder)
         guard tries < maxAttempts else { throw Failure.gaveUp }
-        try? "\(tries + 1) \(appBuild)".write(to: attemptsURL(folder), atomically: true, encoding: .utf8)
+        Data("\(tries + 1) \(appBuild)".utf8).save(to: attemptsURL(folder), "Auswertungsversuche")
         guard let encURL = Bundle.main.url(forResource: "SuyaEpochEncoder", withExtension: "mlmodelc"),
               let seqURL = Bundle.main.url(forResource: "SuyaNightSequence", withExtension: "mlmodelc")
         else { throw Failure.noModel }
@@ -116,7 +116,7 @@ enum NightModel {
         }
         let cache = Cache(version: version, stages: String(stages.map { Character(String($0.rawValue)) }))
         if let data = try? JSONEncoder().encode(cache) {
-            try? data.write(to: folder.appendingPathComponent("model.json"), options: .atomic)
+            data.save(to: Night(folder).url(.model), "Modell-Ergebnis")
         }
         try? FileManager.default.removeItem(at: attemptsURL(folder))
         progress(1)
@@ -157,21 +157,17 @@ extension NightModel {
     /// ältere Nächte aus dem Protokoll. Etwas Rand davor, Ausblenden (30 s) und Nachhall danach.
     static func soundFrames(_ folder: URL) -> [Range<Int>] {
         var marks: [(Double, Bool)] = []
-        if let text = try? String(contentsOf: folder.appendingPathComponent("sounds.csv"), encoding: .utf8) {
+        let night = Night(folder)
+        if let text = night.text(.sounds) {
             for line in text.split(separator: "\n").dropFirst() {
                 let c = line.split(separator: ",")
                 if c.count == 2, let s = Double(c[0]) { marks.append((s, c[1] == "an")) }
             }
-        } else if let log = try? String(contentsOf: folder.appendingPathComponent("events.log"), encoding: .utf8),
-                  let meta = try? Data(contentsOf: folder.appendingPathComponent("meta.json")),
-                  let obj = try? JSONSerialization.jsonObject(with: meta) as? [String: Any],
-                  let startText = obj["start"] as? String {
-            let iso = ISO8601DateFormatter()
-            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            guard let start = iso.date(from: startText) else { return [] }
+        } else if let log = night.text(.log), let start = night.start {
+            // ältere Aufnahmen ohne sounds.csv: Marken aus dem Protokoll
             for line in log.split(separator: "\n") {
                 let parts = line.split(separator: " ", maxSplits: 1)
-                guard parts.count == 2, let t = iso.date(from: String(parts[0])) else { continue }
+                guard parts.count == 2, let t = Night.date(String(parts[0])) else { continue }
                 let text = parts[1].trimmingCharacters(in: .whitespaces)
                 if text.hasPrefix("Klänge an") || text.hasPrefix("Sounds on") { marks.append((t.timeIntervalSince(start), true)) }
                 if text.hasPrefix("Klänge aus") || text.hasPrefix("Sounds off") { marks.append((t.timeIntervalSince(start), false)) }
@@ -182,23 +178,15 @@ extension NightModel {
 
     /// Aussetzer der Aufnahme (mit Stille aufgefüllt, gaps.csv) als Bildbereiche – wie Klänge ausgeblendet
     static func gapFrames(_ folder: URL) -> [Range<Int>] {
-        guard let text = try? String(contentsOf: folder.appendingPathComponent("gaps.csv"), encoding: .utf8) else { return [] }
-        return MaskRanges.gaps(csv: text)
+        Night(folder).text(.gaps).map { MaskRanges.gaps(csv: $0) } ?? []
     }
 
     /// Ältere Aufnahmen (vor gaps.csv) mit Aussetzern: der Ton ist dort zusammengeschoben, die Zeitachse
     /// passt nicht mehr zur Uhr. Erkannt an Sprüngen in den Zeitstempeln von levels.csv (Summe in Sekunden).
     static func untrackedGapSeconds(_ folder: URL) -> Double {
-        let fm = FileManager.default
-        guard !fm.fileExists(atPath: folder.appendingPathComponent("gaps.csv").path),
-              let text = try? String(contentsOf: folder.appendingPathComponent("levels.csv"), encoding: .utf8) else { return 0 }
-        let iso = ISO8601DateFormatter()
-        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let times = text.split(separator: "\n").dropFirst().compactMap { line -> Date? in
-            guard let comma = line.firstIndex(of: ",") else { return nil }
-            return iso.date(from: String(line[..<comma]))
-        }
-        return MaskRanges.timestampGaps(times)
+        let night = Night(folder)
+        guard !night.exists(.gaps) else { return 0 }
+        return MaskRanges.timestampGaps(night.timestamps(.levels))
     }
 }
 

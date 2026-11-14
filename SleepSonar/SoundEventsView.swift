@@ -129,7 +129,7 @@ struct ClipLevels: Sendable {
     let base: Float
 
     static func load(_ folder: URL) -> ClipLevels? {
-        guard let text = try? String(contentsOf: folder.appendingPathComponent("levels.csv"), encoding: .utf8)
+        guard let text = try? String(contentsOf: Night(folder).url(.levels), encoding: .utf8)
         else { return nil }
         var rms: [Float] = []
         for line in text.split(separator: "\n").dropFirst() {

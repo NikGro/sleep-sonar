@@ -11,21 +11,10 @@ enum NightFinisher {
     /// so lange bleibt der Ton nach dem Ende der Nacht (Export mit Audio)
     static let keepAudioHours: Double = 24
 
-    /// Ende der Nacht: meta.json „end“, sonst die letzte Änderung einer Audiodatei
-    nonisolated static func nightEnd(_ folder: URL) -> Date? {
-        let iso = ISO8601DateFormatter()
-        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let data = try? Data(contentsOf: folder.appendingPathComponent("meta.json")),
-           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let e = obj["end"] as? String, let d = iso.date(from: e) { return d }
-        return NightExport.audioFiles(in: folder)
-            .compactMap { try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate }.max()
-    }
-
     /// verbleibende Zeit für den Export mit Audio, z. B. „5 Std., 12 Min.“ (in der Sprache des iPhones)
     nonisolated static func exportTimeLeft(_ folder: URL) -> String? {
         guard canExportAudio(folder) else { return nil }
-        let left = max(60, keepAudioHours * 3600 - Date().timeIntervalSince(nightEnd(folder) ?? Date()))
+        let left = max(60, keepAudioHours * 3600 - Date().timeIntervalSince(Night(folder).end ?? Date()))
         let f = DateComponentsFormatter()
         f.allowedUnits = left >= 3600 ? [.hour, .minute] : [.minute]
         f.unitsStyle = .short
@@ -35,8 +24,8 @@ enum NightFinisher {
 
     /// Ton noch da und Nacht keine 24 Stunden her: Export mit Audio möglich
     nonisolated static func canExportAudio(_ folder: URL) -> Bool {
-        guard !NightExport.audioFiles(in: folder).isEmpty else { return false }
-        guard let end = nightEnd(folder) else { return true }
+        guard !Night(folder).audioFiles.isEmpty else { return false }
+        guard let end = Night(folder).end else { return true }
         return Date().timeIntervalSince(end) < keepAudioHours * 3600
     }
     private static var running = false
@@ -49,7 +38,7 @@ enum NightFinisher {
             at: NightStore.nightsFolder, includingPropertiesForKeys: [.creationDateKey])) ?? []
         for folder in dirs.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) where folder.hasDirectoryPath {
             if PassiveNightEngine.shared.isRunning { break }
-            let files = NightExport.audioFiles(in: folder)
+            let files = Night(folder).audioFiles
             guard !files.isEmpty else { continue }
             let created = (try? folder.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
             let young = Date().timeIntervalSince(created) < keepMelDays * 86400   // ältere bräuchten kein Klangbild mehr
@@ -58,7 +47,7 @@ enum NightFinisher {
                 guard ok else { continue }
             }
             // Ton erst nach 24 Stunden löschen (bis dahin: Export mit Audio)
-            if let end = nightEnd(folder), Date().timeIntervalSince(end) < keepAudioHours * 3600 { continue }
+            if let end = Night(folder).end, Date().timeIntervalSince(end) < keepAudioHours * 3600 { continue }
             _ = try? await NightAudioTrim.trim(folder)   // Ton weg, Ausschnitte bleiben; scheitert das Modell, bleibt er
         }
         cleanupMel()

@@ -30,7 +30,7 @@ enum BackgroundAnalysis {
         return dirs.filter { url in
             url.hasDirectoryPath
                 && !(engine.isRunning && engine.folder == url)
-                && !NightExport.audioFiles(in: url).isEmpty   // Geräusche fehlen oder Ton noch nicht umgewandelt
+                && !Night(url).audioFiles.isEmpty   // Geräusche fehlen oder Ton noch nicht umgewandelt
         }
     }
 

@@ -135,7 +135,7 @@ enum BugReport {
         var items: [Item] = [
             Item(key: "app", label: tr("App"), value: MoreView.version),
             Item(key: "ios", label: "iOS", value: UIDevice.current.systemVersion),
-            Item(key: "geraet", label: tr("iPhone-Modell"), value: DonationUploader.deviceModel()),
+            Item(key: "geraet", label: tr("iPhone-Modell"), value: Device.model),
             Item(key: "sprache", label: tr("Sprache"), value: Locale.preferredLanguages.first ?? "?"),
         ]
         let mic: String
@@ -174,6 +174,8 @@ enum BugReport {
             .filter(\.hasDirectoryPath).count ?? 0
         items.append(Item(key: "naechte", label: tr("Nächte"), value: "\(nights)"))
         items.append(Item(key: "absturzprotokolle", label: tr("Absturzprotokolle"), value: "\(CrashLog.list().count)"))
+        let logLines = Log.recent().split(separator: "\n").count
+        items.append(Item(key: "fehlermeldungen", label: tr("Fehlermeldungen der App"), value: "\(logLines)"))
         if let free = try? URL(fileURLWithPath: NSHomeDirectory())
             .resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]).volumeAvailableCapacityForImportantUsage {
             items.append(Item(key: "speicher_frei", label: tr("Freier Speicher"),
@@ -182,24 +184,19 @@ enum BugReport {
         return items
     }
 
-    static func send(text: String, contact: String, tech: [Item]) async -> Outcome {
-        var request = URLRequest(url: DonationUploader.server.appendingPathComponent("api/fehler"), timeoutInterval: 60)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body: [String: Any] = [
-            "text": String(text.prefix(8000)),
-            "kontakt": String(contact.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200)),
-            "technik": Dictionary(uniqueKeysWithValues: tech.map { ($0.key, $0.value) }),
-            "absturz": tech.isEmpty ? [] : CrashLog.recent(),   // nur mit „Technische Angaben mitsenden“
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+    static func send(text: String, contact: String, tech: [Item], api: SuyaAPI = SuyaAPI()) async -> Outcome {
+        // Absturzprotokolle und App-Protokoll nur mit „Technische Angaben mitsenden“
+        let report = SuyaAPI.BugReport(
+            text: String(text.prefix(8000)),
+            contact: String(contact.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200)),
+            technical: Dictionary(uniqueKeysWithValues: tech.map { ($0.key, $0.value) }),
+            crashes: tech.isEmpty ? [] : CrashLog.recent(),
+            log: tech.isEmpty ? nil : Log.recent())
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            let code = (response as? HTTPURLResponse)?.statusCode ?? 0
-            let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
-            if code == 201, let n = obj?["nummer"] as? String { return .success(n) }
-            if code == 429 { return .failure(tr("Gerade wurden zu viele Berichte gesendet. Bitte versuch es später noch einmal.")) }
-            return .failure(tr("Der Server hat den Bericht nicht angenommen (Fehler %@).", "\(code)"))
+            let res = try await api.sendBugReport(report)
+            if res.status == 201, let n = (res.json["id"] ?? res.json["nummer"]) as? String { return .success(n) }
+            if res.status == 429 { return .failure(tr("Gerade wurden zu viele Berichte gesendet. Bitte versuch es später noch einmal.")) }
+            return .failure(tr("Der Server hat den Bericht nicht angenommen (Fehler %@).", "\(res.status)"))
         } catch {
             return .failure(tr("Keine Verbindung zum Server. Bitte prüf das Internet und versuch es noch einmal."))
         }

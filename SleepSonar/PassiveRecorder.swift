@@ -3,13 +3,8 @@ import Foundation
 
 /// Nimmt das Mikrofon passiv auf (kein Ton wird gesendet).
 ///
-/// Ordnerinhalt einer Nacht:
-/// - `audio_000.m4a`, `audio_001.m4a`, … – AAC, 16 kHz mono, je Datei max. 1 Stunde
-/// - `audio_index.csv` – Startzeit jeder Audiodatei
-/// - `levels.csv`      – je Sekunde Pegel gesamt und in drei Bändern (dBFS)
-/// - `gaps.csv`        – Aussetzer der Aufnahme (Anruf, Siri …): dort Stille eingefügt, damit die Zeitachse
-///                       des Tons mit der Uhr übereinstimmt; die Auswertung blendet diese Stellen aus
-/// - `motion.csv`, `events.log`, `meta.json` – wie gehabt
+/// Schreibt den Ordner einer Nacht (Aufbau: `Night`). Aussetzer der Aufnahme (Anruf, Siri …) werden mit
+/// Stille aufgefüllt und in gaps.csv vermerkt, damit die Zeitachse des Tons mit der Uhr übereinstimmt.
 ///
 /// Alle Audio-Methoden laufen auf dem Tap-Thread, abgesichert per Lock.
 final class PassiveRecorder: @unchecked Sendable {
@@ -21,11 +16,6 @@ final class PassiveRecorder: @unchecked Sendable {
     let startDate: Date
     private let lock = NSLock()
     private let io = DispatchQueue(label: "passive.io")
-    private let iso: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return f
-    }()
 
     private let outFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: PassiveRecorder.sampleRate,
                                           channels: 1, interleaved: false)!
@@ -74,12 +64,12 @@ final class PassiveRecorder: @unchecked Sendable {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         self.meta = meta
         self.onSecond = onSecond
-        levels = try Self.open(folder, "levels.csv", "time,rms_db,peak_db,low_250hz_db,mid_1200hz_db,high_4500hz_db\n")
-        audioIndex = try Self.open(folder, "audio_index.csv", "file,start\n")
-        motion = try Self.open(folder, "motion.csv", "time,activity_g,max_delta_g,pitch_deg,roll_deg\n")
-        events = try Self.open(folder, "events.log", nil)
-        gaps = try Self.open(folder, "gaps.csv", "from_s,to_s\n")
-        self.meta["start"] = iso.string(from: startDate)
+        levels = try Self.open(folder, Night.File.levels.rawValue, "time,rms_db,peak_db,low_250hz_db,mid_1200hz_db,high_4500hz_db\n")
+        audioIndex = try Self.open(folder, Night.File.audioIndex.rawValue, "file,start\n")
+        motion = try Self.open(folder, Night.File.motion.rawValue, "time,activity_g,max_delta_g,pitch_deg,roll_deg\n")
+        events = try Self.open(folder, Night.File.log.rawValue, nil)
+        gaps = try Self.open(folder, Night.File.gaps.rawValue, "from_s,to_s\n")
+        self.meta["start"] = Night.timestamp(startDate)
         self.meta["mode"] = "passive_audio"
         self.meta["audio_sample_rate"] = Self.sampleRate
         self.meta["audio_bitrate"] = Self.bitRate
@@ -182,7 +172,7 @@ final class PassiveRecorder: @unchecked Sendable {
                 eventLocked("AAC mit Standard-Bitrate (\(error.localizedDescription))")
             }
             framesInFile = 0
-            let line = "\(name),\(iso.string(from: Date()))\n"
+            let line = "\(name),\(Night.timestamp(Date()))\n"
             io.async { try? self.audioIndex?.write(contentsOf: Data(line.utf8)) }
         }
         try file?.write(from: buf)
@@ -214,7 +204,7 @@ final class PassiveRecorder: @unchecked Sendable {
                 let bandDB = sumBand.map(db)
                 let pk = 20 * log10(Double(peak) + 1e-7)
                 let line = String(format: "%@,%.1f,%.1f,%.1f,%.1f,%.1f\n",
-                                  iso.string(from: Date()), rms, pk, bandDB[0], bandDB[1], bandDB[2])
+                                  Night.timestamp(Date()), rms, pk, bandDB[0], bandDB[1], bandDB[2])
                 io.async { try? self.levels?.write(contentsOf: Data(line.utf8)) }
                 onSecond(rms, bandDB)
                 sumAll = 0; sumBand = [0, 0, 0]; peak = 0; count = 0
@@ -225,7 +215,7 @@ final class PassiveRecorder: @unchecked Sendable {
     // MARK: - Protokoll
 
     func appendMotion(activity: Double, maxDelta: Double, pitch: Double, roll: Double) {
-        let line = "\(iso.string(from: Date())),\(String(format: "%.5f,%.5f,%.1f,%.1f", activity, maxDelta, pitch, roll))\n"
+        let line = "\(Night.timestamp(Date())),\(String(format: "%.5f,%.5f,%.1f,%.1f", activity, maxDelta, pitch, roll))\n"
         io.async { try? self.motion?.write(contentsOf: Data(line.utf8)) }
     }
 
@@ -235,7 +225,7 @@ final class PassiveRecorder: @unchecked Sendable {
     }
 
     private func eventLocked(_ text: String) {
-        let line = "\(iso.string(from: Date()))  \(text)\n"
+        let line = "\(Night.timestamp(Date()))  \(text)\n"
         io.async { try? self.events?.write(contentsOf: Data(line.utf8)) }
     }
 
@@ -258,7 +248,7 @@ final class PassiveRecorder: @unchecked Sendable {
         live?.finish(folder: folder)
         let end = Date()
         io.sync {
-            meta["end"] = iso.string(from: end)
+            meta["end"] = Night.timestamp(end)
             meta["audio_files"] = files
             meta["gap_seconds"] = gapTotal.rounded()
             writeMeta()
@@ -268,9 +258,7 @@ final class PassiveRecorder: @unchecked Sendable {
     }
 
     private func writeMeta() {
-        if let data = try? JSONSerialization.data(withJSONObject: meta, options: [.prettyPrinted, .sortedKeys]) {
-            try? data.write(to: folder.appendingPathComponent("meta.json"))
-        }
+        do { try Night(folder).writeMeta(meta) } catch { Log.storage.error("meta.json: \(error.localizedDescription, privacy: .public)") }
     }
 }
 

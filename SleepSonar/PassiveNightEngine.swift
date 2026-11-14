@@ -74,7 +74,7 @@ final class PassiveNightEngine: ObservableObject {
             UIDevice.current.isBatteryMonitoringEnabled = true
             let rec = try PassiveRecorder(meta: [
                 "app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "",
-                "device": Self.deviceModel(),
+                "device": Device.model,
                 "ios": UIDevice.current.systemVersion,
             ]) { [weak self] db, bands in
                 Task { @MainActor in
@@ -187,7 +187,7 @@ final class PassiveNightEngine: ObservableObject {
     /// damit das Modell diese Zeit ausblenden kann
     func soundMark(on: Bool) {
         guard isRunning, let folder, let startDate else { return }
-        let url = folder.appendingPathComponent("sounds.csv")
+        let url = Night(folder).url(.sounds)
         let line = String(format: "%.1f,%@\n", Date().timeIntervalSince(startDate), on ? "an" : "aus")
         if let h = try? FileHandle(forWritingTo: url) {
             _ = try? h.seekToEnd(); try? h.write(contentsOf: Data(line.utf8)); try? h.close()
@@ -379,11 +379,4 @@ final class PassiveNightEngine: ObservableObject {
         log(tr("Akku %.0f %%, %@", Double(d.batteryLevel * 100), state))
     }
 
-    private static func deviceModel() -> String {
-        var info = utsname()
-        uname(&info)
-        return withUnsafeBytes(of: &info.machine) { raw in
-            String(decoding: raw.prefix(while: { $0 != 0 }), as: UTF8.self)
-        }
-    }
 }

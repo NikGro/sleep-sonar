@@ -60,7 +60,7 @@ final class SoundReference: @unchecked Sendable {
         converter?.downmix = true
         let host = AVAudioTime.seconds(forHostTime: hostTime)
         let line = String(format: "%@,%.3f,%.6f\n", name, Date().timeIntervalSince1970, host)
-        let csv = folder.appendingPathComponent("klang_ref.csv")
+        let csv = Night(folder).url(.soundReference)
         if let h = try? FileHandle(forWritingTo: csv) {
             _ = try? h.seekToEnd(); try? h.write(contentsOf: Data(line.utf8)); try? h.close()
         } else {

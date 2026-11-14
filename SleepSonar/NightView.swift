@@ -106,7 +106,9 @@ struct NightView: View {
                    isPresented: Binding(get: { !deleting.isEmpty }, set: { if !$0 { deleting = [] } })) {
                 Button(tr("Nacht löschen"), role: .destructive) {
                     for url in deleting where !(rec.isRunning && rec.folder == url) {
-                        try? FileManager.default.removeItem(at: url)
+                        do { try FileManager.default.removeItem(at: url) } catch {
+                            Log.storage.error("Nacht löschen: \(error.localizedDescription, privacy: .public)")
+                        }
                     }
                     deleting = []
                     Haptics.warning()
@@ -131,8 +133,8 @@ struct NightView: View {
         exporting = url
         message = nil
         defer { exporting = nil }
-        let end = NightFinisher.nightEnd(url) ?? Date()
-        let start = DonationUploader.audioStart(url) ?? end.addingTimeInterval(-12 * 3600)
+        let end = Night(url).end ?? Date()
+        let start = Night(url).audioStart ?? end.addingTimeInterval(-12 * 3600)
         _ = await NightExport.writeHealthData(into: url, from: start, to: end)
         do {
             share = ShareItem(urls: [try NightExport.zip(folder: url, includeAudio: true)])
@@ -169,7 +171,7 @@ struct NightSummary: Codable {
     var totalSeconds: Double { Double(stagesCode.count) * epochSeconds }
     var score: SleepScore? { SleepScore.compute(stages, epochSeconds: epochSeconds) }
 
-    static func file(_ folder: URL) -> URL { folder.appendingPathComponent("summary.json") }
+    static func file(_ folder: URL) -> URL { Night(folder).url(.summary) }
 
     /// Gespeicherte Fassung, egal ob aktuell (für die sofortige Anzeige)
     static func cached(_ folder: URL) -> NightSummary? {
@@ -180,11 +182,11 @@ struct NightSummary: Codable {
     var isCurrent: Bool { version == Self.currentVersion }
     /// Ist der Ton schon gelöscht, bleibt auch eine ältere Fassung gültig (neu rechnen geht nicht mehr).
     func isCurrent(for folder: URL) -> Bool {
-        isCurrent || (NightExport.audioFiles(in: folder).isEmpty && NightModel.cachedAnyVersion(folder) == nil)
+        isCurrent || (Night(folder).audioFiles.isEmpty && NightModel.cachedAnyVersion(folder) == nil)
     }
 
     func save(_ folder: URL) {
-        if let data = try? JSONEncoder().encode(self) { try? data.write(to: Self.file(folder), options: .atomic) }
+        if let data = try? JSONEncoder().encode(self) { data.save(to: Self.file(folder), "Kurzfassung") }
     }
 }
 

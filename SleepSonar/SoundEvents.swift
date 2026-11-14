@@ -86,7 +86,7 @@ struct SoundEventFile: Codable {
 }
 
 enum SoundEventDetector {
-    static func fileURL(_ folder: URL) -> URL { folder.appendingPathComponent("events.json") }
+    static func fileURL(_ folder: URL) -> URL { Night(folder).url(.soundEvents) }
 
     /// Bereits ausgewertete Geräusche (oder nil, wenn noch nicht ausgewertet).
     static func cached(in folder: URL) -> [SoundEvent]? {
@@ -106,12 +106,12 @@ enum SoundEventDetector {
         if let c = cached(in: folder) { return c }
         listeners[folder, default: []].append(progress)
         if let t = running[folder] { return try await t.value }
-        let files = NightExport.audioFiles(in: folder)
+        let files = Night(folder).audioFiles
         let report: @Sendable (Double) -> Void = { p in
             Task { @MainActor in listeners[folder]?.forEach { $0(p) } }
         }
         let task = Task.detached(priority: .userInitiated) { () throws -> [SoundEvent] in
-            let partialURL = folder.appendingPathComponent("events_partial.json")
+            let partialURL = Night(folder).url(.soundEventsPartial)
             var partial = (try? JSONDecoder().decode(Partial.self, from: Data(contentsOf: partialURL)))
                 ?? Partial(done: [], windows: [])
             for (i, url) in files.enumerated() where !partial.done.contains(url.lastPathComponent) {

@@ -11,7 +11,7 @@ enum NightAudioTrim {
     }
 
     static func audioBytes(_ folder: URL) -> Int64 {
-        NightExport.audioFiles(in: folder).reduce(0) {
+        Night(folder).audioFiles.reduce(0) {
             $0 + Int64((try? $1.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
         }
     }
@@ -41,7 +41,7 @@ enum NightAudioTrim {
                                           commonFormat: buf.format.commonFormat, interleaved: buf.format.isInterleaved)
                 try out.write(from: buf)
             }
-            for f in NightExport.audioFiles(in: folder) { try FileManager.default.removeItem(at: f) }
+            for f in Night(folder).audioFiles { try FileManager.default.removeItem(at: f) }
             for f in SoundReference.files(in: folder) { try? FileManager.default.removeItem(at: f) }
         }.value
         return before - audioBytes(folder)

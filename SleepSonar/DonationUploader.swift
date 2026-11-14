@@ -24,7 +24,8 @@ final class DonationUploader: ObservableObject {
     @Published private(set) var progress: Double?
 
     private func report(_ phase: String?, _ p: Double?) { self.phase = phase; self.progress = p }
-    static let server = URL(string: "https://suya.ng-lab.de")!
+    static var server: URL { SuyaAPI.server }
+    private let api: SuyaAPI
     /// nur Nächte ab dieser Länge (wie im Einwilligungstext)
     static let minSeconds: TimeInterval = 5 * 3600
     /// so lange auf Watch-Daten warten (die Watch gleicht manchmal erst später ab)
@@ -32,14 +33,8 @@ final class DonationUploader: ObservableObject {
 
     private var running = false
     private let store = HKHealthStore()
-    private lazy var session: URLSession = {
-        let c = URLSessionConfiguration.default
-        c.allowsExpensiveNetworkAccess = false     // kein Mobilfunk
-        c.allowsConstrainedNetworkAccess = false   // kein Datensparmodus
-        c.timeoutIntervalForRequest = 120
-        c.timeoutIntervalForResource = 30 * 60
-        return URLSession(configuration: c)
-    }()
+
+    init(api: SuyaAPI = SuyaAPI()) { self.api = api }
 
     /// Beim Öffnen der App, nach dem Ende einer Nacht und nach Zustimmung/Löschanfrage aufrufen.
     /// nach bestätigter Löschung: Spendenstand aller Nächte vergessen. Ältere Nächte gelten danach als
@@ -47,7 +42,7 @@ final class DonationUploader: ObservableObject {
     static func forgetSentNights() {
         let dirs = (try? FileManager.default.contentsOfDirectory(at: NightStore.nightsFolder, includingPropertiesForKeys: nil)) ?? []
         for folder in dirs where folder.hasDirectoryPath {
-            try? FileManager.default.removeItem(at: folder.appendingPathComponent("donation.json"))
+            try? FileManager.default.removeItem(at: Night(folder).url(.donation))
         }
     }
 
@@ -72,12 +67,12 @@ final class DonationUploader: ObservableObject {
 
     private func runOnce() async {
         let donation = DataDonation.shared
-        guard let donor = donation.donorID else { return }
-        let key = donation.secretKey
+        guard let id = donation.donorID else { return }
+        let donor = SuyaAPI.Donor(id: id, key: donation.secretKey)
 
         // 1) offene Löschanfrage zuerst
         if donation.deletionRequested != nil, !donation.deletionSent {
-            switch await sendDeletion(donor: donor, key: key) {
+            switch await sendDeletion(donor) {
             case 200: donation.markDeletionSent()
             case 409: donation.markDeletionImpossible()   // Schlüssel passt nicht (anderes iPhone): Weg über das Impressum
             default: break                                 // offline o. Ä.: beim nächsten Mal
@@ -86,7 +81,7 @@ final class DonationUploader: ObservableObject {
         }
         guard donation.state == .granted else { return }
         guard !PassiveNightEngine.shared.isRunning else { return }   // nachts nicht rechnen
-        await AppAttestClient.registerIfPossible(donor: donor, key: key)
+        await AppAttestClient.registerIfPossible(donor, api: api)
 
         // 2) Nächte der letzten zwei Wochen: erst umwandeln (Spektrogramm sichern, Ton löschen), dann senden
         let dirs = (try? FileManager.default.contentsOfDirectory(
@@ -107,7 +102,7 @@ final class DonationUploader: ObservableObject {
             if !Self.hasMel(folder), let why = await prepare(folder: folder) {
                 state.skipped = why; state.save(folder); continue
             }
-            switch await upload(folder: folder, state: &state, donor: donor, key: key) {
+            switch await upload(folder: folder, state: &state, donor: donor) {
             case .sent:
                 state.sent = Date(); state.waiting = nil; state.save(folder)
                 donation.countUpload()
@@ -143,7 +138,7 @@ final class DonationUploader: ObservableObject {
         if !Self.hasMel(folder), let why = await prepare(folder: folder) {
             state.skipped = why; state.save(folder); return
         }
-        switch await upload(folder: folder, state: &state, donor: donor, key: donation.secretKey) {
+        switch await upload(folder: folder, state: &state, donor: SuyaAPI.Donor(id: donor, key: donation.secretKey)) {
         case .sent: state.sent = Date(); state.waiting = nil; if !wasSent { donation.countUpload() }
         case .skip(let why): state.skipped = why; state.waiting = nil
         case .later(let why): state.waiting = why
@@ -157,7 +152,7 @@ final class DonationUploader: ObservableObject {
 
     /// Kann diese Nacht (erneut) gespendet werden? Spektrogramm oder Ton muss noch da sein.
     nonisolated static func canResend(_ folder: URL) -> Bool {
-        hasMel(folder) || !NightExport.audioFiles(in: folder).isEmpty
+        hasMel(folder) || !Night(folder).audioFiles.isEmpty
     }
 
     /// Menütext beim Gedrückthalten: schon gespendet → erneut, sonst nachträglich spenden
@@ -166,13 +161,13 @@ final class DonationUploader: ObservableObject {
     }
 
     /// Spektrogramm-Datei der Nacht (Roh-Log-Mel, Float16, Bild für Bild je 64 Bänder)
-    nonisolated static func melURL(_ folder: URL) -> URL { folder.appendingPathComponent("spende_mel.f16") }
+    nonisolated static func melURL(_ folder: URL) -> URL { Night(folder).url(.mel) }
     nonisolated static func hasMel(_ folder: URL) -> Bool { FileManager.default.fileExists(atPath: melURL(folder).path) }
 
     /// Umwandeln: Spektrogramm sichern (den Ton löscht NightFinisher nach 24 Stunden).
     /// Gibt einen Grund zurück, wenn die Nacht nicht gespendet werden kann.
     func prepare(folder: URL) async -> String? {
-        let files = NightExport.audioFiles(in: folder)
+        let files = Night(folder).audioFiles
         guard !files.isEmpty else { return NightDonationState.noAudio }
         let seconds = files.reduce(0.0) { $0 + ((try? audioSeconds($1)) ?? 0) }
         guard seconds >= Self.minSeconds else { return NightDonationState.short }
@@ -193,12 +188,12 @@ final class DonationUploader: ObservableObject {
             for b in 0..<LogMel.bands { half[b] = Float16(f[b]) }
             half.withUnsafeBytes { data.append(contentsOf: $0) }
         }
-        return (try? data.write(to: melURL(folder), options: .atomic)) != nil
+        return data.save(to: melURL(folder), "Spektrogramm")
     }
 
-    private func upload(folder: URL, state: inout NightDonationState, donor: String, key: String) async -> Outcome {
+    private func upload(folder: URL, state: inout NightDonationState, donor: SuyaAPI.Donor) async -> Outcome {
         guard Self.hasMel(folder) else { return .later(NightDonationState.converting) }
-        guard let start = Self.audioStart(folder) else { return .skip(NightDonationState.noStart) }
+        guard let start = Night(folder).audioStart else { return .skip(NightDonationState.noStart) }
         let bytes = (try? FileManager.default.attributesOfItem(atPath: Self.melURL(folder).path)[.size] as? Int) ?? 0
         let epochs = bytes / 2 / LogMel.bands / LogMel.framesPerEpoch
         guard Double(epochs) * 30 >= Self.minSeconds else { return .skip(NightDonationState.short) }
@@ -228,7 +223,7 @@ final class DonationUploader: ObservableObject {
         let partSize = 4 * 1024 * 1024
         let count = max(1, (body.count + partSize - 1) / partSize)
         var lastCode = 0
-        var lastBody = ""
+        var keyMismatch = false
         var networkError: URLError?
         var delivered = Set<Int>()   // Teile, die der Server schon hat (bleiben dort 24 h liegen)
         // bei Unterbrechung weiter versuchen, solange die App offen ist: 8 Runden mit wachsender Pause (gut 6 min)
@@ -241,26 +236,17 @@ final class DonationUploader: ObservableObject {
                 // widerrufen, Löschung verlangt oder Nacht gelöscht: sofort aufhören
                 guard mayDonate, FileManager.default.fileExists(atPath: folder.path) else { return .stop }
                 let chunk = body.subdata(in: (i * partSize)..<min(body.count, (i + 1) * partSize))
-                var request = URLRequest(url: Self.server.appendingPathComponent("api/spende/teil"))
-                request.httpMethod = "POST"
-                request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
-                request.setValue(donor, forHTTPHeaderField: "X-Spender")
-                request.setValue(key, forHTTPHeaderField: "X-Schluessel")
-                request.setValue(night, forHTTPHeaderField: "X-Nacht")
-                request.setValue(String(i), forHTTPHeaderField: "X-Teil")
-                request.setValue(String(count), forHTTPHeaderField: "X-Teile")
-                request.setValue(hash, forHTTPHeaderField: "X-Gesamt")
-                // App Attest über das ganze Paket (der Server prüft es beim letzten fehlenden Teil)
-                for (k, v) in await AppAttestClient.assertionHeaders(kind: "nacht", donor: donor, night: night, bodyHash: hash) {
-                    request.setValue(v, forHTTPHeaderField: k)
-                }
+                // App Attest: jede Teil-Anfrage mit eigener Assertion über das ganze Paket
+                let assertion = await AppAttestClient.assertionHeaders(kind: "nacht", donor: donor.id, night: night, bodyHash: hash)
                 do {
-                    let (respData, response) = try await session.upload(for: request, from: chunk)
-                    lastCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-                    lastBody = String(data: respData, encoding: .utf8) ?? ""
+                    let res = try await api.uploadPart(donor, night: night, index: i, count: count, totalHash: hash,
+                                                       data: chunk, assertion: assertion)
+                    lastCode = res.status
+                    keyMismatch = res.keyMismatch
                     if lastCode == 201 { break rounds }
                     if lastCode == 202 { delivered.insert(i); report(tr("Wird übertragen"), Double(delivered.count) / Double(count)); continue }
                     if [403, 429, 503, 507].contains(lastCode) { break rounds }
+                    Log.donation.notice("Teil \(i): HTTP \(lastCode)")
                     continue rounds          // anderer Fehler: nächste Runde
                 } catch let e as URLError {
                     networkError = e
@@ -289,27 +275,26 @@ final class DonationUploader: ObservableObject {
         case 429, 503, 507: state.waiting = NightDonationState.waitServer; state.save(folder); return .stop
         case 403:
             // Server kennt diesen Schlüssel nicht (z. B. Nummer aus einem Backup): neue Nummer, beim nächsten Mal neu
-            if lastBody.contains("Schlüssel passt nicht") { DataDonation.shared.replaceDonorID() }
+            if keyMismatch { DataDonation.shared.replaceDonorID() }
+            Log.donation.error("Spende abgelehnt (403)")
             state.waiting = NightDonationState.rejected; state.save(folder); return .stop
         default: return .later(NightDonationState.interrupted)
         }
     }
 
     /// HTTP-Status der Löschanfrage (0 = keine Verbindung, 409 = Schlüssel passt nicht zur Nummer)
-    private func sendDeletion(donor: String, key: String) async -> Int {
-        var request = URLRequest(url: Self.server.appendingPathComponent("api/spende/loeschen"))
-        request.httpMethod = "POST"
-        request.setValue(donor, forHTTPHeaderField: "X-Spender")
-        request.setValue(key, forHTTPHeaderField: "X-Schluessel")
-        for (k, v) in await AppAttestClient.assertionHeaders(kind: "loeschen", donor: donor, night: "", bodyHash: "") {
-            request.setValue(v, forHTTPHeaderField: k)
+    private func sendDeletion(_ donor: SuyaAPI.Donor) async -> Int {
+        let assertion = await AppAttestClient.assertionHeaders(kind: "loeschen", donor: donor.id, night: "", bodyHash: "")
+        do {
+            let res = try await api.deleteDonations(donor, assertion: assertion)
+            // 403 heißt Schlüssel falsch oder Echtheitsprüfung fehlgeschlagen – nur Ersteres ist endgültig
+            if res.keyMismatch { return 409 }
+            if res.status != 200 { Log.donation.error("Löschen: HTTP \(res.status)") }
+            return res.status
+        } catch {
+            Log.donation.notice("Löschen: \(error.localizedDescription, privacy: .public)")
+            return 0
         }
-        // Löschen auch über Mobilfunk
-        guard let (body, response) = try? await URLSession.shared.data(for: request) else { return 0 }
-        let code = (response as? HTTPURLResponse)?.statusCode ?? 0
-        // 403 heißt Schlüssel falsch oder Echtheitsprüfung fehlgeschlagen – nur Ersteres ist endgültig
-        if code == 403, String(data: body, encoding: .utf8)?.contains("Schlüssel passt nicht") == true { return 409 }
-        return code
     }
 
     /// Schlafphasen der Watch (nicht Suyas eigene Einträge): 0 Wach, 1 REM, 2 Kern, 3 Tief, −1 unbekannt.
@@ -342,26 +327,6 @@ final class DonationUploader: ObservableObject {
         return out
     }
 
-    /// Beginn des Tons (erste Zeile in audio_index.csv), sonst Beginn der Aufnahme.
-    nonisolated static func audioStart(_ folder: URL) -> Date? {
-        let iso = ISO8601DateFormatter()
-        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let text = try? String(contentsOf: folder.appendingPathComponent("audio_index.csv"), encoding: .utf8) {
-            let lines = text.split(separator: "\n")
-            if lines.count > 1, let s = lines[1].split(separator: ",").last, let d = iso.date(from: String(s)) { return d }
-        }
-        if let data = try? Data(contentsOf: folder.appendingPathComponent("meta.json")),
-           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let s = obj["start"] as? String { return iso.date(from: s) }
-        return nil
-    }
-
-    nonisolated static func deviceModel() -> String {
-        var u = utsname()
-        uname(&u)
-        return withUnsafeBytes(of: &u.machine) { String(decoding: $0.prefix { $0 != 0 }, as: UTF8.self) }
-    }
-
     nonisolated static func buildPackage(folder: URL, watch: [Int]) throws -> URL {
         let mel = try Data(contentsOf: melURL(folder), options: .mappedIfSafe)
         let total = mel.count / 2 / LogMel.bands
@@ -369,18 +334,12 @@ final class DonationUploader: ObservableObject {
         let used = epochs * LogMel.framesPerEpoch
 
         // Lautstärke je Sekunde (levels.csv: time,rms_db,…)
-        var levels: [Float] = []
-        if let text = try? String(contentsOf: folder.appendingPathComponent("levels.csv"), encoding: .utf8) {
-            for line in text.split(separator: "\n").dropFirst() {
-                let cols = line.split(separator: ",", omittingEmptySubsequences: false)
-                if cols.count > 1, let v = Float(cols[1]) { levels.append(v) }
-            }
-        }
+        let levels = Night(folder).column(.levels, 1)
         let sounds = NightModel.soundFrames(folder).map { [$0.lowerBound, $0.upperBound] }
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
         let head: [String: Any] = [
-            "format": 1, "app": "\(version) (\(build))", "device": deviceModel(),
+            "format": 1, "app": "\(version) (\(build))", "device": Device.model,
             "sampleRate": LogMel.sampleRate, "nFFT": LogMel.nFFT, "hop": LogMel.hop,
             "bands": LogMel.bands, "framesPerSecond": 10, "epochSeconds": 30,
             "frames": used, "levels": levels.count, "watch": Array(watch.prefix(epochs)),
@@ -446,21 +405,20 @@ struct NightDonationState: Codable {
     }
 
     static func load(_ folder: URL) -> NightDonationState? {
-        let url = folder.appendingPathComponent("donation.json")
+        let url = Night(folder).url(.donation)
         if let data = try? Data(contentsOf: url), let s = try? JSONDecoder().decode(Self.self, from: data) { return s }
         return NightDonationState(id: UUID().uuidString.lowercased())
     }
 
     /// nur lesen, ohne eine neue Kennung zu erfinden (für die Anzeige)
     static func existing(_ folder: URL) -> NightDonationState? {
-        guard let data = try? Data(contentsOf: folder.appendingPathComponent("donation.json")) else { return nil }
+        guard let data = try? Data(contentsOf: Night(folder).url(.donation)) else { return nil }
         return try? JSONDecoder().decode(Self.self, from: data)
     }
 
     func save(_ folder: URL) {
-        if let data = try? JSONEncoder().encode(self) {
-            try? data.write(to: folder.appendingPathComponent("donation.json"), options: .atomic)
-        }
+        guard Night(folder).isPresent, let data = try? JSONEncoder().encode(self) else { return }
+        data.save(to: Night(folder).url(.donation), "Spendenstand")
     }
 }
 
@@ -473,47 +431,29 @@ enum AppAttestClient {
     private static var keyID: String? { d.string(forKey: "attest.keyID") }
     private static var registered: Bool { d.bool(forKey: "attest.registered") }
 
-    private static func challenge() async -> String? {
-        let url = DonationUploader.server.appendingPathComponent("api/attest/challenge")
-        guard let (data, r) = try? await URLSession.shared.data(from: url), (r as? HTTPURLResponse)?.statusCode == 200,
-              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
-        return obj["challenge"] as? String
-    }
-
-    private static func serverWantsAttest() async -> Bool {
-        let url = DonationUploader.server.appendingPathComponent("api/status")
-        guard let (data, _) = try? await URLSession.shared.data(from: url),
-              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return false }
-        return obj["attest"] as? Bool ?? false
-    }
-
-    static func registerIfPossible(donor: String, key: String) async {
+    static func registerIfPossible(_ donor: SuyaAPI.Donor, api: SuyaAPI) async {
         let service = DCAppAttestService.shared
-        guard !registered, service.isSupported, await serverWantsAttest() else { return }
+        guard !registered, service.isSupported, await api.attestEnabled() else { return }
         do {
             let id = try await service.generateKey()
-            guard let c = await challenge(), let cBytes = Data(base64Encoded: c) else { return }
+            guard let c = await api.challenge(), let cBytes = Data(base64Encoded: c) else { return }
             let attestation = try await service.attestKey(id, clientDataHash: Data(SHA256.hash(data: cBytes)))
-            var request = URLRequest(url: DonationUploader.server.appendingPathComponent("api/attest/register"))
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.setValue(donor, forHTTPHeaderField: "X-Spender")
-            request.setValue(key, forHTTPHeaderField: "X-Schluessel")
-            request.httpBody = try JSONSerialization.data(withJSONObject: [
-                "keyId": id, "attestation": attestation.base64EncodedString(), "challenge": c])
-            let (_, r) = try await URLSession.shared.data(for: request)
-            if (r as? HTTPURLResponse)?.statusCode == 201 {
+            let res = try await api.registerAttestation(donor, keyID: id, attestation: attestation, challenge: c)
+            if res.status == 201 {
                 d.set(id, forKey: "attest.keyID")
                 d.set(true, forKey: "attest.registered")
+            } else {
+                Log.donation.notice("App Attest abgelehnt: HTTP \(res.status) \(res.code ?? "", privacy: .public)")
             }
         } catch {
-            // nicht unterstützt oder abgelehnt: ohne App Attest weiter
+            // nicht unterstützt (z. B. selbst signierte Version): ohne App Attest weiter
+            Log.donation.notice("App Attest: \(error.localizedDescription, privacy: .public)")
         }
     }
 
     /// Kopfzeilen X-Assertion/X-Challenge für eine Anfrage (leer, wenn diese Installation nicht registriert ist).
     static func assertionHeaders(kind: String, donor: String, night: String, bodyHash: String) async -> [String: String] {
-        guard registered, let id = keyID, let c = await challenge() else { return [:] }
+        guard registered, let id = keyID, let c = await SuyaAPI().challenge() else { return [:] }
         let clientData = Data("\(kind)|\(c)|\(donor)|\(night)|\(bodyHash)".utf8)
         guard let a = try? await DCAppAttestService.shared.generateAssertion(
             id, clientDataHash: Data(SHA256.hash(data: clientData))) else { return [:] }

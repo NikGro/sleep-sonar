@@ -25,8 +25,6 @@ enum DemoScreens {
             .appendingPathComponent(DateFormatter.nightName.string(from: start) + "_demo", isDirectory: true)
         
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let iso = ISO8601DateFormatter()
-        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         var rng = SystemRandomNumberGenerator()
         var csv = "time,rms_db,peak_db,low_250hz_db,mid_1200hz_db,high_4500hz_db\n"
         let total = 7 * 3600 + 30 * 60
@@ -45,12 +43,12 @@ enum DemoScreens {
                 .contains { t >= $0.0 && t < $0.1 } ? 12 + 8 * abs(sin(Double(t) * 0.9)) : 0
             let rms = -78 + breath * 0.6 + jitter * 0.5 + (awake ? 4 : 0) + loud
             let line = [rms, rms + 18, rms - 2, rms - 9, high].map { String(format: "%.1f", $0) }
-            csv += iso.string(from: start.addingTimeInterval(Double(t))) + "," + line.joined(separator: ",") + "\n"
+            csv += Night.timestamp(start.addingTimeInterval(Double(t))) + "," + line.joined(separator: ",") + "\n"
         }
-        try? csv.write(to: folder.appendingPathComponent("levels.csv"), atomically: true, encoding: .utf8)
+        try? csv.write(to: Night(folder).url(.levels), atomically: true, encoding: .utf8)
         // Beginn und Schlafphasen (wie vom Modell, je 30 s)
-        let meta = ["start": iso.string(from: start)]
-        if let d = try? JSONSerialization.data(withJSONObject: meta) { try? d.write(to: folder.appendingPathComponent("meta.json")) }
+        let meta = ["start": Night.timestamp(start)]
+        if let d = try? JSONSerialization.data(withJSONObject: meta) { try? d.write(to: Night(folder).url(.meta)) }
         var code = ""
         for e in 0..<(total / 30) {
             let t = e * 30
@@ -59,7 +57,7 @@ enum DemoScreens {
             code += awake ? "0" : (cycle > 0.15 && cycle < 0.45 && t < 4 * 3600) ? "3" : (cycle > 0.75 && t > 3600) ? "1" : "2"
         }
         let model: [String: Any] = ["version": NightModel.version, "stages": code]
-        if let d = try? JSONSerialization.data(withJSONObject: model) { try? d.write(to: folder.appendingPathComponent("model.json")) }
+        if let d = try? JSONSerialization.data(withJSONObject: model) { try? d.write(to: Night(folder).url(.model)) }
         try? SoundEventDetector.save([
             SoundEvent(kind: .snoring, start: 7200, end: 7238, confidence: 0.92),
             SoundEvent(kind: .snoring, start: 9100, end: 9121, confidence: 0.78),

@@ -23,7 +23,9 @@ enum Keychain {
         var add = base
         add[kSecValueData as String] = Data(value.utf8)
         add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        return SecItemAdd(add as CFDictionary, nil) == errSecSuccess
+        let status = SecItemAdd(add as CFDictionary, nil)
+        if status != errSecSuccess { Log.keychain.fault("Schlüsselbund \(key, privacy: .public): \(status)") }
+        return status == errSecSuccess
     }
 
     static func delete(_ key: String) {

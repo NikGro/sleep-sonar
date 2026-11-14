@@ -31,11 +31,11 @@ enum NightAnalyzer {
     /// Beginn: erste Audiodatei (darauf beziehen sich die 30-s-Epochen des Modells).
     static func estimate(folder: URL, progress: @escaping @Sendable (Double) -> Void = { _ in }) throws
         -> (start: Date, stages: [SleepStaging.Stage], epochSeconds: Double) {
-        guard let start = DonationUploader.audioStart(folder) else { throw Failure.noModel }
+        guard let start = Night(folder).audioStart else { throw Failure.noModel }
         let stages: [SleepStaging.Stage]
         if let c = NightModel.cached(folder) {
             stages = c
-        } else if NightExport.audioFiles(in: folder).isEmpty, let c = NightModel.cachedAnyVersion(folder) {
+        } else if Night(folder).audioFiles.isEmpty, let c = NightModel.cachedAnyVersion(folder) {
             stages = c   // Ton schon gelöscht: das zuletzt gerechnete Ergebnis behalten
         } else {
             guard NightModel.isAvailable, let s = try? NightModel.stages(folder: folder, progress: progress)

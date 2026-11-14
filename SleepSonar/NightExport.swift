@@ -21,7 +21,6 @@ enum NightExport {
     /// Schreibt die Health-Daten von (start − 2 h) bis (ende + 2 h) in den Ordner der Nacht.
     static func writeHealthData(into folder: URL, from start: Date, to end: Date) async -> [String] {
         var notes: [String] = []
-        let iso = ISO8601DateFormatter()
         let predicate = HKQuery.predicateForSamples(withStart: start.addingTimeInterval(-7200),
                                                     end: end.addingTimeInterval(7200))
         do {
@@ -40,11 +39,11 @@ enum NightExport {
             // Suyas eigene Einträge nicht: die Datei ist der Vergleich mit der Watch
             let own = Bundle.main.bundleIdentifier ?? ""
             for s in samples where s.sourceRevision.source.bundleIdentifier != own {
-                csv += "\(iso.string(from: s.startDate)),\(iso.string(from: s.endDate)),"
+                csv += "\(Night.timestamp(s.startDate, fractionalSeconds: false)),\(Night.timestamp(s.endDate, fractionalSeconds: false)),"
                     + "\(stageName(s.value)),\(clean(s.sourceRevision.source.name)),"
                     + "\(clean(s.device?.model ?? ""))\n"
             }
-            try csv.write(to: folder.appendingPathComponent("watch_sleep.csv"), atomically: true, encoding: .utf8)
+            try csv.write(to: Night(folder).url(.watchSleep), atomically: true, encoding: .utf8)
             notes.append(tr("Schlafphasen: %d Einträge", samples.count))
         } catch {
             notes.append(tr("Schlafphasen: Fehler %@", error.localizedDescription))
@@ -58,7 +57,7 @@ enum NightExport {
                 let samples = try await d.result(for: store)
                 var csv = "start,end,value,source\n"
                 for s in samples {
-                    csv += "\(iso.string(from: s.startDate)),\(iso.string(from: s.endDate)),"
+                    csv += "\(Night.timestamp(s.startDate, fractionalSeconds: false)),\(Night.timestamp(s.endDate, fractionalSeconds: false)),"
                         + "\(s.quantity.doubleValue(for: unit)),\(clean(s.sourceRevision.source.name))\n"
                 }
                 try csv.write(to: folder.appendingPathComponent("watch_" + file), atomically: true, encoding: .utf8)
@@ -75,11 +74,6 @@ enum NightExport {
     }
 
     /// Audiodateien einer Nacht (für separates Teilen).
-    static func audioFiles(in folder: URL) -> [URL] {
-        let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
-        return files.filter { $0.pathExtension == "m4a" }.sorted { $0.lastPathComponent < $1.lastPathComponent }
-    }
-
     /// Packt den Ordner als ZIP (über NSFileCoordinator, ohne Zusatzbibliothek).
     /// Ohne `includeAudio` werden die Audiodateien weggelassen (klein genug für den Chat).
     static func zip(folder: URL, includeAudio: Bool = false) throws -> URL {
