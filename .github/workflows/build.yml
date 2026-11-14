@@ -48,8 +48,8 @@ jobs:
       - name: Build (unsigned)
         run: |
           set -o pipefail
-          xcodebuild -project SleepSonar.xcodeproj \
-            -scheme SleepSonar \
+          xcodebuild -project Suya.xcodeproj \
+            -scheme Suya \
             -configuration Release \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
@@ -57,45 +57,45 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build | tee build.log | grep -E "error:|warning:|BUILD" || true
           grep -q "BUILD SUCCEEDED" build.log || { grep -E "error:" build.log; exit 1; }
-          test -d build/dd/Build/Products/Release-iphoneos/SleepSonar.app
-          cp -R build/dd/Build/Products/Release-iphoneos/SleepSonar.app build/
+          test -d build/dd/Build/Products/Release-iphoneos/Suya.app
+          cp -R build/dd/Build/Products/Release-iphoneos/Suya.app build/
 
       - name: Set version (Jahr.Monat.laufende Nummer im Monat, z. B. 26.11.2)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          PL=build/SleepSonar.app/Info.plist
+          PL=build/Suya.app/Info.plist
           YM="$(TZ=Europe/Berlin date +%y).$(TZ=Europe/Berlin date +%-m)"
           LAST=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[].tag_name' \
                  | sed -n "s/^v${YM//./\\.}\.\([0-9]*\)$/\1/p" | sort -n | tail -1)
           VERSION="$YM.$(( ${LAST:-0} + 1 ))"
           /usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString $VERSION" "$PL"
           /usr/libexec/PlistBuddy -c "Set CFBundleVersion ${GITHUB_RUN_NUMBER}" "$PL"
-          for EX in build/SleepSonar.app/PlugIns/*.appex; do
+          for EX in build/Suya.app/PlugIns/*.appex; do
             /usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString $VERSION" "$EX/Info.plist"
             /usr/libexec/PlistBuddy -c "Set CFBundleVersion ${GITHUB_RUN_NUMBER}" "$EX/Info.plist"
           done
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "### SleepSonar $VERSION" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Suya $VERSION" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Ad-hoc sign with entitlements (AltStore re-signs later)
         run: |
-          for EX in build/SleepSonar.app/PlugIns/*.appex; do codesign --force --sign - "$EX"; done
+          for EX in build/Suya.app/PlugIns/*.appex; do codesign --force --sign - "$EX"; done
           codesign --force --sign - \
-            --entitlements SleepSonar/SleepSonar.entitlements \
-            build/SleepSonar.app
-          codesign -d --entitlements - build/SleepSonar.app
+            --entitlements Suya/Suya.entitlements \
+            build/Suya.app
+          codesign -d --entitlements - build/Suya.app
 
       - name: Package IPA
         run: |
           mkdir Payload
-          cp -R build/SleepSonar.app Payload/
-          zip -qry SleepSonar.ipa Payload
+          cp -R build/Suya.app Payload/
+          zip -qry Suya.ipa Payload
 
       - uses: actions/upload-artifact@v4
         with:
-          name: SleepSonar-ipa
-          path: SleepSonar.ipa
+          name: Suya-ipa
+          path: Suya.ipa
 
       - name: Release + SideStore-Quelle
         if: github.ref == 'refs/heads/main'
@@ -104,10 +104,10 @@ jobs:
         run: |
           TAG="v$VERSION"
           NOTES=$(git log -1 --format=%B | grep -v -E '^(Co-Authored-By|Claude-Session):' | sed '/^$/N;/^\n$/D')
-          python3 scripts/make_source.py --ipa SleepSonar.ipa \
-            --entitlements SleepSonar/SleepSonar.entitlements \
+          python3 scripts/make_source.py --ipa Suya.ipa \
+            --entitlements Suya/Suya.entitlements \
             --repo "$GITHUB_REPOSITORY" --tag "$TAG" --notes "$NOTES" --out source.json
-          gh release create "$TAG" SleepSonar.ipa source.json \
+          gh release create "$TAG" Suya.ipa source.json \
             --title "Suya $VERSION" --notes "$NOTES" --latest
           echo "Quelle: https://github.com/$GITHUB_REPOSITORY/releases/latest/download/source.json" >> "$GITHUB_STEP_SUMMARY"
 

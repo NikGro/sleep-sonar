@@ -41,7 +41,7 @@ def main():
         "buildVersion": info["CFBundleVersion"],
         "date": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "localizedDescription": a.notes.strip() or "Neue Version",
-        "downloadURL": f"{base}/releases/download/{a.tag}/SleepSonar.ipa",
+        "downloadURL": f"{base}/releases/download/{a.tag}/Suya.ipa",
         "size": len(data),
         "sha256": hashlib.sha256(data).hexdigest(),
         "minOSVersion": info.get("MinimumOSVersion", "17.0"),

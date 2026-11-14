@@ -4,7 +4,7 @@ import SwiftUI
 import WidgetKit
 
 @main
-struct SomnivoWidgets: WidgetBundle {
+struct SuyaWidgets: WidgetBundle {
     var body: some Widget {
         NightLiveActivity()
         if #available(iOS 26.0, *) {

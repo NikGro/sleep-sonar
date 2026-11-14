@@ -3,7 +3,7 @@
 SideStore signiert Apps mit deiner kostenlosen Apple-ID. Dabei lässt es nur
 Berechtigungen durch, die auf einer festen Liste stehen. HealthKit fehlt dort,
 obwohl Apple es auch für kostenlose Accounts freischaltet. Deshalb verliert
-SleepSonar beim Signieren den Health-Zugriff.
+Suya beim Signieren den Health-Zugriff.
 
 `patch_healthkit.py` (von [kenantan32/sidestore-healthkit](https://github.com/kenantan32/sidestore-healthkit))
 ergänzt in SideSign, der Signier-Bibliothek von SideStore, sechs Zeilen:

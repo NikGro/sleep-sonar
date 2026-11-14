@@ -92,7 +92,7 @@ version.
 
 | Folder | Contents |
 |---|---|
-| `SleepSonar/` | the app (SwiftUI): recording, analysis, alarms, sounds, data donation |
+| `Suya/` | the app (SwiftUI): recording, analysis, alarms, sounds, data donation |
 | `Packages/SonarDSP/` | signal processing (log-mel spectrogram, normalisation) with tests |
 | `Widgets/` | Live Activity and widgets |
 | `training/` | training of the sleep stage model (PyTorch → Core ML) |

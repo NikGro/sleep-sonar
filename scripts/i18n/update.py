@@ -8,7 +8,7 @@ g = open(os.path.join(SCRIPTS, "gen_strings.py")).read(); ns = {"__file__": os.p
 exec(g.split("# weitere Sprachen")[0].split("missing = sorted")[0], ns)
 used = ns["keys_in_code"]()
 from strings_en import EN
-src = "".join(open(f, encoding="utf-8").read() for f in glob.glob(f"{ROOT}/SleepSonar/*.swift") + glob.glob(f"{ROOT}/Widgets/*.swift"))
+src = "".join(open(f, encoding="utf-8").read() for f in glob.glob(f"{ROOT}/Suya/*.swift") + glob.glob(f"{ROOT}/Widgets/*.swift"))
 new = json.load(open(sys.argv[1], encoding="utf-8")) if len(sys.argv) > 1 else {}
 keep = lambda k: k in used or ('"' + k + '"') in src or k in new
 en = {k: v for k, v in EN.items() if keep(k)}

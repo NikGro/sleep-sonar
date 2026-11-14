@@ -16,7 +16,7 @@ def write(path, pairs):
 def keys_in_code():
     keys = set()
     pat = re.compile(r'tr\(\s*(?:\w+ \? )?"((?:[^"\\]|\\.)*)"(?:\s*:\s*"((?:[^"\\]|\\.)*)")?')
-    for f in glob.glob(f"{ROOT}/SleepSonar/*.swift") + glob.glob(f"{ROOT}/Widgets/*.swift"):
+    for f in glob.glob(f"{ROOT}/Suya/*.swift") + glob.glob(f"{ROOT}/Widgets/*.swift"):
         for m in pat.finditer(open(f, encoding="utf-8").read()):
             keys.update(k.encode().decode("unicode_escape").encode("latin1").decode("utf-8") if "\\" in k else k
                         for k in m.groups() if k)
@@ -40,12 +40,12 @@ if "--check" in sys.argv:
     print(f"{len(EN)} Übersetzungen vollständig"); sys.exit(0)
 
 pairs = sorted(EN.items())
-for target in ("SleepSonar", "Widgets"):
+for target in ("Suya", "Widgets"):
     write(f"{ROOT}/{target}/en.lproj/Localizable.strings", pairs)
     write(f"{ROOT}/{target}/de.lproj/Localizable.strings", [])
-write(f"{ROOT}/SleepSonar/en.lproj/InfoPlist.strings", sorted(INFOPLIST_EN.items()))
-write(f"{ROOT}/SleepSonar/en.lproj/AppShortcuts.strings", [(k, v[0]) for k, v in SHORTCUTS.items()])
-write(f"{ROOT}/SleepSonar/de.lproj/AppShortcuts.strings", [(k, v[1]) for k, v in SHORTCUTS.items()])
+write(f"{ROOT}/Suya/en.lproj/InfoPlist.strings", sorted(INFOPLIST_EN.items()))
+write(f"{ROOT}/Suya/en.lproj/AppShortcuts.strings", [(k, v[0]) for k, v in SHORTCUTS.items()])
+write(f"{ROOT}/Suya/de.lproj/AppShortcuts.strings", [(k, v[1]) for k, v in SHORTCUTS.items()])
 for lang in LANGS:
     d = json.load(open(os.path.join(I18N, f"{lang}.json"), encoding="utf-8"))
     problems += [f"{lang}: fehlt: {k}" for k in sorted(set(EN) - set(d))]
@@ -55,8 +55,8 @@ if problems:
 for lang in LANGS:
     d = json.load(open(os.path.join(I18N, f"{lang}.json"), encoding="utf-8"))
     lp = sorted((k, d[k]) for k in EN)
-    for target in ("SleepSonar", "Widgets"):
+    for target in ("Suya", "Widgets"):
         write(f"{ROOT}/{target}/{lang}.lproj/Localizable.strings", lp)
-    write(f"{ROOT}/SleepSonar/{lang}.lproj/InfoPlist.strings", sorted(extra["infoplist"][lang].items()))
-    write(f"{ROOT}/SleepSonar/{lang}.lproj/AppShortcuts.strings", list(zip(SHORTCUTS.keys(), extra["shortcuts"][lang])))
+    write(f"{ROOT}/Suya/{lang}.lproj/InfoPlist.strings", sorted(extra["infoplist"][lang].items()))
+    write(f"{ROOT}/Suya/{lang}.lproj/AppShortcuts.strings", list(zip(SHORTCUTS.keys(), extra["shortcuts"][lang])))
 print("geschrieben:", len(pairs), "Einträge,", 2 + len(LANGS), "Sprachen")

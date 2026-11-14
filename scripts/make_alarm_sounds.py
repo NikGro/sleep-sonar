@@ -4,7 +4,7 @@ import numpy as np, subprocess, os
 from scipy import signal
 SR = 44100; DUR = 30
 t = np.arange(SR * DUR) / SR
-OUT = os.path.join(os.path.dirname(__file__), "..", "SleepSonar", "Sounds")
+OUT = os.path.join(os.path.dirname(__file__), "..", "Suya", "Sounds")
 rng = np.random.default_rng(3)
 
 def reverb(x, rt=1.8, mix=0.25):
@@ -56,7 +56,7 @@ def classic():
 
 def from_loop(name):
     raw = subprocess.run(["ffmpeg", "-loglevel", "error", "-i",
-                          os.path.join(os.path.dirname(__file__), "..", "SleepSonar", "SleepSounds", f"{name}.m4a"),
+                          os.path.join(os.path.dirname(__file__), "..", "Suya", "SleepSounds", f"{name}.m4a"),
                           "-t", str(DUR), "-f", "f32le", "-ac", "1", "-ar", str(SR), "-"], capture_output=True, check=True).stdout
     x = np.frombuffer(raw, np.float32).astype(np.float64); return np.pad(x, (0, max(0, len(t) - len(x))))[:len(t)]
 

@@ -40,7 +40,7 @@ struct StopNightRecordingIntent: AppIntent {
     }
 }
 
-struct SleepSonarShortcuts: AppShortcutsProvider {
+struct SuyaShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(intent: StartNightRecordingIntent(),
                     phrases: ["Starte Schlafaufnahme in \(.applicationName)",

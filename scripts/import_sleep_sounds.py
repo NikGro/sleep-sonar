@@ -1,8 +1,8 @@
 """Übernimmt freie Naturklänge aus Blanket (github.com/rafaelmardojai/blanket, nur CC0 / gemeinfrei / CC BY)
-als nahtlose Schleifen (höchstens 60 s, 2 s überblendet) in SleepSonar/SleepSounds/."""
+als nahtlose Schleifen (höchstens 60 s, 2 s überblendet) in Suya/SleepSounds/."""
 import numpy as np, subprocess, os, sys
 SRC = sys.argv[1] if len(sys.argv) > 1 else "/tmp/blanket/data/resources/sounds"
-OUT = os.path.join(os.path.dirname(__file__), "..", "SleepSonar", "SleepSounds")
+OUT = os.path.join(os.path.dirname(__file__), "..", "Suya", "SleepSounds")
 SR = 44100; MAXLEN = 60; FADE = 2
 MAP = {"regen": "rain", "gewitter": "storm", "wellen": "waves", "bach": "stream", "wind": "wind",
        "kamin": "fireplace", "voegel": "birds", "sommernacht": "summer-night", "zug": "train",

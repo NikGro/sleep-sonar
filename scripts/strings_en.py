@@ -1,5 +1,5 @@
 # Englische Übersetzungen (Schlüssel = deutscher Text). Wird von gen_strings.py in
-# SleepSonar/en.lproj und Widgets/en.lproj geschrieben.
+# Suya/en.lproj und Widgets/en.lproj geschrieben.
 EN = {
 "Willst du diese Nacht löschen?": "Do you want to delete this night?",
 "Nacht löschen": "Delete night",

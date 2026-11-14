@@ -4,7 +4,7 @@ from scipy import signal
 SR = 22050; DUR = 60; FADE = 3
 N = int(SR * (DUR + FADE)); t = np.arange(N) / SR
 rng = np.random.default_rng(7)
-OUT = os.path.join(os.path.dirname(__file__), "..", "SleepSonar", "SleepSounds")
+OUT = os.path.join(os.path.dirname(__file__), "..", "Suya", "SleepSounds")
 
 def white(): return rng.standard_normal(N)
 def pink():

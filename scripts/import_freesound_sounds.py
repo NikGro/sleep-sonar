@@ -1,5 +1,5 @@
 """Macht aus freien Aufnahmen von freesound.org (nur CC0 / CC BY, Vorschau in hoher Qualität) nahtlose
-Schleifen für SleepSonar/SleepSounds/: sucht den ruhigsten, gleichmäßigsten Abschnitt (ohne Anfang und Ende
+Schleifen für Suya/SleepSounds/: sucht den ruhigsten, gleichmäßigsten Abschnitt (ohne Anfang und Ende
 der Aufnahme), schneidet ihn auf höchstens 60 s und blendet das Ende in den Anfang über. Gleichmäßig
 tickende Klänge (Uhr, Herzschlag) werden auf eine ganze Zahl von Schlägen geschnitten, damit die Naht
 nicht stolpert. Aufruf: import_freesound_sounds.py <Ordner mit name.ogg> [name …]"""
@@ -8,7 +8,7 @@ import numpy as np
 
 SRC = sys.argv[1]
 ONLY = set(sys.argv[2:])
-OUT = os.path.join(os.path.dirname(__file__), "..", "SleepSonar", "SleepSounds")
+OUT = os.path.join(os.path.dirname(__file__), "..", "Suya", "SleepSounds")
 SR = 44100; MAXLEN = 60; FADE = 2.0; EDGE = 5
 PERIODIC = {"uhr", "herzschlag"}
 

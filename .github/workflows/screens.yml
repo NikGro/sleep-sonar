@@ -41,16 +41,16 @@ jobs:
       - name: Build for simulator
         run: |
           set -o pipefail
-          xcodebuild -project SleepSonar.xcodeproj -scheme SleepSonar -configuration Debug \
+          xcodebuild -project Suya.xcodeproj -scheme Suya -configuration Debug \
             -sdk iphonesimulator -destination "id=$UDID" -derivedDataPath build/dd \
             CODE_SIGNING_ALLOWED=NO build | grep -E "error:|BUILD" || true
-          test -d build/dd/Build/Products/Debug-iphonesimulator/SleepSonar.app
+          test -d build/dd/Build/Products/Debug-iphonesimulator/Suya.app
       - name: Screenshots
         env:
           SCREENS: ${{ github.event.inputs.screens }}
           LANG_INPUT: ${{ github.event.inputs.lang }}
         run: |
-          APP=build/dd/Build/Products/Debug-iphonesimulator/SleepSonar.app
+          APP=build/dd/Build/Products/Debug-iphonesimulator/Suya.app
           xcrun simctl install "$UDID" "$APP"
           xcrun simctl privacy "$UDID" grant microphone de.nikgro.sleepsonar || true
           mkdir -p shots

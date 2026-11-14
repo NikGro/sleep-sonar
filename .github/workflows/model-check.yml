@@ -1,12 +1,12 @@
 name: Model check
 
-# Prüft die Core-ML-Modelle (SleepSonar/Model) gegen die PyTorch-Ausgaben (training/model/reference.npz)
+# Prüft die Core-ML-Modelle (Suya/Model) gegen die PyTorch-Ausgaben (training/model/reference.npz)
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - "SleepSonar/Model/**"
+      - "Suya/Model/**"
       - "training/model/**"
 
 permissions:
@@ -26,8 +26,8 @@ jobs:
           /tmp/v/bin/python - <<'PY'
           import numpy as np, coremltools as ct
           r = np.load("training/model/reference.npz")
-          enc = ct.models.MLModel("SleepSonar/Model/SuyaEpochEncoder.mlpackage")
-          seq = ct.models.MLModel("SleepSonar/Model/SuyaNightSequence.mlpackage")
+          enc = ct.models.MLModel("Suya/Model/SuyaEpochEncoder.mlpackage")
+          seq = ct.models.MLModel("Suya/Model/SuyaNightSequence.mlpackage")
           a = enc.predict({"mel": r["x"]})["embedding"]
           b = seq.predict({"embeddings": r["e"]})["probabilities"]
           ea = float(np.abs(a - r["enc"]).max()); eb = float(np.abs(b - r["seq"]).max())

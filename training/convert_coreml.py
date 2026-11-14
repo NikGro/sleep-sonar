@@ -3,7 +3,7 @@
 - SuyaEpochEncoder: je 30-s-Epoche ein normiertes Log-Mel-Bild (64 x 300) -> 96 Merkmale (CNN)
 - SuyaNightSequence: alle Epochen der Nacht (T x 96) -> Wahrscheinlichkeiten Wach/REM/Kern/Tief (GRU)
 
-Aufruf: python3 training/convert_coreml.py   (schreibt nach SleepSonar/Model/)
+Aufruf: python3 training/convert_coreml.py   (schreibt nach Suya/Model/)
 """
 import os, sys
 import numpy as np, torch, torch.nn as nn
@@ -33,7 +33,7 @@ class Sequence(nn.Module):
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 net = Net(); net.load_state_dict(torch.load(os.path.join(root, "training/model/suya_e2e.pt"), map_location="cpu")); net.eval()
 enc, seq = Encoder(net).eval(), Sequence(net).eval()
-outdir = os.path.join(root, "SleepSonar/Model"); os.makedirs(outdir, exist_ok=True)
+outdir = os.path.join(root, "Suya/Model"); os.makedirs(outdir, exist_ok=True)
 
 x = torch.randn(4, 1, 64, 300)
 m1 = ct.convert(torch.jit.trace(enc, x),

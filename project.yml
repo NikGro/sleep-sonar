@@ -1,4 +1,4 @@
-name: SleepSonar
+name: Suya
 options:
   bundleIdPrefix: de.nikgro
   developmentLanguage: en
@@ -8,16 +8,16 @@ packages:
   SonarDSP:
     path: Packages/SonarDSP
 targets:
-  SleepSonar:
+  Suya:
     type: application
     platform: iOS
-    sources: [SleepSonar, Shared]
+    sources: [Suya, Shared]
     dependencies:
       - package: SonarDSP
-      - target: SomnivoWidgets
+      - target: SuyaWidgets
     scheme: {}
     info:
-      path: SleepSonar/Info.plist
+      path: Suya/Info.plist
       properties:
         CFBundleDisplayName: Suya
         CFBundleShortVersionString: "26.11.0"
@@ -36,13 +36,13 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.nikgro.sleepsonar
-        CODE_SIGN_ENTITLEMENTS: SleepSonar/SleepSonar.entitlements
+        CODE_SIGN_ENTITLEMENTS: Suya/Suya.entitlements
         CODE_SIGNING_ALLOWED: "NO"
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "6.0"
         GENERATE_INFOPLIST_FILE: "NO"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-  SomnivoWidgets:
+  SuyaWidgets:
     type: app-extension
     platform: iOS
     sources: [Widgets, Shared]

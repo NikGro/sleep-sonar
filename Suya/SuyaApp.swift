@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 @main
-struct SleepSonarApp: App {
+struct SuyaApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var askDonation = false
