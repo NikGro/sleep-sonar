@@ -135,9 +135,9 @@ final class PassiveRecorder: @unchecked Sendable {
     /// wäre gegenüber Uhr, Watch und Klängen verschoben. Deshalb Stille einfügen und die Stelle vermerken.
     private func fillGap(before buf: AVAudioPCMBuffer) throws {
         let now = Date()
-        guard let audioStart else { audioStart = now.addingTimeInterval(-Double(buf.frameLength) / Self.sampleRate); return }
+        guard let start = audioStart else { audioStart = now.addingTimeInterval(-Double(buf.frameLength) / Self.sampleRate); return }
         let position = Double(samplesWritten) / Self.sampleRate
-        let lag = now.timeIntervalSince(audioStart) - position - Double(buf.frameLength) / Self.sampleRate
+        let lag = now.timeIntervalSince(start) - position - Double(buf.frameLength) / Self.sampleRate
         guard lag > 5 else { return }   // normales Ruckeln und Uhrendrift bleiben unberührt
         let fill = min(lag, Self.maxGapFill)
         let chunk = AVAudioFrameCount(Self.sampleRate)
