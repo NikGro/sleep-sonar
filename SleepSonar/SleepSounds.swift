@@ -241,6 +241,9 @@ final class SleepSoundPlayer: ObservableObject {
 
     /// Klänge im Hintergrund dekodieren, damit Abspielen sofort beginnt
     func preload(_ sounds: [SleepSound]) {
+        // nur gewählte oder gerade spielende Klänge im Speicher halten (je Klang einige MB)
+        let keep = Set(sounds).union(active).union(nodes.keys)
+        for s in Self.cache.keys where !keep.contains(s) { Self.cache[s] = nil }
         for s in sounds where Self.cache[s] == nil && !loading.contains(s) {
             loading.insert(s)
             Task {

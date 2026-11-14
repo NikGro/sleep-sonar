@@ -54,6 +54,12 @@ final class PassiveNightEngine: ObservableObject {
             errorMessage = tr("Kein Mikrofonzugriff. Einstellungen → Suya → Mikrofon erlauben.")
             return
         }
+        // eine Nacht braucht gut 200 MB (Ton, Spektrogramm beim Auswerten); bei vollem Speicher gar nicht erst anfangen
+        if let free = Self.freeBytes(), free < Self.minimumFreeBytes {
+            errorMessage = tr("Zu wenig freier Speicher (%@). Für eine Nacht braucht Suya mindestens 500 MB.",
+                              ByteCountFormatter.string(fromByteCount: free, countStyle: .file))
+            return
+        }
         do {
             let session = AVAudioSession.sharedInstance()
             // Mischbar: andere Apps dürfen abspielen, ohne die Aufnahme zu unterbrechen.
@@ -123,6 +129,7 @@ final class PassiveNightEngine: ObservableObject {
             alarmTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
                 Task { @MainActor in
                     guard let self else { return }
+                    if self.endIfNeeded() { return }
                     SmartAlarm.shared.tick(seconds: self.secondsHistory, motion: self.motionHistory)
                     SleepSoundPlayer.shared.tick(seconds: self.secondsHistory, motion: self.motionHistory)
                 }
@@ -183,7 +190,7 @@ final class PassiveNightEngine: ObservableObject {
         let url = folder.appendingPathComponent("sounds.csv")
         let line = String(format: "%.1f,%@\n", Date().timeIntervalSince(startDate), on ? "an" : "aus")
         if let h = try? FileHandle(forWritingTo: url) {
-            h.seekToEndOfFile(); h.write(Data(line.utf8)); try? h.close()
+            _ = try? h.seekToEnd(); try? h.write(contentsOf: Data(line.utf8)); try? h.close()
         } else {
             try? ("seconds,state\n" + line).write(to: url, atomically: true, encoding: .utf8)
         }
@@ -292,6 +299,33 @@ final class PassiveNightEngine: ObservableObject {
             }
             failedRestarts += 1
         }
+    }
+
+    /// längste Aufnahme: danach endet die Nacht von selbst (vergessen zu stoppen)
+    static let maximumSeconds = 14 * 3600.0
+    static let minimumFreeBytes: Int64 = 500_000_000
+    /// beim Aufnehmen: unter dieser Grenze anhalten, damit iOS und die Auswertung noch Platz haben
+    static let stopFreeBytes: Int64 = 150_000_000
+
+    static func freeBytes() -> Int64? {
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        return (try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]))?
+            .volumeAvailableCapacityForImportantUsage
+    }
+
+    /// einmal je Minute: zu lange oder Speicher fast voll → Aufnahme beenden (nicht, solange ein Wecker klingelt)
+    private func endIfNeeded() -> Bool {
+        guard isRunning, let startDate else { return false }
+        if #available(iOS 26.0, *), AlarmBackend.isRinging { return false }
+        if Date().timeIntervalSince(startDate) > Self.maximumSeconds {
+            log(tr("Nach 14 Stunden automatisch beendet"))
+            stop(); return true
+        }
+        if let free = Self.freeBytes(), free < Self.stopFreeBytes {
+            log(tr("Speicher fast voll – Aufnahme beendet"))
+            stop(); return true
+        }
+        return false
     }
 
     private func checkAlive() {

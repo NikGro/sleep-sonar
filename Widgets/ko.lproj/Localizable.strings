@@ -75,6 +75,7 @@
 "Der Server nimmt gerade nichts an. Suya versucht es später wieder." = "서버가 지금은 받지 않습니다. Suya가 나중에 다시 시도합니다.";
 "Der Wecker braucht iOS 26 oder neuer." = "알람에는 iOS 26 이상이 필요합니다.";
 "Der iPhone-Standardton folgt der Lautstärke in den Einstellungen. iOS gibt die Töne der Uhr-App nicht für andere Apps frei." = "iPhone 기본 사운드는 설정의 음량을 따릅니다. iOS는 시계 앱의 사운드를 다른 앱에 제공하지 않습니다.";
+"Die Aufnahme hatte Aussetzer – wird nicht gespendet." = "기록이 중간에 끊겨 기부되지 않습니다.";
 "Die Klänge laufen gerade für die Nacht." = "지금 밤을 위한 소리가 재생 중입니다.";
 "Die Lautstärke wird in den Ton gerechnet. Die Klingellautstärke des iPhones gilt zusätzlich." = "음량은 사운드 자체에 포함되어 있습니다. 여기에 iPhone 벨소리 음량이 더해집니다.";
 "Die Nachtaufnahme läuft bereits." = "밤 기록이 이미 실행 중입니다.";
@@ -182,6 +183,7 @@
 "Mit der Nachtaufnahme starten" = "밤 기록과 함께 시작";
 "Morgenlicht" = "아침 햇살";
 "NICHT am Strom" = "충전 중 아님";
+"Nach 14 Stunden automatisch beendet" = "14시간 후 자동으로 종료됨";
 "Nacht gespendet." = "밤을 기증했습니다.";
 "Nacht löschen" = "밤 삭제";
 "Nacht wird ausgewertet" = "밤 분석 중";
@@ -254,6 +256,7 @@
 "Sommernacht" = "여름밤";
 "Sonnenaufgang" = "해돋이";
 "Sonstiges" = "기타";
+"Speicher fast voll – Aufnahme beendet" = "저장 공간이 거의 가득 참 – 기록 종료";
 "Spende widerrufen" = "기증 철회";
 "Spenden ist ab 18 Jahren möglich." = "기증은 만 18세 이상만 가능합니다.";
 "Spender-Nummer" = "기증자 번호";
@@ -346,6 +349,7 @@
 "ZIP konnte nicht erstellt werden: %@" = "ZIP을 만들 수 없습니다: %@";
 "Zeit je Phase" = "단계별 시간";
 "Zeitraum" = "시간대";
+"Zu wenig freier Speicher (%@). Für eine Nacht braucht Suya mindestens 500 MB." = "저장 공간이 부족합니다(%@). 하룻밤 기록에는 최소 500MB가 필요합니다.";
 "Zugfahrt" = "기차 여행";
 "ab Aufnahmebeginn, nur mit Aufnahme" = "기록 시작부터, 기록 중에만";
 "abgelehnt" = "거부됨";

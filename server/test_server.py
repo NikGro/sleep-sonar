@@ -28,7 +28,7 @@ class Server(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.httpd.shutdown()
+        cls.httpd.shutdown(); cls.httpd.server_close()
 
     def setUp(self):
         srv.ip_hits.clear(); srv.donor_bytes.clear(); srv.bug_hits.clear()

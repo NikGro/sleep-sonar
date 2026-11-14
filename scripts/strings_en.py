@@ -376,6 +376,10 @@ EN = {
 "Flugzeug": "Airplane",
 "Autofahrt": "Car ride",
 "Die Spender-Nummer %@ stammt von einem anderen iPhone und lässt sich von hier nicht löschen. Schreib uns über das Impressum – sonst wird alles nach 6 Monaten automatisch gelöscht.": "Donor number %@ comes from another iPhone and can't be deleted from here. Contact us via the imprint – otherwise everything is deleted automatically after 6 months.",
+"Zu wenig freier Speicher (%@). Für eine Nacht braucht Suya mindestens 500 MB.": "Not enough free storage (%@). Suya needs at least 500 MB for a night.",
+"Nach 14 Stunden automatisch beendet": "Stopped automatically after 14 hours",
+"Speicher fast voll – Aufnahme beendet": "Storage almost full – recording stopped",
+"Die Aufnahme hatte Aussetzer – wird nicht gespendet.": "The recording had gaps – not donated.",
 }
 # Schlüssel, die nicht über tr("…") im Code stehen (für die Vollständigkeitsprüfung)
 DYNAMIC = ["Aus", "Schlummern", "Klänge ausblenden", "Klänge abspielen", "Klänge sofort aus", "Wach", "REM", "Kern", "Tief", "Im Bett", "Schlafend", "Schnarchen", "Sprechen",

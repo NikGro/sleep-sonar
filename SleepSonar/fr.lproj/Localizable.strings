@@ -75,6 +75,7 @@
 "Der Server nimmt gerade nichts an. Suya versucht es später wieder." = "Le serveur n’accepte rien pour le moment. Suya réessaiera plus tard.";
 "Der Wecker braucht iOS 26 oder neuer." = "L’alarme nécessite iOS 26 ou ultérieur.";
 "Der iPhone-Standardton folgt der Lautstärke in den Einstellungen. iOS gibt die Töne der Uhr-App nicht für andere Apps frei." = "Le son standard de l’iPhone suit le volume des Réglages. iOS ne met pas les sons de l’app Horloge à disposition des autres apps.";
+"Die Aufnahme hatte Aussetzer – wird nicht gespendet." = "L'enregistrement a eu des coupures – pas de don.";
 "Die Klänge laufen gerade für die Nacht." = "Les sons jouent en ce moment pour la nuit.";
 "Die Lautstärke wird in den Ton gerechnet. Die Klingellautstärke des iPhones gilt zusätzlich." = "Le volume est intégré au son. Le volume de sonnerie de l’iPhone s’y ajoute.";
 "Die Nachtaufnahme läuft bereits." = "L’enregistrement nocturne est déjà en cours.";
@@ -182,6 +183,7 @@
 "Mit der Nachtaufnahme starten" = "Démarrer avec l’enregistrement nocturne";
 "Morgenlicht" = "Lumière du matin";
 "NICHT am Strom" = "PAS en charge";
+"Nach 14 Stunden automatisch beendet" = "Arrêté automatiquement après 14 heures";
 "Nacht gespendet." = "Nuit donnée.";
 "Nacht löschen" = "Supprimer la nuit";
 "Nacht wird ausgewertet" = "Analyse de la nuit";
@@ -254,6 +256,7 @@
 "Sommernacht" = "Nuit d’été";
 "Sonnenaufgang" = "Lever du soleil";
 "Sonstiges" = "Autres";
+"Speicher fast voll – Aufnahme beendet" = "Stockage presque plein – enregistrement arrêté";
 "Spende widerrufen" = "Retirer le don";
 "Spenden ist ab 18 Jahren möglich." = "Il faut avoir 18 ans ou plus pour donner.";
 "Spender-Nummer" = "Numéro de donneur";
@@ -346,6 +349,7 @@
 "ZIP konnte nicht erstellt werden: %@" = "Impossible de créer le ZIP : %@";
 "Zeit je Phase" = "Temps par phase";
 "Zeitraum" = "Plage";
+"Zu wenig freier Speicher (%@). Für eine Nacht braucht Suya mindestens 500 MB." = "Espace de stockage insuffisant (%@). Suya a besoin d'au moins 500 Mo pour une nuit.";
 "Zugfahrt" = "Trajet en train";
 "ab Aufnahmebeginn, nur mit Aufnahme" = "depuis le début de l’enregistrement, uniquement avec enregistrement";
 "abgelehnt" = "refusé";

@@ -75,6 +75,7 @@
 "Der Server nimmt gerade nichts an. Suya versucht es später wieder." = "The server isn't accepting anything right now. Suya will try again later.";
 "Der Wecker braucht iOS 26 oder neuer." = "The alarm needs iOS 26 or later.";
 "Der iPhone-Standardton folgt der Lautstärke in den Einstellungen. iOS gibt die Töne der Uhr-App nicht für andere Apps frei." = "The iPhone default sound follows the volume in Settings. iOS doesn't make the Clock app's sounds available to other apps.";
+"Die Aufnahme hatte Aussetzer – wird nicht gespendet." = "The recording had gaps – not donated.";
 "Die Klänge laufen gerade für die Nacht." = "The sounds are playing for the night right now.";
 "Die Lautstärke wird in den Ton gerechnet. Die Klingellautstärke des iPhones gilt zusätzlich." = "The volume is built into the tone. The iPhone's ringer volume applies on top.";
 "Die Nachtaufnahme läuft bereits." = "The night recording is already running.";
@@ -182,6 +183,7 @@
 "Mit der Nachtaufnahme starten" = "Start with the night recording";
 "Morgenlicht" = "Morning light";
 "NICHT am Strom" = "NOT charging";
+"Nach 14 Stunden automatisch beendet" = "Stopped automatically after 14 hours";
 "Nacht gespendet." = "Night donated.";
 "Nacht löschen" = "Delete night";
 "Nacht wird ausgewertet" = "Analyzing the night";
@@ -254,6 +256,7 @@
 "Sommernacht" = "Summer night";
 "Sonnenaufgang" = "Sunrise";
 "Sonstiges" = "Other";
+"Speicher fast voll – Aufnahme beendet" = "Storage almost full – recording stopped";
 "Spende widerrufen" = "Withdraw donation";
 "Spenden ist ab 18 Jahren möglich." = "You must be 18 or older to donate.";
 "Spender-Nummer" = "Donor number";
@@ -346,6 +349,7 @@
 "ZIP konnte nicht erstellt werden: %@" = "Couldn't create ZIP: %@";
 "Zeit je Phase" = "Time per stage";
 "Zeitraum" = "Window";
+"Zu wenig freier Speicher (%@). Für eine Nacht braucht Suya mindestens 500 MB." = "Not enough free storage (%@). Suya needs at least 500 MB for a night.";
 "Zugfahrt" = "Train ride";
 "ab Aufnahmebeginn, nur mit Aufnahme" = "from recording start, only with recording";
 "abgelehnt" = "declined";

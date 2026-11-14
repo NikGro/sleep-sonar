@@ -7,6 +7,8 @@ import Foundation
 /// - `audio_000.m4a`, `audio_001.m4a`, … – AAC, 16 kHz mono, je Datei max. 1 Stunde
 /// - `audio_index.csv` – Startzeit jeder Audiodatei
 /// - `levels.csv`      – je Sekunde Pegel gesamt und in drei Bändern (dBFS)
+/// - `gaps.csv`        – Aussetzer der Aufnahme (Anruf, Siri …): dort Stille eingefügt, damit die Zeitachse
+///                       des Tons mit der Uhr übereinstimmt; die Auswertung blendet diese Stellen aus
 /// - `motion.csv`, `events.log`, `meta.json` – wie gehabt
 ///
 /// Alle Audio-Methoden laufen auf dem Tap-Thread, abgesichert per Lock.
@@ -33,6 +35,13 @@ final class PassiveRecorder: @unchecked Sendable {
     private var fileIndex = -1
     private var framesInFile: AVAudioFramePosition = 0
     private var finished = false
+    /// Uhrzeit der ersten Probe und Zahl aller geschriebenen Proben (für das Erkennen von Aussetzern)
+    private var audioStart: Date?
+    private var samplesWritten: Int64 = 0
+    private var gaps: FileHandle?
+    private var gapSeconds = 0.0
+    /// längere Aussetzer werden nur bis hierhin aufgefüllt (Speicher, Zeit auf dem Audio-Thread)
+    static let maxGapFill = 2 * 3600.0
 
     // Pegel je Sekunde: gesamt + Bänder (Brummen/Schnarchen, Stimme/Atem, Zischen)
     private var bands = [Biquad.bandpass(f: 250, q: 0.7, fs: PassiveRecorder.sampleRate),
@@ -69,6 +78,7 @@ final class PassiveRecorder: @unchecked Sendable {
         audioIndex = try Self.open(folder, "audio_index.csv", "file,start\n")
         motion = try Self.open(folder, "motion.csv", "time,activity_g,max_delta_g,pitch_deg,roll_deg\n")
         events = try Self.open(folder, "events.log", nil)
+        gaps = try Self.open(folder, "gaps.csv", "from_s,to_s\n")
         self.meta["start"] = iso.string(from: startDate)
         self.meta["mode"] = "passive_audio"
         self.meta["audio_sample_rate"] = Self.sampleRate
@@ -81,7 +91,7 @@ final class PassiveRecorder: @unchecked Sendable {
         let url = folder.appendingPathComponent(name)
         FileManager.default.createFile(atPath: url.path, contents: header.map { Data($0.utf8) })
         let h = try FileHandle(forWritingTo: url)
-        h.seekToEndOfFile()
+        _ = try? h.seekToEnd()
         return h
     }
 
@@ -110,13 +120,42 @@ final class PassiveRecorder: @unchecked Sendable {
             }
             if let err { throw err }
             guard out.frameLength > 0 else { return }
+            try fillGap(before: out)
             // Aufgenommen wird der Ton, wie er ist (eigene Schlafklänge werden in der Auswertung ausgeblendet)
             try write(out)
+            samplesWritten += Int64(out.frameLength)
             measure(out)
             live?.feed(out)
         } catch {
             eventLocked("Audio-Fehler: \(error.localizedDescription)")
         }
+    }
+
+    /// Lief die Aufnahme eine Weile nicht (Unterbrechung, Neustart), fehlt diese Zeit im Ton – alles danach
+    /// wäre gegenüber Uhr, Watch und Klängen verschoben. Deshalb Stille einfügen und die Stelle vermerken.
+    private func fillGap(before buf: AVAudioPCMBuffer) throws {
+        let now = Date()
+        guard let audioStart else { audioStart = now.addingTimeInterval(-Double(buf.frameLength) / Self.sampleRate); return }
+        let position = Double(samplesWritten) / Self.sampleRate
+        let lag = now.timeIntervalSince(audioStart) - position - Double(buf.frameLength) / Self.sampleRate
+        guard lag > 5 else { return }   // normales Ruckeln und Uhrendrift bleiben unberührt
+        let fill = min(lag, Self.maxGapFill)
+        let chunk = AVAudioFrameCount(Self.sampleRate)
+        guard let zero = AVAudioPCMBuffer(pcmFormat: outFormat, frameCapacity: chunk) else { return }
+        var left = Int64(fill * Self.sampleRate)
+        while left > 0 {
+            zero.frameLength = AVAudioFrameCount(min(Int64(chunk), left))
+            if let p = zero.floatChannelData?[0] { p.update(repeating: 0, count: Int(zero.frameLength)) }
+            try write(zero)
+            samplesWritten += Int64(zero.frameLength)
+            left -= Int64(zero.frameLength)
+        }
+        gapSeconds += fill
+        let line = String(format: "%.1f,%.1f\n", position, position + fill)
+        io.async { try? self.gaps?.write(contentsOf: Data(line.utf8)) }
+        eventLocked(String(format: "Aussetzer %.0f s mit Stille aufgefüllt", fill)
+                    + (lag > fill ? String(format: " (weitere %.0f s fehlen)", lag - fill) : ""))
+        if lag > fill { audioStart = now.addingTimeInterval(-position - fill - Double(buf.frameLength) / Self.sampleRate) }
     }
 
     private func write(_ buf: AVAudioPCMBuffer) throws {
@@ -144,7 +183,7 @@ final class PassiveRecorder: @unchecked Sendable {
             }
             framesInFile = 0
             let line = "\(name),\(iso.string(from: Date()))\n"
-            io.async { self.audioIndex?.write(Data(line.utf8)) }
+            io.async { try? self.audioIndex?.write(contentsOf: Data(line.utf8)) }
         }
         try file?.write(from: buf)
         framesInFile += AVAudioFramePosition(buf.frameLength)
@@ -176,7 +215,7 @@ final class PassiveRecorder: @unchecked Sendable {
                 let pk = 20 * log10(Double(peak) + 1e-7)
                 let line = String(format: "%@,%.1f,%.1f,%.1f,%.1f,%.1f\n",
                                   iso.string(from: Date()), rms, pk, bandDB[0], bandDB[1], bandDB[2])
-                io.async { self.levels?.write(Data(line.utf8)) }
+                io.async { try? self.levels?.write(contentsOf: Data(line.utf8)) }
                 onSecond(rms, bandDB)
                 sumAll = 0; sumBand = [0, 0, 0]; peak = 0; count = 0
             }
@@ -187,7 +226,7 @@ final class PassiveRecorder: @unchecked Sendable {
 
     func appendMotion(activity: Double, maxDelta: Double, pitch: Double, roll: Double) {
         let line = "\(iso.string(from: Date())),\(String(format: "%.5f,%.5f,%.1f,%.1f", activity, maxDelta, pitch, roll))\n"
-        io.async { self.motion?.write(Data(line.utf8)) }
+        io.async { try? self.motion?.write(contentsOf: Data(line.utf8)) }
     }
 
     func event(_ text: String) {
@@ -197,7 +236,7 @@ final class PassiveRecorder: @unchecked Sendable {
 
     private func eventLocked(_ text: String) {
         let line = "\(iso.string(from: Date()))  \(text)\n"
-        io.async { self.events?.write(Data(line.utf8)) }
+        io.async { try? self.events?.write(contentsOf: Data(line.utf8)) }
     }
 
     func setMeta(_ key: String, _ value: Any) {
@@ -212,6 +251,7 @@ final class PassiveRecorder: @unchecked Sendable {
         finished = true
         file = nil          // AAC-Datei abschließen
         let files = fileIndex + 1
+        let gapTotal = gapSeconds
         let live = self.live
         self.live = nil
         lock.unlock()
@@ -220,9 +260,10 @@ final class PassiveRecorder: @unchecked Sendable {
         io.sync {
             meta["end"] = iso.string(from: end)
             meta["audio_files"] = files
+            meta["gap_seconds"] = gapTotal.rounded()
             writeMeta()
-            for h in [levels, audioIndex, motion, events] { try? h?.close() }
-            levels = nil; audioIndex = nil; motion = nil; events = nil
+            for h in [levels, audioIndex, motion, events, gaps] { try? h?.close() }
+            levels = nil; audioIndex = nil; motion = nil; events = nil; gaps = nil
         }
     }
 

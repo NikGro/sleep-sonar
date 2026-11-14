@@ -34,7 +34,20 @@ enum NightModel {
             && Bundle.main.url(forResource: "SuyaNightSequence", withExtension: "mlmodelc") != nil
     }
 
-    enum Failure: Error { case noAudio, noModel }
+    enum Failure: Error { case noAudio, noModel, gaveUp }
+
+    /// Versuche je Nacht: vor dem Rechnen hochgezählt, nach Erfolg entfernt. So bleibt auch ein Absturz
+    /// mitten in der Auswertung gezählt, und eine kaputte Nacht bringt die App nicht bei jedem Start zum Absturz.
+    static let maxAttempts = 3
+    private static func attemptsURL(_ folder: URL) -> URL { folder.appendingPathComponent("analysis_attempts") }
+    /// gezählt je App-Version: nach einem Update (vielleicht mit Fehlerbehebung) neue Versuche
+    static func attempts(_ folder: URL) -> Int {
+        guard let text = try? String(contentsOf: attemptsURL(folder), encoding: .utf8) else { return 0 }
+        let parts = text.split(separator: " ")
+        guard parts.count == 2, String(parts[1]) == appBuild else { return 0 }
+        return Int(parts[0]) ?? 0
+    }
+    private static var appBuild: String { Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "" }
 
     /// Rechnet die Nacht (dauert je nach iPhone etwa eine Minute). `progress`: 0 … 1
     static func stages(folder: URL, progress report: @escaping @Sendable (Double) -> Void = { _ in }) throws
@@ -51,6 +64,9 @@ enum NightModel {
         if let c = cached(folder) { return c }   // inzwischen von einem anderen Aufruf gerechnet
         let files = NightExport.audioFiles(in: folder)
         guard !files.isEmpty else { throw Failure.noAudio }
+        let tries = attempts(folder)
+        guard tries < maxAttempts else { throw Failure.gaveUp }
+        try? "\(tries + 1) \(appBuild)".write(to: attemptsURL(folder), atomically: true, encoding: .utf8)
         guard let encURL = Bundle.main.url(forResource: "SuyaEpochEncoder", withExtension: "mlmodelc"),
               let seqURL = Bundle.main.url(forResource: "SuyaNightSequence", withExtension: "mlmodelc")
         else { throw Failure.noModel }
@@ -102,6 +118,7 @@ enum NightModel {
         if let data = try? JSONEncoder().encode(cache) {
             try? data.write(to: folder.appendingPathComponent("model.json"), options: .atomic)
         }
+        try? FileManager.default.removeItem(at: attemptsURL(folder))
         progress(1)
         return stages
     }
@@ -160,19 +177,28 @@ extension NightModel {
                 if text.hasPrefix("Klänge aus") || text.hasPrefix("Sounds off") { marks.append((t.timeIntervalSince(start), false)) }
             }
         }
-        var out: [Range<Int>] = []
-        /// nur gültige, endliche Bereiche (ein kaputter Eintrag darf die Auswertung nicht abstürzen lassen)
-        func append(_ from: Double, _ to: Double) {
-            guard from.isFinite, to.isFinite, to > from, abs(to) < 1e7 else { return }
-            out.append(Int(from * 10)..<Int(to * 10))
+        return MaskRanges.sounds(marks.map { (seconds: $0.0, on: $0.1) }) + gapFrames(folder)
+    }
+
+    /// Aussetzer der Aufnahme (mit Stille aufgefüllt, gaps.csv) als Bildbereiche – wie Klänge ausgeblendet
+    static func gapFrames(_ folder: URL) -> [Range<Int>] {
+        guard let text = try? String(contentsOf: folder.appendingPathComponent("gaps.csv"), encoding: .utf8) else { return [] }
+        return MaskRanges.gaps(csv: text)
+    }
+
+    /// Ältere Aufnahmen (vor gaps.csv) mit Aussetzern: der Ton ist dort zusammengeschoben, die Zeitachse
+    /// passt nicht mehr zur Uhr. Erkannt an Sprüngen in den Zeitstempeln von levels.csv (Summe in Sekunden).
+    static func untrackedGapSeconds(_ folder: URL) -> Double {
+        let fm = FileManager.default
+        guard !fm.fileExists(atPath: folder.appendingPathComponent("gaps.csv").path),
+              let text = try? String(contentsOf: folder.appendingPathComponent("levels.csv"), encoding: .utf8) else { return 0 }
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let times = text.split(separator: "\n").dropFirst().compactMap { line -> Date? in
+            guard let comma = line.firstIndex(of: ",") else { return nil }
+            return iso.date(from: String(line[..<comma]))
         }
-        var on: Double?
-        for (s, isOn) in marks.sorted(by: { $0.0 < $1.0 }) {
-            if isOn { if on == nil { on = s } }
-            else if let o = on { append(o - 2, s + 35); on = nil }
-        }
-        if let o = on { append(o - 2, o + 3 * 3600) }   // „aus“ fehlt: höchstens 3 h
-        return out
+        return MaskRanges.timestampGaps(times)
     }
 }
 
@@ -193,7 +219,8 @@ private struct AudioStream {
         while out.count < count {
             if file == nil {
                 guard index < files.count else { break }
-                let f = try AVAudioFile(forReading: files[index])
+                // unlesbare Datei (z. B. beim Schreiben abgebrochen) überspringen statt die ganze Nacht aufzugeben
+                guard let f = try? AVAudioFile(forReading: files[index]) else { index += 1; continue }
                 index += 1
                 file = f
                 converter = f.processingFormat.sampleRate == target.sampleRate && f.processingFormat.channelCount == 1

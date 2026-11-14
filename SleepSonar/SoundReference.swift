@@ -62,7 +62,7 @@ final class SoundReference: @unchecked Sendable {
         let line = String(format: "%@,%.3f,%.6f\n", name, Date().timeIntervalSince1970, host)
         let csv = folder.appendingPathComponent("klang_ref.csv")
         if let h = try? FileHandle(forWritingTo: csv) {
-            h.seekToEndOfFile(); h.write(Data(line.utf8)); try? h.close()
+            _ = try? h.seekToEnd(); try? h.write(contentsOf: Data(line.utf8)); try? h.close()
         } else {
             try? Data(("datei,beginn_unix,beginn_host\n" + line).utf8).write(to: csv)
         }

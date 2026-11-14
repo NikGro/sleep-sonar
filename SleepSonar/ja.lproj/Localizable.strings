@@ -75,6 +75,7 @@
 "Der Server nimmt gerade nichts an. Suya versucht es später wieder." = "サーバは現在受け付けていません。Suyaが後でもう一度試します。";
 "Der Wecker braucht iOS 26 oder neuer." = "アラームにはiOS 26以降が必要です。";
 "Der iPhone-Standardton folgt der Lautstärke in den Einstellungen. iOS gibt die Töne der Uhr-App nicht für andere Apps frei." = "iPhoneの標準サウンドは設定の音量に従います。iOSは時計アプリのサウンドを他のアプリに提供していません。";
+"Die Aufnahme hatte Aussetzer – wird nicht gespendet." = "記録が途切れていたため、提供されません。";
 "Die Klänge laufen gerade für die Nacht." = "いま夜用のサウンドを再生中です。";
 "Die Lautstärke wird in den Ton gerechnet. Die Klingellautstärke des iPhones gilt zusätzlich." = "音量はサウンド自体に含まれています。さらにiPhoneの着信音量が適用されます。";
 "Die Nachtaufnahme läuft bereits." = "夜間記録はすでに実行中です。";
@@ -182,6 +183,7 @@
 "Mit der Nachtaufnahme starten" = "夜間記録と一緒に開始";
 "Morgenlicht" = "朝の光";
 "NICHT am Strom" = "充電していません";
+"Nach 14 Stunden automatisch beendet" = "14時間後に自動停止しました";
 "Nacht gespendet." = "夜を寄付しました。";
 "Nacht löschen" = "夜を削除";
 "Nacht wird ausgewertet" = "夜を分析中";
@@ -254,6 +256,7 @@
 "Sommernacht" = "夏の夜";
 "Sonnenaufgang" = "日の出";
 "Sonstiges" = "サポート";
+"Speicher fast voll – Aufnahme beendet" = "空き容量がほぼありません – 記録を停止しました";
 "Spende widerrufen" = "寄付を取り消す";
 "Spenden ist ab 18 Jahren möglich." = "寄付は18歳以上の方のみ可能です。";
 "Spender-Nummer" = "寄付者番号";
@@ -346,6 +349,7 @@
 "ZIP konnte nicht erstellt werden: %@" = "ZIPを作成できませんでした：%@";
 "Zeit je Phase" = "段階ごとの時間";
 "Zeitraum" = "時間枠";
+"Zu wenig freier Speicher (%@). Für eine Nacht braucht Suya mindestens 500 MB." = "空き容量が不足しています（%@）。1晩の記録には 500 MB 以上が必要です。";
 "Zugfahrt" = "列車の旅";
 "ab Aufnahmebeginn, nur mit Aufnahme" = "記録開始から、記録中のみ";
 "abgelehnt" = "拒否";

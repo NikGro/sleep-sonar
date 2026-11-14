@@ -257,14 +257,7 @@ final class SmartAlarm: ObservableObject {
     func latest(_ a: AlarmItem, after from: Date = Date()) -> Date? {
         switch a.mode {
         case .time:
-            let cal = Calendar.current
-            for dayOffset in 0...7 {
-                guard let day = cal.date(byAdding: .day, value: dayOffset, to: from),
-                      let at = cal.date(bySettingHour: a.wakeMinutes / 60, minute: a.wakeMinutes % 60, second: 0, of: day),
-                      at > from else { continue }
-                if a.repeatDays.isEmpty || a.repeatDays.contains(cal.component(.weekday, from: at)) { return at }
-            }
-            return nil
+            return AlarmTimes.next(wakeMinutes: a.wakeMinutes, repeatDays: a.repeatDays, after: from)
         case .duration:
             // ab Beginn der Nachtaufnahme; ohne Aufnahme kein Wecker
             guard let start = recordingStart else { return nil }
@@ -481,10 +474,8 @@ final class SmartAlarm: ObservableObject {
         // derselbe Wochentag in den nächsten vier Wochen, falls die App so lange nicht geöffnet wird
         // (danach stellt das nächste Öffnen die volle Wochenregel wieder her und räumt diese ab)
         if a.repeatDays.contains(today) {
-            for week in 1...4 {
-                if let next = cal.date(byAdding: .day, value: 7 * week, to: latest) {
-                    try await AlarmBackend.scheduleExtra(a, at: next)
-                }
+            for next in AlarmTimes.followUps(after: latest, weeks: 4, calendar: cal) {
+                try await AlarmBackend.scheduleExtra(a, at: next)
             }
         }
     }

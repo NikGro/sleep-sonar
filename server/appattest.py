@@ -32,7 +32,7 @@ def _auth_data(a):
 
 
 def _verify_chain(der_list):
-    root = x509.load_pem_x509_certificate(open(ROOT_PEM, "rb").read())
+    with open(ROOT_PEM, "rb") as f: root = x509.load_pem_x509_certificate(f.read())
     certs = [x509.load_der_x509_certificate(d) for d in der_list]
     chain = certs + [root]
     for child, parent in zip(chain, chain[1:]):

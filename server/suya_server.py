@@ -75,7 +75,7 @@ def token_ok(d, token):
     h = hashlib.sha256(token.encode()).hexdigest()
     if not os.path.exists(p):
         return None
-    return hmac.compare_digest(open(p).read().strip(), h)
+    with open(p) as f: return hmac.compare_digest(f.read().strip(), h)
 
 def store_token(d, token):
     """Hash des Schlüssels beim ersten Mal hinterlegen (atomar)"""
@@ -117,7 +117,7 @@ def check_attest(h, d, kind, night="", body_hash=""):
     a, c = h.headers.get("X-Assertion") or "", h.headers.get("X-Challenge") or ""
     if not a or not c or not take_challenge(c): return "Assertion oder Challenge fehlt"
     with attest_lock:
-        info = json.load(open(p))
+        with open(p) as f: info = json.load(f)
         data = f"{kind}|{c}|{d}|{night}|{body_hash}".encode()
         try:
             info["counter"] = appattest.verify_assertion(APP_ID, info["key"], info["counter"], base64.b64decode(a), data)

@@ -202,6 +202,9 @@ final class DonationUploader: ObservableObject {
         let bytes = (try? FileManager.default.attributesOfItem(atPath: Self.melURL(folder).path)[.size] as? Int) ?? 0
         let epochs = bytes / 2 / LogMel.bands / LogMel.framesPerEpoch
         guard Double(epochs) * 30 >= Self.minSeconds else { return .skip(NightDonationState.short) }
+        // ältere Aufnahme mit Aussetzern: Ton und Watch-Phasen lägen gegeneinander verschoben
+        let untracked = await Task.detached(priority: .utility) { NightModel.untrackedGapSeconds(folder) }.value
+        guard untracked < 60 else { return .skip(NightDonationState.gaps) }
 
         // Watch-Phasen je 30-s-Epoche ab Aufnahmebeginn
         guard let watch = await watchStages(start: start, epochs: epochs) else {
@@ -421,7 +424,8 @@ struct NightDonationState: Codable {
 
     static let beforeConsent = "vorZustimmung", short = "kurz", noAudio = "ohneTon", noStart = "ohneStart",
                noWatch = "ohneWatch", waitWatch = "warteWatch", waitWifi = "warteWLAN", waitServer = "warteServer",
-               rejected = "abgelehnt", converting = "umwandeln", interrupted = "unterbrochen", lowData = "datensparen"
+               rejected = "abgelehnt", converting = "umwandeln", interrupted = "unterbrochen", lowData = "datensparen",
+               gaps = "aussetzer"
 
     static func reasonText(_ code: String) -> String {
         switch code {
@@ -436,6 +440,7 @@ struct NightDonationState: Codable {
         case rejected: tr("Der Server hat die Spende abgelehnt.")
         case interrupted: tr("Die Übertragung wurde unterbrochen. Suya versucht es beim nächsten Öffnen wieder.")
         case lowData: tr("Der Datensparmodus ist an. Ohne ihn wird im WLAN gesendet.")
+        case gaps: tr("Die Aufnahme hatte Aussetzer – wird nicht gespendet.")
         default: tr("Wird vorbereitet.")
         }
     }

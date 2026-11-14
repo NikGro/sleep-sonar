@@ -75,6 +75,7 @@
 "Der Server nimmt gerade nichts an. Suya versucht es später wieder." = "O servidor não está aceitando nada agora. O Suya tentará de novo mais tarde.";
 "Der Wecker braucht iOS 26 oder neuer." = "O alarme requer iOS 26 ou posterior.";
 "Der iPhone-Standardton folgt der Lautstärke in den Einstellungen. iOS gibt die Töne der Uhr-App nicht für andere Apps frei." = "O som padrão do iPhone segue o volume em Ajustes. O iOS não disponibiliza os sons do app Relógio para outros apps.";
+"Die Aufnahme hatte Aussetzer – wird nicht gespendet." = "A gravação teve falhas – não será doada.";
 "Die Klänge laufen gerade für die Nacht." = "Os sons estão tocando agora para a noite.";
 "Die Lautstärke wird in den Ton gerechnet. Die Klingellautstärke des iPhones gilt zusätzlich." = "O volume está embutido no som. O volume da campainha do iPhone também se aplica.";
 "Die Nachtaufnahme läuft bereits." = "A gravação noturna já está em andamento.";
@@ -182,6 +183,7 @@
 "Mit der Nachtaufnahme starten" = "Iniciar com a gravação noturna";
 "Morgenlicht" = "Luz da manhã";
 "NICHT am Strom" = "NÃO está carregando";
+"Nach 14 Stunden automatisch beendet" = "Encerrada automaticamente após 14 horas";
 "Nacht gespendet." = "Noite doada.";
 "Nacht löschen" = "Excluir noite";
 "Nacht wird ausgewertet" = "Analisando a noite";
@@ -254,6 +256,7 @@
 "Sommernacht" = "Noite de verão";
 "Sonnenaufgang" = "Nascer do sol";
 "Sonstiges" = "Outros";
+"Speicher fast voll – Aufnahme beendet" = "Armazenamento quase cheio – gravação encerrada";
 "Spende widerrufen" = "Retirar doação";
 "Spenden ist ab 18 Jahren möglich." = "É preciso ter 18 anos ou mais para doar.";
 "Spender-Nummer" = "Número de doador";
@@ -346,6 +349,7 @@
 "ZIP konnte nicht erstellt werden: %@" = "Não foi possível criar o ZIP: %@";
 "Zeit je Phase" = "Tempo por fase";
 "Zeitraum" = "Intervalo";
+"Zu wenig freier Speicher (%@). Für eine Nacht braucht Suya mindestens 500 MB." = "Armazenamento livre insuficiente (%@). O Suya precisa de pelo menos 500 MB para uma noite.";
 "Zugfahrt" = "Viagem de trem";
 "ab Aufnahmebeginn, nur mit Aufnahme" = "desde o início da gravação, só com gravação";
 "abgelehnt" = "recusado";
