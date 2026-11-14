@@ -24,11 +24,11 @@ def _name(cn):
     return x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, cn)])
 
 
-def _cert(subj, pub, issuer, ikey, ca, ext=None):
+def _cert(subj, pub, issuer, ikey, ca, ext=None, days=(-1, 30), path_length=None):
     b = (x509.CertificateBuilder().subject_name(_name(subj)).issuer_name(_name(issuer)).public_key(pub)
-         .serial_number(x509.random_serial_number()).not_valid_before(NOW - datetime.timedelta(days=1))
-         .not_valid_after(NOW + datetime.timedelta(days=30))
-         .add_extension(x509.BasicConstraints(ca=ca, path_length=None), critical=True))
+         .serial_number(x509.random_serial_number()).not_valid_before(NOW + datetime.timedelta(days=days[0]))
+         .not_valid_after(NOW + datetime.timedelta(days=days[1]))
+         .add_extension(x509.BasicConstraints(ca=ca, path_length=path_length), critical=True))
     if ext:
         b = b.add_extension(x509.UnrecognizedExtension(appattest.NONCE_OID, ext), critical=False)
     return b.sign(ikey, hashes.SHA384() if ca else hashes.SHA256())
@@ -43,17 +43,19 @@ with open(_root_pem, "wb") as f:
     f.write(ROOT.public_bytes(serialization.Encoding.PEM))
 
 
-def make_attestation(challenge, app=APP, env=b"appattest" + b"\0" * 7):
+def make_attestation(challenge, app=APP, env=b"appattest" + b"\0" * 7, leaf_days=(-1, 30), leaf_ca=False,
+                     inter=None, extra=()):
     kk = ec.generate_private_key(ec.SECP256R1())
     point = kk.public_key().public_bytes(serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint)
     kid = hashlib.sha256(point).digest()
     auth = (hashlib.sha256(app.encode()).digest() + b"\x40" + (0).to_bytes(4, "big") + env
             + len(kid).to_bytes(2, "big") + kid)
     nonce = hashlib.sha256(auth + hashlib.sha256(challenge).digest()).digest()
-    leaf = _cert("leaf", kk.public_key(), "inter", INTER_KEY, False, bytes([0x30, 0x24, 0xa1, 0x22, 0x04, 0x20]) + nonce)
+    leaf = _cert("leaf", kk.public_key(), "inter", INTER_KEY, leaf_ca, bytes([0x30, 0x24, 0xa1, 0x22, 0x04, 0x20]) + nonce,
+                 days=leaf_days)
+    chain = [leaf, inter or INTER, *extra]
     att = cbor2.dumps({"fmt": "apple-appattest", "authData": auth, "attStmt": {
-        "x5c": [leaf.public_bytes(serialization.Encoding.DER), INTER.public_bytes(serialization.Encoding.DER)],
-        "receipt": b""}})
+        "x5c": [c.public_bytes(serialization.Encoding.DER) for c in chain], "receipt": b""}})
     return kk, base64.b64encode(kid).decode(), att
 
 
@@ -78,6 +80,25 @@ class Verify(unittest.TestCase):
         for args in ((APP, kid, att, b"xyz"), ("OTHER.app", kid, att, b"abc"), (APP, kid, att, b"abc", "development")):
             with self.assertRaises(appattest.AttestError):
                 appattest.verify_attestation(*args)
+
+    def test_chain_rules(self):
+        def rejected(**kw):
+            kk, kid, att = make_attestation(b"abc", **kw)
+            with self.assertRaises(appattest.AttestError):
+                appattest.verify_attestation(APP, kid, att, b"abc")
+        rejected(leaf_days=(-30, -1))                 # abgelaufen
+        rejected(leaf_days=(1, 30))                   # noch nicht gültig
+        rejected(leaf_ca=True)                        # Blatt darf nicht ausstellen
+        rejected(inter=_cert("inter", INTER_KEY.public_key(), "root", ROOT_KEY, False))   # Zwischenzert. keine CA
+        rejected(inter=_cert("inter", INTER_KEY.public_key(), "root", ROOT_KEY, True, days=(-30, -1)))
+        rejected(extra=(INTER,))                      # mehr als zwei Zertifikate
+
+    def test_garbage(self):
+        for att in (b"", b"\x00\x01", cbor2.dumps({"fmt": "apple-appattest"}), cbor2.dumps([1, 2])):
+            with self.assertRaises(appattest.AttestError):
+                appattest.verify_attestation(APP, "AAAA", att, b"abc")
+        with self.assertRaises(appattest.AttestError):
+            appattest.verify_assertion(APP, "x", 0, b"\xff", b"d")
 
     def test_assertion(self):
         kk, kid, att = make_attestation(b"abc")
