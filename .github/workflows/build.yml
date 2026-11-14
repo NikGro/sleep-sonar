@@ -9,6 +9,9 @@ on:
       - ".github/workflows/sidestore.yml"
       - "Packages/SonarDSP/prototype/**"
       - "training/**"
+      - "server/**"
+      - ".github/workflows/server-tests.yml"
+      - ".github/workflows/cleanup-releases.yml"
   workflow_dispatch:
 
 permissions:

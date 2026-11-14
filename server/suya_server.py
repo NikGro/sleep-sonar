@@ -3,12 +3,12 @@
 Nur Python-Standardbibliothek. Hinter dem DSM-Reverse-Proxy (TLS dort), lauscht selbst nur im Heimnetz.
 
 Schnittstelle (alles JSON-Antworten):
-  POST /api/spende/nacht      Kopf: X-Spender (8 Zeichen, in der App sichtbar), X-Schluessel (geheimes Token der
-                              Installation), X-Nacht (zufällige Nacht-Kennung). Inhalt: Spendenpaket (≤ MAX_BYTES).
-  POST /api/spende/teil       wie /nacht, aber in Teilen (robuster bei wackligem Netz): Kopf X-Teil (0 …),
-                              X-Teile (Anzahl), X-Gesamt (sha256 des ganzen Pakets). Fehlende Teile einfach
-                              erneut senden; mit dem letzten fehlenden Teil wird die Nacht zusammengesetzt
-                              (App Attest dann über den Hash des ganzen Pakets).
+  POST /api/spende/teil       Kopf: X-Spender (8 Zeichen, in der App sichtbar), X-Schluessel (geheimes Token der
+                              Installation), X-Nacht (zufällige Nacht-Kennung), X-Teil (0 …), X-Teile (Anzahl),
+                              X-Gesamt (sha256 des ganzen Pakets). Inhalt: ein Teil des Spendenpakets (zusammen
+                              ≤ MAX_BYTES). Fehlende Teile einfach erneut senden; mit dem letzten fehlenden Teil wird
+                              die Nacht zusammengesetzt. Schlüssel, App Attest (über den Hash des ganzen Pakets) und
+                              die Mengengrenzen werden schon vor jedem Teil geprüft.
   POST /api/spende/loeschen   Kopf: X-Spender, X-Schluessel. Löscht alle Nächte dieser Spender-Nummer.
   GET  /api/status            {"ok": true}
   GET  /api/attest/challenge  {"challenge": base64} – einmal gültig, 5 Minuten
@@ -32,6 +32,11 @@ PORT = int(os.environ.get("PORT", "8770"))
 MAX_BYTES = int(os.environ.get("MAX_BYTES", str(80 * 2**20)))
 KEEP_DAYS = int(os.environ.get("KEEP_DAYS", "183"))   # 6 Monate
 PER_DONOR_DAY = 4                                      # Nächte je Spender und Tag
+OPEN_PER_DONOR = 2                                     # gleichzeitig offene (unvollständige) Nächte je Spender
+DONOR_DAY_BYTES = 400 * 2**20                          # höchstens 400 MB je Spender und Tag
+PART_MAX = 8 * 2**20                                   # ein Teil (die App sendet 4 MB)
+PART_KEEP = 86400                                      # unvollständige Nächte nach 24 h verwerfen
+PROTOKOLL_MAX = 5 * 2**20                              # protokoll.jsonl danach einmal umbenennen (.1)
 BUG_KEEP_DAYS = 365                                    # Fehlerberichte höchstens ein Jahr
 BUG_MAX = 400 * 1024                                   # Text, technische Angaben, bis zu 5 Absturzprotokolle
 BUG_PER_IP_HOUR = 10
@@ -40,7 +45,7 @@ bug_hits = {}
 bug_day = {"tag": "", "n": 0}
 PER_IP_HOUR = 300                                      # Anfragen je Adresse und Stunde (nur im Speicher)
 DAY_BYTES = 4 * 2**30                                  # höchstens 4 GB pro Tag insgesamt
-MIN_FREE = 30 * 2**30                                  # mindestens 30 GB frei lassen
+MIN_FREE = int(os.environ.get("MIN_FREE", str(30 * 2**30)))   # mindestens 30 GB frei lassen
 
 ATTEST = os.environ.get("ATTEST", "optional")          # off | optional | required
 APP_ID = os.environ.get("APP_ID", "")                  # "TEAMID.de.nikgro.sleepsonar" – leer: App Attest aus
@@ -52,12 +57,15 @@ try:
 except ImportError:                                    # ohne cryptography/cbor2 läuft der Rest trotzdem
     appattest = None
 challenges = {}                                        # base64 → Ablaufzeit
+attest_lock = threading.Lock()                         # Zähler einer Assertion nie gleichzeitig fortschreiben
 
 ID = re.compile(r"^[0-9A-F]{8}$")
 NIGHT = re.compile(r"^[0-9A-Za-z-]{8,40}$")
 TOKEN = re.compile(r"^[0-9A-Za-z-]{32,64}$")
 lock = threading.Lock()
 ip_hits, day = {}, {"date": "", "bytes": 0}
+donor_bytes = {}                                       # (Tag, Spender) → angenommene Bytes, nur im Speicher
+status = {"aufraeumen": None}                          # letzter erfolgreicher Lauf der Löschroutine
 
 def donor_dir(d): return os.path.join(ROOT, "spender", d)
 
@@ -69,9 +77,27 @@ def token_ok(d, token):
         return None
     return hmac.compare_digest(open(p).read().strip(), h)
 
+def store_token(d, token):
+    """Hash des Schlüssels beim ersten Mal hinterlegen (atomar)"""
+    os.makedirs(donor_dir(d), exist_ok=True)
+    p = os.path.join(donor_dir(d), "schluessel.sha256")
+    with open(p + ".tmp", "w") as f: f.write(hashlib.sha256(token.encode()).hexdigest())
+    os.replace(p + ".tmp", p)
+
+def client_key(h):
+    """Adresse für die Mengenbegrenzung; IPv6 je /64-Netz (sonst hätte jeder beliebig viele Adressen).
+    Der Container ist nur über den DSM-Proxy erreichbar (127.0.0.1), dessen Eintrag steht zuletzt."""
+    ip = h.headers.get("X-Forwarded-For", h.client_address[0]).split(",")[-1].strip()
+    return ":".join(ip.split(":")[:4]) + "::/64" if ":" in ip else ip
+
 def log_event(kind, d):
     """Nur Ereignis, Spender-Nummer und Zeit - für Nachweise (z. B. erledigte Löschungen)."""
-    with open(os.path.join(ROOT, "protokoll.jsonl"), "a") as f:
+    p = os.path.join(ROOT, "protokoll.jsonl")
+    try:
+        if os.path.getsize(p) > PROTOKOLL_MAX: os.replace(p, p + ".1")
+    except OSError:
+        pass
+    with open(p, "a") as f:
         f.write(json.dumps({"t": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "ereignis": kind, "spender": d}) + "\n")
 
 def take_challenge(c):
@@ -90,31 +116,57 @@ def check_attest(h, d, kind, night="", body_hash=""):
         return "App Attest nötig" if ATTEST == "required" and kind == "nacht" else None
     a, c = h.headers.get("X-Assertion") or "", h.headers.get("X-Challenge") or ""
     if not a or not c or not take_challenge(c): return "Assertion oder Challenge fehlt"
-    info = json.load(open(p))
-    data = f"{kind}|{c}|{d}|{night}|{body_hash}".encode()
-    try:
-        info["counter"] = appattest.verify_assertion(APP_ID, info["key"], info["counter"], base64.b64decode(a), data)
-    except Exception as e:
-        return f"Assertion ungültig ({e})"
-    with open(p + ".tmp", "w") as f: json.dump(info, f)
-    os.replace(p + ".tmp", p)
+    with attest_lock:
+        info = json.load(open(p))
+        data = f"{kind}|{c}|{d}|{night}|{body_hash}".encode()
+        try:
+            info["counter"] = appattest.verify_assertion(APP_ID, info["key"], info["counter"], base64.b64decode(a), data)
+        except Exception as e:
+            return f"Assertion ungültig ({e})"
+        with open(p + ".tmp", "w") as f: json.dump(info, f)
+        os.replace(p + ".tmp", p)
     return None
 
+def remove(p):
+    shutil.rmtree(p, ignore_errors=True) if os.path.isdir(p) else os.remove(p)
+
+def cleanup_once():
+    """Nächte nach KEEP_DAYS, Fehlerberichte nach BUG_KEEP_DAYS, unvollständige Uploads nach 24 h löschen.
+    Ein Fehler bei einem Eintrag hält den Rest nicht auf."""
+    now = time.time()
+    cut, cut_b = now - KEEP_DAYS * 86400, now - BUG_KEEP_DAYS * 86400
+    problems = 0
+    base = os.path.join(ROOT, "spender")
+    for d in (os.listdir(base) if os.path.isdir(base) else []):
+        nd = os.path.join(base, d, "naechte")
+        for f in (os.listdir(nd) if os.path.isdir(nd) else []):
+            p = os.path.join(nd, f)
+            try:
+                age = os.path.getmtime(p)
+                if f.startswith("."):
+                    if age < now - PART_KEEP: remove(p)
+                elif age < cut:
+                    remove(p); log_event("abgelaufen", d)
+            except Exception as e:
+                problems += 1; print("Aufräumen:", type(e).__name__, e, flush=True)
+    bugs = os.path.join(ROOT, "fehler")
+    for f in (os.listdir(bugs) if os.path.isdir(bugs) else []):
+        p = os.path.join(bugs, f)
+        try:
+            if os.path.getmtime(p) < cut_b: remove(p)
+        except Exception as e:
+            problems += 1; print("Aufräumen:", type(e).__name__, e, flush=True)
+    status["aufraeumen"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    return problems
+
 def cleanup_loop():
-    """Täglich: Nächte löschen, die älter als KEEP_DAYS sind."""
+    """Stündlich aufräumen; der Thread überlebt jeden Fehler."""
     while True:
-        cut = time.time() - KEEP_DAYS * 86400
-        base = os.path.join(ROOT, "spender")
-        for d in (os.listdir(base) if os.path.isdir(base) else []):
-            nd = os.path.join(base, d, "naechte")
-            for f in (os.listdir(nd) if os.path.isdir(nd) else []):
-                p = os.path.join(nd, f)
-                if os.path.getmtime(p) < cut:
-                    os.remove(p); log_event("abgelaufen", d)
-        bugs = os.path.join(ROOT, "fehler"); cut_b = time.time() - BUG_KEEP_DAYS * 86400
-        for f in (os.listdir(bugs) if os.path.isdir(bugs) else []):
-            if os.path.getmtime(os.path.join(bugs, f)) < cut_b: os.remove(os.path.join(bugs, f))
-        time.sleep(86400)
+        try:
+            cleanup_once()
+        except Exception as e:
+            print("Aufräumen fehlgeschlagen:", type(e).__name__, e, flush=True)
+        time.sleep(3600)
 
 def length(h):
     """Content-Length sicher lesen (fehlt/kaputt/negativ → -1)"""
@@ -149,18 +201,20 @@ class H(BaseHTTPRequestHandler):
         if self.command != "HEAD": self.wfile.write(data)
 
     def limited(self):
-        ip = self.headers.get("X-Forwarded-For", self.client_address[0]).split(",")[-1].strip()   # letzter Eintrag kommt vom eigenen Proxy
-        now = time.time()
+        ip, now = client_key(self), time.time()
         with lock:
             hits = [t for t in ip_hits.get(ip, []) if now - t < 3600]
             hits.append(now); ip_hits[ip] = hits
-            if len(ip_hits) > 10000: ip_hits.clear()
+            if len(ip_hits) > 10000:      # nur abgelaufene Einträge verwerfen, nie alle Zähler
+                for k in [k for k, v in ip_hits.items() if now - v[-1] >= 3600]: del ip_hits[k]
             return len(hits) > PER_IP_HOUR
 
     # ---------- Seiten ----------
     def do_GET(self):
         path = self.path.split("?")[0].rstrip("/") or "/"
-        if path == "/api/status": return self.send(200, {"ok": True, "attest": bool(APP_ID and appattest) and ATTEST != "off"})
+        if path == "/api/status":
+            return self.send(200, {"ok": True, "attest": bool(APP_ID and appattest) and ATTEST != "off",
+                                   "aufraeumen": status["aufraeumen"]})
         if path == "/api/attest/challenge":
             if self.limited(): return self.send(429, {"fehler": "zu viele Anfragen"})
             c = base64.b64encode(secrets.token_bytes(32)).decode()
@@ -189,7 +243,6 @@ class H(BaseHTTPRequestHandler):
         if not ID.match(d) or not TOKEN.match(token):
             return self.send(400, {"fehler": "Spender-Nummer oder Schlüssel ungültig"})
         path = self.path.split("?")[0]
-        if path == "/api/spende/nacht": return self.upload(d, token)
         if path == "/api/spende/teil": return self.upload_part(d, token)
         if path == "/api/spende/loeschen": return self.delete(d, token)
         if path == "/api/attest/register": return self.register(d, token)
@@ -197,14 +250,15 @@ class H(BaseHTTPRequestHandler):
 
     def bug_report(self):
         """Fehlerbericht aus der App: nur Text, freiwillige Kontaktangabe und technische Angaben; keine IP auf der Platte"""
-        ip = self.headers.get("X-Forwarded-For", self.client_address[0]).split(",")[-1].strip()
-        now = time.time(); today = time.strftime("%Y-%m-%d", time.gmtime())
+        ip, now = client_key(self), time.time()
+        today = time.strftime("%Y-%m-%d", time.gmtime())
         with lock:
             hits = [t for t in bug_hits.get(ip, []) if now - t < 3600]; hits.append(now); bug_hits[ip] = hits
-            if len(bug_hits) > 10000: bug_hits.clear()
+            if len(bug_hits) > 10000:
+                for k in [k for k, v in bug_hits.items() if now - v[-1] >= 3600]: del bug_hits[k]
             if bug_day["tag"] != today: bug_day.update(tag=today, n=0)
-            bug_day["n"] += 1
-            if len(hits) > BUG_PER_IP_HOUR or bug_day["n"] > BUG_PER_DAY:
+            # gezählt werden nur angenommene Berichte – Müll-Anfragen sperren die echten nicht aus
+            if len(hits) > BUG_PER_IP_HOUR or bug_day["n"] >= BUG_PER_DAY:
                 return self.send(429, {"fehler": "zu viele Berichte, bitte später"})
         n = length(self)
         if n <= 0 or n > BUG_MAX: return self.send(413, {"fehler": "Bericht zu lang oder leer"})
@@ -229,6 +283,7 @@ class H(BaseHTTPRequestHandler):
         os.makedirs(os.path.join(ROOT, "fehler"), exist_ok=True)
         with open(os.path.join(ROOT, "fehler", rid + ".json"), "w") as f:
             json.dump(report, f, ensure_ascii=False, indent=1)
+        with lock: bug_day["n"] += 1
         log_event("fehlerbericht " + rid, "-")
         return self.send(201, {"ok": True, "nummer": rid})
 
@@ -236,46 +291,6 @@ class H(BaseHTTPRequestHandler):
         """Fehler zurückgeben und (ohne IP) protokollieren – zur Fehlersuche"""
         log_event(f"fehler {code}: {msg}", d)
         return self.send(code, {"fehler": msg})
-
-    def upload(self, d, token):
-        night = self.headers.get("X-Nacht") or ""
-        n = length(self)
-        if not NIGHT.match(night): return self.fail(d, 400, "Nacht-Kennung ungültig")
-        if n <= 0 or n > MAX_BYTES: return self.fail(d, 413, "Paket zu groß oder leer")
-        if shutil.disk_usage(ROOT).free < MIN_FREE + n: return self.fail(d, 507, "Speicher voll")
-        today = time.strftime("%Y-%m-%d", time.gmtime())
-        with lock:
-            if day["date"] != today: day.update(date=today, bytes=0)
-            if day["bytes"] + n > DAY_BYTES: return self.fail(d, 503, "Tageslimit erreicht")
-            ok = token_ok(d, token)
-            if ok is False: return self.fail(d, 403, "Schlüssel passt nicht")
-            nd = os.path.join(donor_dir(d), "naechte"); os.makedirs(nd, exist_ok=True)
-            for f in os.listdir(nd):                       # abgebrochene Reste aufräumen
-                q = os.path.join(nd, f)
-                if f.startswith(".") and time.time() - os.path.getmtime(q) > 86400:
-                    shutil.rmtree(q, ignore_errors=True) if os.path.isdir(q) else os.remove(q)
-            recent = [f for f in os.listdir(nd) if not f.startswith(".")
-                      and time.time() - os.path.getmtime(os.path.join(nd, f)) < 86400]
-            if len(recent) >= PER_DONOR_DAY: return self.fail(d, 429, "zu viele Nächte heute")
-            if ok is None:
-                open(os.path.join(donor_dir(d), "schluessel.sha256"), "w").write(hashlib.sha256(token.encode()).hexdigest())
-            day["bytes"] += n
-        tmp = os.path.join(nd, f".{night}.part")
-        left = n
-        with open(tmp, "wb") as f:
-            while left:
-                chunk = self.rfile.read(min(left, 1 << 20))
-                if not chunk: break
-                f.write(chunk); left -= len(chunk)
-        if left: os.remove(tmp); return self.fail(d, 400, "Übertragung abgebrochen")
-        hsh = hashlib.sha256()
-        with open(tmp, "rb") as f:
-            for chunk in iter(lambda: f.read(1 << 20), b""): hsh.update(chunk)
-        err = check_attest(self, d, "nacht", night, hsh.hexdigest())
-        if err: os.remove(tmp); return self.fail(d, 403, err)
-        os.replace(tmp, os.path.join(nd, night + ".suya"))
-        log_event("nacht", d)
-        self.send(201, {"ok": True, "nacht": night})
 
     def upload_part(self, d, token):
         night = self.headers.get("X-Nacht") or ""
@@ -288,19 +303,34 @@ class H(BaseHTTPRequestHandler):
         if not NIGHT.match(night): return self.fail(d, 400, "Nacht-Kennung ungültig")
         if not (0 <= i < total <= 64) or not re.fullmatch(r"[0-9a-f]{64}", full):
             return self.fail(d, 400, "Teil ungültig")
-        if n <= 0 or n > 16 * 2**20: return self.fail(d, 413, "Teil zu groß oder leer")
+        if n <= 0 or n > PART_MAX: return self.fail(d, 413, "Teil zu groß oder leer")
         if shutil.disk_usage(ROOT).free < MIN_FREE + n: return self.fail(d, 507, "Speicher voll")
+        nd = os.path.join(donor_dir(d), "naechte")
+        pd = os.path.join(nd, f".{night}.teile")
         today = time.strftime("%Y-%m-%d", time.gmtime())
+        # alles prüfen, bevor auch nur ein Byte gespeichert wird
         with lock:
-            if day["date"] != today: day.update(date=today, bytes=0)
-            if day["bytes"] + n > DAY_BYTES: return self.fail(d, 503, "Tageslimit erreicht")
             ok = token_ok(d, token)
             if ok is False: return self.fail(d, 403, "Schlüssel passt nicht")
-            nd = os.path.join(donor_dir(d), "naechte"); os.makedirs(nd, exist_ok=True)
-            if ok is None:
-                open(os.path.join(donor_dir(d), "schluessel.sha256"), "w").write(hashlib.sha256(token.encode()).hexdigest())
-            day["bytes"] += n
-        pd = os.path.join(nd, f".{night}.teile")
+            done = os.path.exists(os.path.join(nd, night + ".suya"))
+            if not os.path.isdir(pd) and not done:     # neue Nacht: Tages- und Offen-Grenzen
+                names = os.listdir(nd) if os.path.isdir(nd) else []
+                recent = [f for f in names if not f.startswith(".")
+                          and time.time() - os.path.getmtime(os.path.join(nd, f)) < 86400]
+                open_now = [f for f in names if f.endswith(".teile")]
+                if len(recent) + len(open_now) >= PER_DONOR_DAY: return self.fail(d, 429, "zu viele Nächte heute")
+                if len(open_now) >= OPEN_PER_DONOR: return self.fail(d, 429, "zu viele offene Nächte")
+            have_bytes = sum(os.path.getsize(os.path.join(pd, f)) for f in os.listdir(pd)) if os.path.isdir(pd) else 0
+            if have_bytes + n > MAX_BYTES: return self.fail(d, 413, "Paket zu groß")
+            if day["date"] != today: day.update(date=today, bytes=0); donor_bytes.clear()
+            if day["bytes"] + n > DAY_BYTES: return self.fail(d, 503, "Tageslimit erreicht")
+            if donor_bytes.get(d, 0) + n > DONOR_DAY_BYTES: return self.fail(d, 429, "Tageslimit für diese Spender-Nummer")
+        err = check_attest(self, d, "nacht", night, full)   # jede Teil-Anfrage braucht eine eigene Assertion
+        if err: return self.fail(d, 403, err)
+        with lock:
+            if ok is None and token_ok(d, token) is None: store_token(d, token)
+            elif token_ok(d, token) is False: return self.fail(d, 403, "Schlüssel passt nicht")
+            day["bytes"] += n; donor_bytes[d] = donor_bytes.get(d, 0) + n
         os.makedirs(pd, exist_ok=True)
         left, tmp = n, os.path.join(pd, f"{i}.part")
         with open(tmp, "wb") as f:
@@ -323,13 +353,6 @@ class H(BaseHTTPRequestHandler):
                         h.update(chunk); f.write(chunk)
         shutil.rmtree(pd, ignore_errors=True)
         if h.hexdigest() != full: os.remove(out); return self.fail(d, 400, "Paket passt nicht zum Hash")
-        err = check_attest(self, d, "nacht", night, full)
-        if err: os.remove(out); return self.fail(d, 403, err)
-        with lock:
-            recent = [f for f in os.listdir(nd) if not f.startswith(".")
-                      and time.time() - os.path.getmtime(os.path.join(nd, f)) < 86400]
-            if len(recent) >= PER_DONOR_DAY and not os.path.exists(os.path.join(nd, night + ".suya")):
-                os.remove(out); return self.fail(d, 429, "zu viele Nächte heute")
         os.replace(out, os.path.join(nd, night + ".suya"))
         log_event("nacht", d)
         self.send(201, {"ok": True, "nacht": night})
@@ -343,7 +366,7 @@ class H(BaseHTTPRequestHandler):
             if err: return self.send(403, {"fehler": err})
         with lock:
             if ok is not None: shutil.rmtree(donor_dir(d), ignore_errors=True)
-        log_event("geloescht", d)
+        if ok is not None: log_event("geloescht", d)
         self.send(200, {"ok": True, "geloescht": ok is not None})
 
     def register(self, d, token):
@@ -364,10 +387,9 @@ class H(BaseHTTPRequestHandler):
             ok = token_ok(d, token)
             if ok is False: return self.send(403, {"fehler": "Schlüssel passt nicht"})
             if os.path.exists(attest_file(d)): return self.send(409, {"fehler": "schon registriert"})
-            os.makedirs(donor_dir(d), exist_ok=True)
-            if ok is None:
-                open(os.path.join(donor_dir(d), "schluessel.sha256"), "w").write(hashlib.sha256(token.encode()).hexdigest())
-            json.dump({"keyId": key_id, "key": pem, "counter": counter}, open(attest_file(d), "w"))
+            if ok is None: store_token(d, token)
+            with open(attest_file(d) + ".tmp", "w") as f: json.dump({"keyId": key_id, "key": pem, "counter": counter}, f)
+            os.replace(attest_file(d) + ".tmp", attest_file(d))
         log_event("appattest", d)
         self.send(201, {"ok": True})
 

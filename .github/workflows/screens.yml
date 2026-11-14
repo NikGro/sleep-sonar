@@ -11,6 +11,9 @@ on:
         description: "Sprache (de, en, es, fr, it, pt-BR, nl, ja, ko, zh-Hans)"
         default: "de"
 
+permissions:
+  contents: read
+
 jobs:
   screens:
     runs-on: macos-26
@@ -43,14 +46,17 @@ jobs:
             CODE_SIGNING_ALLOWED=NO build | grep -E "error:|BUILD" || true
           test -d build/dd/Build/Products/Debug-iphonesimulator/SleepSonar.app
       - name: Screenshots
+        env:
+          SCREENS: ${{ github.event.inputs.screens }}
+          LANG_INPUT: ${{ github.event.inputs.lang }}
         run: |
           APP=build/dd/Build/Products/Debug-iphonesimulator/SleepSonar.app
           xcrun simctl install "$UDID" "$APP"
           xcrun simctl privacy "$UDID" grant microphone de.nikgro.sleepsonar || true
           mkdir -p shots
-          for S in ${{ github.event.inputs.screens }}; do
+          for S in $SCREENS; do
             xcrun simctl terminate "$UDID" de.nikgro.sleepsonar 2>/dev/null || true
-            xcrun simctl launch "$UDID" de.nikgro.sleepsonar -suyaScreen "$S" -AppleLanguages "(${{ github.event.inputs.lang }})"
+            xcrun simctl launch "$UDID" de.nikgro.sleepsonar -suyaScreen "$S" -AppleLanguages "($LANG_INPUT)"
             sleep 9
             xcrun simctl io "$UDID" screenshot "shots/$S.png"
           done

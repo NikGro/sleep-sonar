@@ -9,6 +9,9 @@ on:
       - "SleepSonar/Model/**"
       - "training/model/**"
 
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: macos-26
