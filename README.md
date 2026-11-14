@@ -1,118 +1,109 @@
 <p align="center">
-  <img src="docs/logo.png" width="128" alt="Suya-Logo">
+  <img src="docs/suya-icon.png" width="128" alt="Suya icon">
 </p>
 
 <h1 align="center">Suya</h1>
-<p align="center"><b>Schlaf-Tracker fürs iPhone, der einfach zuhört.</b><br>
-Leg das iPhone neben das Bett – Suya erkennt aus Atmung und Bewegung deine Schlafphasen.<br>
-Ohne Uhr, ohne Armband, ohne Cloud.</p>
+<p align="center"><b>The iPhone sleep tracker that simply listens.</b><br>
+Put your iPhone next to your bed – Suya recognises your sleep stages from breathing and movement.<br>
+No watch, no wristband, no cloud.</p>
 
-## Was Suya kann
+## What Suya does
 
 <table>
 <tr>
-<td width="230"><img src="docs/screenshots/tonight.jpg" width="210" alt="Heute Nacht"></td>
+<td width="230"><img src="docs/screenshots/tonight.jpg" width="210" alt="Tonight"></td>
 <td>
-<h3>Einfach hinlegen</h3>
-iPhone ans Ladekabel, neben das Bett, Aufnahme starten. Suya hört nur zu – ohne Uhr, ohne Armband.
-Live-Aktivität auf dem Sperrbildschirm, Kurzbefehle („Schlafaufnahme starten“) für den Schlaf-Fokus
-und eine ruhige Ansicht im Querformat für den Nachttisch.
+<h3>Just lie down</h3>
+Plug in your iPhone, place it next to the bed and start recording. Suya only listens – no watch, no
+wristband. Live Activity on the lock screen, Shortcuts (“Start sleep recording”) for your Sleep Focus
+and a calm landscape view for the nightstand.
 </td>
 </tr>
 <tr>
 <td>
-<h3>Schlafphasen auf dem iPhone</h3>
-Ein kleines neuronales Netz erkennt aus Atmung und Bewegung <b>Wach, REM, Kern- und Tiefschlaf</b> –
-direkt auf dem Gerät, nichts geht in eine Cloud. Dazu ein Schlafwert aus Dauer, Ruhe, Tief- und
-REM-Schlaf und Aufwachen. Auf Wunsch landen die Phasen in <b>Apple Health</b>; mit Apple Watch siehst
-du beide Schätzungen nebeneinander.
+<h3>Sleep stages on your iPhone</h3>
+A small neural network recognises <b>awake, REM, core and deep sleep</b> from breathing and movement –
+right on the device, nothing goes to a cloud. Plus a sleep score from duration, restfulness, deep and REM
+sleep and awakenings. Stages can be written to <b>Apple Health</b>; with an Apple Watch you see both
+estimates side by side.
 </td>
-<td width="230"><img src="docs/screenshots/night.jpg" width="210" alt="Auswertung einer Nacht"></td>
+<td width="230"><img src="docs/screenshots/night.jpg" width="210" alt="Night details"></td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/nights.jpg" width="210" alt="Nächte"></td>
+<td><img src="docs/screenshots/nights.jpg" width="210" alt="Nights"></td>
 <td>
-<h3>Alle Nächte im Blick</h3>
-Jede Nacht mit Schlafwert und Mini-Zeitstrahl. Gedrückt halten zum Löschen, Exportieren oder Spenden;
-der Ton bleibt 24 Stunden zum Export verfügbar.
-</td>
-</tr>
-<tr>
-<td>
-<h3>27 Einschlafklänge</h3>
-Regen am Fenster, Lagerfeuer, Meereswellen, Schneesturm, Klangschalen und mehr – echte Aufnahmen,
-frei mischbar, mit Timer und sanftem Ausblenden, sobald du eingeschlafen bist. Laufende Klänge zählen
-nicht in die Auswertung.
-</td>
-<td><img src="docs/screenshots/sounds.jpg" width="210" alt="Einschlafklänge"></td>
-</tr>
-<tr>
-<td><img src="docs/screenshots/alarms.jpg" width="210" alt="Wecker"></td>
-<td>
-<h3>Wecken im leichten Schlaf</h3>
-Wecker nach Uhrzeit oder Schlafdauer. Während die Aufnahme läuft, weckt Suya im gewählten Zeitraum,
-sobald du leicht schläfst – und klingelt wie der iPhone-Wecker, auch bei Stummschaltung und im
-Schlaf-Fokus.
+<h3>All your nights at a glance</h3>
+Every night with its sleep score and a mini timeline. Long-press to delete, export or donate a night;
+the audio stays available for export for 24 hours.
 </td>
 </tr>
 <tr>
 <td>
-<h3>Datenschutz zuerst</h3>
-Ausgewertet wird auf dem iPhone. Nach 24 Stunden wird der Ton gelöscht; übrig bleibt nur ein grobes
-Klangbild, aus dem sich keine Sprache verstehen lässt.<br><br>
-<b>Freiwillige Datenspende:</b> Wer möchte, spendet einzelne Nächte (Klangbild und Schlafphasen, keine
-Aufnahmen) an einen eigenen Server in Hamburg, damit das Modell besser wird – Widerruf und Löschung
-jederzeit in der App.<br><br>
-<a href="https://suya.ng-lab.de/datenschutz">Datenschutzerklärung</a> ·
-<a href="https://suya.ng-lab.de/impressum">Impressum</a><br><br>
-In 10 Sprachen: Deutsch, Englisch, Spanisch, Französisch, Italienisch, Portugiesisch, Niederländisch,
-Japanisch, Koreanisch, Chinesisch.
+<h3>27 sleep sounds</h3>
+Rain on the window, campfire, ocean waves, snowstorm, singing bowls and more – real recordings, freely
+mixable, with a timer and a gentle fade-out as soon as you fall asleep. Time with sounds playing is left
+out of the analysis.
 </td>
-<td><img src="docs/screenshots/more.jpg" width="210" alt="Mehr"></td>
+<td><img src="docs/screenshots/sounds.jpg" width="210" alt="Sleep sounds"></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/alarms.jpg" width="210" alt="Alarms"></td>
+<td>
+<h3>Wake up in light sleep</h3>
+Alarms by time or by sleep duration. While recording, Suya wakes you within your chosen window as soon
+as you are in light sleep – and rings like the iPhone alarm, even in silent mode and Sleep Focus.
+</td>
+</tr>
+<tr>
+<td>
+<h3>Privacy first</h3>
+Everything is analysed on the iPhone. After 24 hours the audio is deleted; only a coarse sound image
+remains, from which speech cannot be understood.<br><br>
+<b>Voluntary data donation:</b> if you like, you can donate single nights (sound image and sleep stages,
+no recordings) to a private server in Hamburg, Germany, to make the model better – withdraw and delete
+at any time in the app.<br><br>
+<a href="https://suya.ng-lab.de/en/privacy">Privacy policy</a> ·
+<a href="https://suya.ng-lab.de/en/imprint">Imprint</a><br><br>
+Available in 10 languages: English, German, Spanish, French, Italian, Portuguese, Dutch, Japanese,
+Korean and Chinese.
+</td>
+<td><img src="docs/screenshots/more.jpg" width="210" alt="More"></td>
 </tr>
 </table>
 
-## Installieren (SideStore)
+## Install (SideStore)
 
-SideStore → **Sources** → **+** → diese Adresse eintragen:
+SideStore → **Sources** → **+** → add this URL:
 
 ```
 https://github.com/NikGro/suya/releases/latest/download/source.json
 ```
 
-Danach Suya einmal aus dieser Quelle installieren. Neue Versionen erscheinen dann automatisch unter
-„My Apps“. Damit Suya mit einer kostenlosen Apple-ID auf Apple Health zugreifen darf, braucht es ein
-leicht angepasstes SideStore – siehe [sidestore/README.md](sidestore/README.md).
+Then install Suya once from this source. New versions show up automatically under “My Apps”. To let
+Suya access Apple Health with a free Apple ID, SideStore needs a small patch – see
+[sidestore/README.md](sidestore/README.md).
 
-Versionen heißen *Jahr.Monat.Nummer* (z. B. `26.11.14`); jeder Push auf `main` baut und veröffentlicht
-eine neue Version.
+Versions are named *year.month.number* (e.g. `26.11.14`); every push to `main` builds and publishes a new
+version.
 
-## Aufbau
+## Repository layout
 
-| Ordner | Inhalt |
+| Folder | Contents |
 |---|---|
-| `SleepSonar/` | die App (SwiftUI): Aufnahme, Auswertung, Wecker, Klänge, Datenspende |
-| `Packages/SonarDSP/` | Signalverarbeitung (Log-Mel-Spektrogramm, Normierung) mit Tests |
-| `Widgets/` | Live-Aktivität und Widgets |
-| `training/` | Training des Schlafphasen-Modells (PyTorch → Core ML) |
-| `server/` | Server für Datenspende, Fehlerberichte und die Webseiten (läuft auf einer Synology) |
-| `scripts/` | Übersetzungen, Klänge, Hilfsskripte |
+| `SleepSonar/` | the app (SwiftUI): recording, analysis, alarms, sounds, data donation |
+| `Packages/SonarDSP/` | signal processing (log-mel spectrogram, normalisation) with tests |
+| `Widgets/` | Live Activity and widgets |
+| `training/` | training of the sleep stage model (PyTorch → Core ML) |
+| `server/` | server for data donations, bug reports and the website (runs on a Synology NAS) |
+| `scripts/` | translations, sounds, helper scripts |
 
-**Das Modell** lernt aus Tonaufnahmen von Schlaflabor-Messungen (öffentlicher Datensatz) und aus eigenen
-Nächten mit Apple-Watch-Schlafphasen. Aufbau angelehnt an SoundSleepNet: Log-Mel-Spektrogramm je
-30-Sekunden-Abschnitt → kleines CNN → bidirektionales GRU über die ganze Nacht.
+**The model** learns from audio of sleep lab recordings (public dataset) and from own nights with
+Apple Watch sleep stages. Architecture inspired by SoundSleepNet: log-mel spectrogram per 30-second epoch
+→ small CNN → bidirectional GRU over the whole night.
 
-## Lizenz
+## License
 
-[PolyForm Noncommercial 1.0.0](LICENSE): Ansehen, Ausprobieren, Verändern und Weitergeben sind für
-nicht-kommerzielle Zwecke erlaubt; kommerzielle Nutzung nur mit schriftlicher Erlaubnis.
-Die Schlafklänge stammen von freesound.org (CC0 / CC BY) und stehen unter ihren eigenen Lizenzen –
-Namensnennung in der App unter „Quellen der Klänge“.
-
----
-
-<sub>**English:** Suya is an iPhone sleep tracker that only listens: put the phone next to your bed and an
-on-device neural network estimates your sleep stages (wake, REM, core, deep) from breathing and movement
-sounds – no watch, no cloud. It writes to Apple Health, has a smart alarm that wakes you in light sleep,
-27 high-quality sleep sounds and is available in 10 languages. Install via SideStore with the source URL
-above. Source-available under the PolyForm Noncommercial License.</sub>
+[PolyForm Noncommercial 1.0.0](LICENSE): viewing, trying, modifying and sharing are allowed for
+noncommercial purposes; commercial use only with written permission.
+The sleep sounds come from freesound.org (CC0 / CC BY) and remain under their own licenses – credits in
+the app under “Sound credits”.
