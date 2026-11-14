@@ -7,36 +7,70 @@
 Leg das iPhone neben das Bett – Suya erkennt aus Atmung und Bewegung deine Schlafphasen.<br>
 Ohne Uhr, ohne Armband, ohne Cloud.</p>
 
-<p align="center">
-  <img src="docs/screenshots/tonight.jpg" width="200" alt="Heute Nacht">
-  <img src="docs/screenshots/night.jpg" width="200" alt="Auswertung einer Nacht">
-  <img src="docs/screenshots/sounds.jpg" width="200" alt="Einschlafklänge">
-  <img src="docs/screenshots/alarms.jpg" width="200" alt="Wecker">
-</p>
-
 ## Was Suya kann
 
-- **Schlafphasen nur übers Mikrofon** – Wach, REM, Kern- und Tiefschlaf. Ein kleines neuronales Netz
-  wertet die Nacht direkt auf dem iPhone aus; nichts verlässt das Gerät.
-- **Schlafwert** aus Dauer, Ruhe, Tief- und REM-Schlaf und Aufwachen – mit Zeitstrahl der Nacht.
-- **Apple Health**: Die Phasen landen auf Wunsch in Health. Mit Apple Watch siehst du beide Schätzungen
-  nebeneinander.
-- **Wecker mit Wecken im leichten Schlaf** – klingelt wie der iPhone-Wecker, auch bei Stummschaltung und
-  im Schlaf-Fokus (AlarmKit).
-- **27 Einschlafklänge** in Studioqualität, frei mischbar, mit Timer und Ausblenden beim Einschlafen.
-  Laufende Klänge zählen nicht in die Auswertung.
-- **Live-Aktivität**, Kurzbefehle („Schlafaufnahme starten“), Aufnahme im Querformat für den Nachttisch.
-- **10 Sprachen**: Deutsch, Englisch, Spanisch, Französisch, Italienisch, Portugiesisch, Niederländisch,
-  Japanisch, Koreanisch, Chinesisch.
-
-## Datenschutz
-
-- Ausgewertet wird **auf dem iPhone**. Der Ton bleibt 24 Stunden zum Export verfügbar und wird danach
-  gelöscht; übrig bleibt nur ein grobes Klangbild, aus dem sich keine Sprache verstehen lässt.
-- **Freiwillige Datenspende**: Wer möchte, spendet einzelne Nächte (nur das Klangbild und die
-  Schlafphasen, keine Aufnahmen) an einen eigenen Server in Hamburg, damit das Modell besser wird.
-  Widerruf und Löschung jederzeit in der App.
-- Datenschutzerklärung: <https://suya.ng-lab.de/datenschutz> · Impressum: <https://suya.ng-lab.de/impressum>
+<table>
+<tr>
+<td width="230"><img src="docs/screenshots/tonight.jpg" width="210" alt="Heute Nacht"></td>
+<td>
+<h3>Einfach hinlegen</h3>
+iPhone ans Ladekabel, neben das Bett, Aufnahme starten. Suya hört nur zu – ohne Uhr, ohne Armband.
+Live-Aktivität auf dem Sperrbildschirm, Kurzbefehle („Schlafaufnahme starten“) für den Schlaf-Fokus
+und eine ruhige Ansicht im Querformat für den Nachttisch.
+</td>
+</tr>
+<tr>
+<td>
+<h3>Schlafphasen auf dem iPhone</h3>
+Ein kleines neuronales Netz erkennt aus Atmung und Bewegung <b>Wach, REM, Kern- und Tiefschlaf</b> –
+direkt auf dem Gerät, nichts geht in eine Cloud. Dazu ein Schlafwert aus Dauer, Ruhe, Tief- und
+REM-Schlaf und Aufwachen. Auf Wunsch landen die Phasen in <b>Apple Health</b>; mit Apple Watch siehst
+du beide Schätzungen nebeneinander.
+</td>
+<td width="230"><img src="docs/screenshots/night.jpg" width="210" alt="Auswertung einer Nacht"></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/nights.jpg" width="210" alt="Nächte"></td>
+<td>
+<h3>Alle Nächte im Blick</h3>
+Jede Nacht mit Schlafwert und Mini-Zeitstrahl. Gedrückt halten zum Löschen, Exportieren oder Spenden;
+der Ton bleibt 24 Stunden zum Export verfügbar.
+</td>
+</tr>
+<tr>
+<td>
+<h3>27 Einschlafklänge</h3>
+Regen am Fenster, Lagerfeuer, Meereswellen, Schneesturm, Klangschalen und mehr – echte Aufnahmen,
+frei mischbar, mit Timer und sanftem Ausblenden, sobald du eingeschlafen bist. Laufende Klänge zählen
+nicht in die Auswertung.
+</td>
+<td><img src="docs/screenshots/sounds.jpg" width="210" alt="Einschlafklänge"></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/alarms.jpg" width="210" alt="Wecker"></td>
+<td>
+<h3>Wecken im leichten Schlaf</h3>
+Wecker nach Uhrzeit oder Schlafdauer. Während die Aufnahme läuft, weckt Suya im gewählten Zeitraum,
+sobald du leicht schläfst – und klingelt wie der iPhone-Wecker, auch bei Stummschaltung und im
+Schlaf-Fokus.
+</td>
+</tr>
+<tr>
+<td>
+<h3>Datenschutz zuerst</h3>
+Ausgewertet wird auf dem iPhone. Nach 24 Stunden wird der Ton gelöscht; übrig bleibt nur ein grobes
+Klangbild, aus dem sich keine Sprache verstehen lässt.<br><br>
+<b>Freiwillige Datenspende:</b> Wer möchte, spendet einzelne Nächte (Klangbild und Schlafphasen, keine
+Aufnahmen) an einen eigenen Server in Hamburg, damit das Modell besser wird – Widerruf und Löschung
+jederzeit in der App.<br><br>
+<a href="https://suya.ng-lab.de/datenschutz">Datenschutzerklärung</a> ·
+<a href="https://suya.ng-lab.de/impressum">Impressum</a><br><br>
+In 10 Sprachen: Deutsch, Englisch, Spanisch, Französisch, Italienisch, Portugiesisch, Niederländisch,
+Japanisch, Koreanisch, Chinesisch.
+</td>
+<td><img src="docs/screenshots/more.jpg" width="210" alt="Mehr"></td>
+</tr>
+</table>
 
 ## Installieren (SideStore)
 
