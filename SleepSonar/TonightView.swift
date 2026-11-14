@@ -119,11 +119,9 @@ struct TonightView: View {
 
             DisclosureGroup(isExpanded: $showDetails) {
                 VStack(spacing: 10) {
-                    detail(tr("Pegel"), String(format: "%.0f dBFS", rec.levelDB))
-                    detail(tr("Tief / Mitte / Hoch"), rec.bandDB.map { String(format: "%.0f", $0) }.joined(separator: " / "))
-                    detail(tr("Mikrofon"), rec.inputName)
-                    detail(tr("iPhone bewegt"), String(format: "%.3f g", rec.motionActivity))
-                    detail(tr("Neustarts"), "\(rec.restarts)")
+                    LiveDetails()
+                    TonightDetail(key: tr("Mikrofon"), value: rec.inputName)
+                    TonightDetail(key: tr("Neustarts"), value: "\(rec.restarts)")
                     ForEach(rec.events, id: \.self) {
                         Text($0).font(.caption.monospaced()).foregroundStyle(Theme.mist)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -154,18 +152,7 @@ struct TonightView: View {
     }
 
     private func breath(height: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            BreathLine(values: rec.recentBreath)
-                .frame(height: height)
-                .accessibilityLabel(tr("Atemlinie der letzten 30 Sekunden"))
-            HStack {
-                Text(tr("Letzte 30 Sekunden"))
-                Spacer()
-                Text(Self.statusText(rec))
-            }
-            .font(.caption)
-            .foregroundStyle(Theme.mist)
-        }
+        LiveBreath(height: height, restarts: rec.restarts)
     }
 
     private var stopButton: some View {
@@ -191,24 +178,60 @@ struct TonightView: View {
         .animation(.snappy(duration: 0.2), value: confirmStop)
     }
 
-    private func detail(_ k: String, _ v: String) -> some View {
-        HStack {
-            Text(k).foregroundStyle(Theme.mist)
-            Spacer()
-            Text(v).monospacedDigit()
-        }
-        .font(.callout)
-    }
-
-    private static func statusText(_ rec: PassiveNightEngine) -> String {
-        if rec.motionActivity > MotionLogger.handledThreshold { return tr("iPhone wird bewegt") }
-        if rec.restarts > 0 { return tr("hört zu, %d× neu gestartet", rec.restarts) }
-        return tr("hört zu")
-    }
 
     static func clock(_ t: TimeInterval) -> String {
         let s = max(0, Int(t))
         return String(format: "%d:%02d:%02d", s / 3600, (s / 60) % 60, s % 60)
+    }
+}
+
+private struct TonightDetail: View {
+    let key: String
+    let value: String
+    var body: some View {
+        HStack {
+            Text(key).foregroundStyle(Theme.mist)
+            Spacer()
+            Text(value).monospacedDigit()
+        }
+        .font(.callout)
+    }
+}
+
+/// Atemlinie mit Zustand – beobachtet als Einzige die schnellen Pegel, damit nur sie neu gezeichnet wird
+private struct LiveBreath: View {
+    @ObservedObject private var live = LiveLevels.shared
+    let height: CGFloat
+    let restarts: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            BreathLine(values: live.recentBreath)
+                .frame(height: height)
+                .accessibilityLabel(tr("Atemlinie der letzten 30 Sekunden"))
+            HStack {
+                Text(tr("Letzte 30 Sekunden"))
+                Spacer()
+                Text(status)
+            }
+            .font(.caption)
+            .foregroundStyle(Theme.mist)
+        }
+    }
+
+    private var status: String {
+        if live.motionActivity > MotionLogger.handledThreshold { return tr("iPhone wird bewegt") }
+        if restarts > 0 { return tr("hört zu, %d× neu gestartet", restarts) }
+        return tr("hört zu")
+    }
+}
+
+private struct LiveDetails: View {
+    @ObservedObject private var live = LiveLevels.shared
+    var body: some View {
+        TonightDetail(key: tr("Pegel"), value: String(format: "%.0f dBFS", live.levelDB))
+        TonightDetail(key: tr("Tief / Mitte / Hoch"), value: live.bandDB.map { String(format: "%.0f", $0) }.joined(separator: " / "))
+        TonightDetail(key: tr("iPhone bewegt"), value: String(format: "%.3f g", live.motionActivity))
     }
 }
 

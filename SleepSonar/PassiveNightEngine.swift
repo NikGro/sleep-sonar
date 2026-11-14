@@ -12,23 +12,16 @@ final class PassiveNightEngine: ObservableObject {
     static let shared = PassiveNightEngine()
     private init() {}
 
+    // Nur Werte, die sich selten ändern. Pegel und Atemlinie (10× je Sekunde) liegen in `LiveLevels`,
+    // damit Listen und Einstellungen, die diese Klasse beobachten, nicht ständig neu gezeichnet werden.
     @Published private(set) var isRunning = false
     @Published private(set) var startDate: Date?
-    @Published private(set) var levelDB: Double = -120
-    @Published private(set) var bandDB: [Double] = [-120, -120, -120]
-    /// Hochton-Pegel (Atemrauschen) der letzten 30 s, alle 0,1 s – für die Atemlinie
-    @Published private(set) var recentBreath: [BreathLine.Sample] = []
-    /// Audiozeit → Uhrzeit: Startpunkt, wird neu gesetzt, wenn er mehr als 0,5 s abweicht
-    private var breathAnchor: TimeInterval?
-    @Published private(set) var motionActivity: Double = 0
     @Published private(set) var restarts = 0
     @Published private(set) var events: [String] = []
     @Published private(set) var errorMessage: String?
     @Published private(set) var folder: URL?
     /// zuletzt beendete Aufnahme war zu kurz zum Auswerten (und wurde verworfen) – Hinweis in „Heute Nacht“
     @Published var tooShort = false
-    /// darunter kann das Modell nichts schätzen (mindestens 20 Abschnitte à 30 s, etwas Puffer)
-    static let minimumSeconds: TimeInterval = 11 * 60
     @Published private(set) var inputName = ""
 
     private var engine: AVAudioEngine?
@@ -36,11 +29,9 @@ final class PassiveNightEngine: ObservableObject {
     private var motion: MotionLogger?
     private var observers: [NSObjectProtocol] = []
     private var watchdog: Timer?
-    private var activity: Activity<NightActivityAttributes>?
-    /// Sekundenwerte der laufenden Nacht für den Wecker (gleiche Daten wie levels.csv)
-    private var secondsHistory: [SleepStaging.Second?] = []
-    private var motionHistory: [Double?] = []
-    private var motionPeak = 0.0
+    private let activity = NightLiveActivity()
+    private let live = LiveLevels.shared
+    private var history = NightHistory()
     private var alarmTimer: Timer?
 
     func start() async {
@@ -48,14 +39,13 @@ final class PassiveNightEngine: ObservableObject {
         errorMessage = nil
         events = []
         restarts = 0
-        recentBreath = []
-        breathAnchor = nil
+        live.reset()
         guard await AVAudioApplication.requestRecordPermission() else {
             errorMessage = tr("Kein Mikrofonzugriff. Einstellungen → Suya → Mikrofon erlauben.")
             return
         }
         // eine Nacht braucht gut 200 MB (Ton, Spektrogramm beim Auswerten); bei vollem Speicher gar nicht erst anfangen
-        if let free = Self.freeBytes(), free < Self.minimumFreeBytes {
+        if let free = RecordingLimits.freeBytes(), free < RecordingLimits.minimumFreeBytes {
             errorMessage = tr("Zu wenig freier Speicher (%@). Für eine Nacht braucht Suya mindestens 500 MB.",
                               ByteCountFormatter.string(fromByteCount: free, countStyle: .file))
             return
@@ -79,24 +69,13 @@ final class PassiveNightEngine: ObservableObject {
             ]) { [weak self] db, bands in
                 Task { @MainActor in
                     guard let self else { return }
-                    self.levelDB = db
-                    self.bandDB = bands
-                    self.secondsHistory.append(.init(rms: db, mid: bands[1], high: bands[2]))
-                    self.motionHistory.append(self.motionPeak)
-                    self.motionPeak = 0
+                    self.live.second(db: db, bands: bands)
+                    self.history.second(db: db, bands: bands)
                 }
             }
-            rec.onTick = { [weak self] high, index in
+            rec.onTick = { high, index in
                 let arrived = Date().timeIntervalSinceReferenceDate
-                Task { @MainActor in
-                    guard let self else { return }
-                    // Zeitstempel aus der Audiozeit, nicht aus der (stoßweisen) Ankunft
-                    let audio = Double(index) * 0.1
-                    if let a = self.breathAnchor, abs(a + audio - arrived) < 0.5 {} else { self.breathAnchor = arrived - audio }
-                    self.recentBreath.append(.init(t: self.breathAnchor! + audio, v: high))
-                    let cut = arrived - BreathLine.window - 2
-                    if let i = self.recentBreath.firstIndex(where: { $0.t >= cut }), i > 0 { self.recentBreath.removeFirst(i) }
-                }
+                Task { @MainActor in LiveLevels.shared.tick(high: high, index: index, arrived: arrived) }
             }
             recorder = rec
             folder = rec.folder
@@ -104,8 +83,9 @@ final class PassiveNightEngine: ObservableObject {
             let m = MotionLogger { [weak self] activity, maxDelta, pitch, roll in
                 rec.appendMotion(activity: activity, maxDelta: maxDelta, pitch: pitch, roll: roll)
                 Task { @MainActor in
-                    self?.motionActivity = activity
-                    self?.motionPeak = max(self?.motionPeak ?? 0, activity)
+                    guard let self else { return }
+                    self.live.motionActivity = activity
+                    self.history.motion(activity)
                 }
             }
             m.start()
@@ -113,7 +93,7 @@ final class PassiveNightEngine: ObservableObject {
             observeSession()
             // Live-Aktivität vor dem Mikrofon: Pflicht für den Start im Hintergrund per Kurzbefehl
             startDate = Date()
-            startActivity()
+            log(activity.start(at: startDate ?? Date(), sounds: SleepSoundPlayer.shared))
             try buildAndStart()
             isRunning = true
             Orientation.recordingChanged(true)
@@ -122,19 +102,19 @@ final class PassiveNightEngine: ObservableObject {
             watchdog = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
                 Task { @MainActor in self?.checkAlive() }
             }
-            secondsHistory = []
-            motionHistory = []
+            history = NightHistory()
             if let startDate { SmartAlarm.shared.recordingStarted(at: startDate) }
             SleepSoundPlayer.shared.recordingStarted()
             alarmTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
                 Task { @MainActor in
                     guard let self else { return }
                     if self.endIfNeeded() { return }
-                    SmartAlarm.shared.tick(seconds: self.secondsHistory, motion: self.motionHistory)
-                    SleepSoundPlayer.shared.tick(seconds: self.secondsHistory, motion: self.motionHistory)
+                    SmartAlarm.shared.tick(seconds: self.history.seconds, motion: self.history.motionPeaks)
+                    SleepSoundPlayer.shared.tick(seconds: self.history.seconds, motion: self.history.motionPeaks)
                 }
             }
         } catch {
+            Log.recording.error("Start: \(error.localizedDescription, privacy: .public)")
             errorMessage = tr("Audio-Fehler: %@", error.localizedDescription)
             stop()
         }
@@ -156,7 +136,7 @@ final class PassiveNightEngine: ObservableObject {
         motion?.stop()
         motion = nil
         SoundReference.shared.setFolder(nil)
-        let short = recorder != nil && Date().timeIntervalSince(startDate ?? Date()) < Self.minimumSeconds
+        let short = recorder != nil && Date().timeIntervalSince(startDate ?? Date()) < RecordingLimits.minimumSeconds
         if let recorder {
             logBattery()
             log(tr("Gestoppt"))
@@ -165,13 +145,15 @@ final class PassiveNightEngine: ObservableObject {
         recorder = nil
         // zu kurz zum Auswerten: keine Nacht in der Übersicht anlegen
         if short, let f = folder {
-            try? FileManager.default.removeItem(at: f)
+            do { try FileManager.default.removeItem(at: f) } catch {
+                Log.recording.error("kurze Aufnahme verwerfen: \(error.localizedDescription, privacy: .public)")
+            }
             folder = nil
             tooShort = true
         }
         isRunning = false
         SleepSoundPlayer.shared.recordingStopped()
-        endActivity()
+        activity.end()
         Orientation.recordingChanged(false)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         // Nacht in Health eintragen (außer die Watch hat sie schon)
@@ -196,44 +178,8 @@ final class PassiveNightEngine: ObservableObject {
         }
     }
 
-    // MARK: - Live-Aktivität (Dynamic Island, Sperrbildschirm, StandBy)
-
-    private func startActivity() {
-        guard let startDate else { return }
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            log(tr("Live-Aktivitäten sind aus (Einstellungen → Suya → Live-Aktivitäten)"))
-            return
-        }
-        // Reste einer abgebrochenen Nacht aufräumen
-        for old in Activity<NightActivityAttributes>.activities {
-            Task { await old.end(nil, dismissalPolicy: .immediate) }
-        }
-        do {
-            activity = try Activity.request(
-                attributes: NightActivityAttributes(start: startDate),
-                content: .init(state: .init(handled: false), staleDate: nil))
-            log(tr("Live-Aktivität gestartet"))
-            updateActivity()
-        } catch {
-            log(tr("Live-Aktivität nicht möglich: %@", error.localizedDescription))
-        }
-    }
-
     /// Klänge in der Live-Aktivität aktuell halten
-    func updateActivity() {
-        guard let activity else { return }
-        let p = SleepSoundPlayer.shared
-        let state = NightActivityAttributes.ContentState(
-            handled: false, sounds: p.active.isEmpty ? nil : p.activeNames, playing: p.isPlaying,
-            fadeStart: p.isPlaying ? p.fadeStart : nil, fadeEnd: p.isPlaying ? p.fadeEnd : nil)
-        Task { await activity.update(.init(state: state, staleDate: nil)) }
-    }
-
-    private func endActivity() {
-        let all = Activity<NightActivityAttributes>.activities
-        activity = nil
-        for a in all { Task { await a.end(nil, dismissalPolicy: .immediate) } }
-    }
+    func updateActivity() { activity.update(sounds: SleepSoundPlayer.shared) }
 
     // MARK: - Engine
 
@@ -301,27 +247,15 @@ final class PassiveNightEngine: ObservableObject {
         }
     }
 
-    /// längste Aufnahme: danach endet die Nacht von selbst (vergessen zu stoppen)
-    static let maximumSeconds = 14 * 3600.0
-    static let minimumFreeBytes: Int64 = 500_000_000
-    /// beim Aufnehmen: unter dieser Grenze anhalten, damit iOS und die Auswertung noch Platz haben
-    static let stopFreeBytes: Int64 = 150_000_000
-
-    static func freeBytes() -> Int64? {
-        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        return (try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]))?
-            .volumeAvailableCapacityForImportantUsage
-    }
-
     /// einmal je Minute: zu lange oder Speicher fast voll → Aufnahme beenden (nicht, solange ein Wecker klingelt)
     private func endIfNeeded() -> Bool {
         guard isRunning, let startDate else { return false }
         if #available(iOS 26.0, *), AlarmBackend.isRinging { return false }
-        if Date().timeIntervalSince(startDate) > Self.maximumSeconds {
+        if Date().timeIntervalSince(startDate) > RecordingLimits.maximumSeconds {
             log(tr("Nach 14 Stunden automatisch beendet"))
             stop(); return true
         }
-        if let free = Self.freeBytes(), free < Self.stopFreeBytes {
+        if let free = RecordingLimits.freeBytes(), free < RecordingLimits.stopFreeBytes {
             log(tr("Speicher fast voll – Aufnahme beendet"))
             stop(); return true
         }
@@ -379,4 +313,115 @@ final class PassiveNightEngine: ObservableObject {
         log(tr("Akku %.0f %%, %@", Double(d.batteryLevel * 100), state))
     }
 
+}
+
+/// Pegel und Atemlinie der laufenden Nacht – ändern sich 10× je Sekunde. Nur die Anzeige der Aufnahme
+/// beobachtet sie; alles andere hängt an `PassiveNightEngine`.
+@MainActor
+final class LiveLevels: ObservableObject {
+    static let shared = LiveLevels()
+
+    @Published private(set) var levelDB: Double = -120
+    @Published private(set) var bandDB: [Double] = [-120, -120, -120]
+    /// Hochton-Pegel (Atemrauschen) der letzten 30 s, alle 0,1 s
+    @Published private(set) var recentBreath: [BreathLine.Sample] = []
+    @Published var motionActivity: Double = 0
+    /// Audiozeit → Uhrzeit: Startpunkt, wird neu gesetzt, wenn er mehr als 0,5 s abweicht
+    private var anchor: TimeInterval?
+
+    func reset() {
+        levelDB = -120
+        bandDB = [-120, -120, -120]
+        recentBreath = []
+        motionActivity = 0
+        anchor = nil
+    }
+
+    func second(db: Double, bands: [Double]) {
+        levelDB = db
+        bandDB = bands
+    }
+
+    /// Zeitstempel aus der Audiozeit (`index` × 0,1 s), nicht aus der stoßweisen Ankunft
+    func tick(high: Double, index: Int, arrived: TimeInterval) {
+        let audio = Double(index) * 0.1
+        if let a = anchor, abs(a + audio - arrived) < 0.5 {} else { anchor = arrived - audio }
+        recentBreath.append(.init(t: (anchor ?? arrived) + audio, v: high))
+        let cut = arrived - BreathLine.window - 2
+        if let i = recentBreath.firstIndex(where: { $0.t >= cut }), i > 0 { recentBreath.removeFirst(i) }
+    }
+}
+
+/// Sekundenwerte der laufenden Nacht für Wecker und Schlafklänge (gleiche Daten wie levels.csv)
+struct NightHistory {
+    private(set) var seconds: [SleepStaging.Second?] = []
+    /// stärkste Bewegung des iPhones je Sekunde
+    private(set) var motionPeaks: [Double?] = []
+    private var peak = 0.0
+
+    mutating func second(db: Double, bands: [Double]) {
+        seconds.append(.init(rms: db, mid: bands[1], high: bands[2]))
+        motionPeaks.append(peak)
+        peak = 0
+    }
+
+    mutating func motion(_ activity: Double) { peak = max(peak, activity) }
+}
+
+/// Grenzen einer Aufnahme
+enum RecordingLimits {
+    /// darunter kann das Modell nichts schätzen (mindestens 20 Abschnitte à 30 s, etwas Puffer)
+    static let minimumSeconds: TimeInterval = 11 * 60
+    /// längste Aufnahme: danach endet die Nacht von selbst (vergessen zu stoppen)
+    static let maximumSeconds = 14 * 3600.0
+    /// eine Nacht braucht gut 200 MB (Ton, Spektrogramm beim Auswerten)
+    static let minimumFreeBytes: Int64 = 500_000_000
+    /// beim Aufnehmen: unter dieser Grenze anhalten, damit iOS und die Auswertung noch Platz haben
+    static let stopFreeBytes: Int64 = 150_000_000
+
+    static func freeBytes() -> Int64? {
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        return (try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]))?
+            .volumeAvailableCapacityForImportantUsage
+    }
+}
+
+/// Live-Aktivität der Nacht (Dynamic Island, Sperrbildschirm, StandBy)
+@MainActor
+final class NightLiveActivity {
+    private var activity: Activity<NightActivityAttributes>?
+
+    /// Gibt einen Protokolleintrag zurück
+    func start(at start: Date, sounds: SleepSoundPlayer) -> String {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            return tr("Live-Aktivitäten sind aus (Einstellungen → Suya → Live-Aktivitäten)")
+        }
+        // Reste einer abgebrochenen Nacht aufräumen
+        for old in Activity<NightActivityAttributes>.activities {
+            Task { await old.end(nil, dismissalPolicy: .immediate) }
+        }
+        do {
+            activity = try Activity.request(
+                attributes: NightActivityAttributes(start: start),
+                content: .init(state: .init(handled: false), staleDate: nil))
+            update(sounds: sounds)
+            return tr("Live-Aktivität gestartet")
+        } catch {
+            Log.recording.notice("Live-Aktivität: \(error.localizedDescription, privacy: .public)")
+            return tr("Live-Aktivität nicht möglich: %@", error.localizedDescription)
+        }
+    }
+
+    func update(sounds p: SleepSoundPlayer) {
+        guard let activity else { return }
+        let state = NightActivityAttributes.ContentState(
+            handled: false, sounds: p.active.isEmpty ? nil : p.activeNames, playing: p.isPlaying,
+            fadeStart: p.isPlaying ? p.fadeStart : nil, fadeEnd: p.isPlaying ? p.fadeEnd : nil)
+        Task { await activity.update(.init(state: state, staleDate: nil)) }
+    }
+
+    func end() {
+        activity = nil
+        for a in Activity<NightActivityAttributes>.activities { Task { await a.end(nil, dismissalPolicy: .immediate) } }
+    }
 }

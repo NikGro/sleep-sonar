@@ -31,13 +31,13 @@ struct NightView: View {
                     let recording = rec.isRunning && rec.folder == url
                     Group {
                         if recording {
-                            NightRow(url: url, summary: nil, recording: true, busy: false)
+                            NightRow(url: url, summary: nil, size: nil, recording: true, busy: false)
                         } else {
                             NavigationLink {
                                 NightAnalysisView(folder: url)
                             } label: {
-                                NightRow(url: url, summary: summaries.items[url], recording: false,
-                                         busy: exporting == url || uploader.active == url)
+                                NightRow(url: url, summary: summaries.items[url], size: summaries.info[url]?.size,
+                                         recording: false, busy: exporting == url || uploader.active == url)
                             }
                         }
                     }
@@ -45,22 +45,24 @@ struct NightView: View {
                     .listRowSeparatorTint(Theme.hairline)
                     .task { if !recording { summaries.load(url) } }
                     .contextMenu {
-                        if !recording {
-                            if donation.state == .granted, DonationUploader.canResend(url) {
+                        // Angaben vorab im Hintergrund gelesen (`NightSummaries.info`), nicht bei jedem Zeichnen
+                        if !recording, let info = summaries.info[url] {
+                            if donation.state == .granted, info.canResend {
                                 Button {
                                     Task {
                                         exporting = url
                                         defer { exporting = nil }
                                         await DonationUploader.shared.resend(url)
+                                        summaries.refreshInfo([url])
                                         let st = NightDonationState.existing(url)
                                         message = st?.sent != nil ? tr("Nacht gespendet.")
                                             : (st?.skipped ?? st?.waiting).map(NightDonationState.reasonText)
                                     }
                                 } label: {
-                                    Label(DonationUploader.donateLabel(url), systemImage: "arrow.up.heart")
+                                    Label(info.donateLabel, systemImage: "arrow.up.heart")
                                 }
                             }
-                            if let left = NightFinisher.exportTimeLeft(url) {
+                            if let left = info.exportTimeLeft {
                                 Button {
                                     Task { await export(url) }
                                 } label: {
@@ -126,6 +128,7 @@ struct NightView: View {
                                                                  includingPropertiesForKeys: nil)) ?? []
         nights = dirs.filter { $0.hasDirectoryPath }.sorted { $0.lastPathComponent > $1.lastPathComponent }
         summaries.preload(nights)
+        summaries.refreshInfo(nights)
     }
 
     /// ZIP mit allem: Ton, Pegel, Bewegung, Auswertung und Watch-Daten aus Health (24 h nach der Nacht möglich)
@@ -190,9 +193,37 @@ struct NightSummary: Codable {
     }
 }
 
+/// Was das Menü und die Zeile einer Nacht brauchen und sonst bei jedem Zeichnen von der Platte lesen müssten
+struct NightListInfo: Sendable, Equatable {
+    var canResend: Bool
+    var donateLabel: String
+    /// verbleibende Zeit für den Export mit Ton
+    var exportTimeLeft: String?
+    /// Größe des Ordners (für Nächte ohne Auswertung)
+    var size: String
+
+    nonisolated static func read(_ url: URL) -> NightListInfo {
+        let files = (try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: [.fileSizeKey])) ?? []
+        let bytes = files.compactMap { try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize }.reduce(0, +)
+        return NightListInfo(canResend: DonationUploader.canResend(url), donateLabel: DonationUploader.donateLabel(url),
+                             exportTimeLeft: NightFinisher.exportTimeLeft(url),
+                             size: ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file))
+    }
+}
+
 @MainActor
 final class NightSummaries: ObservableObject {
     @Published private(set) var items: [URL: NightSummary] = [:]
+    @Published private(set) var info: [URL: NightListInfo] = [:]
+
+    func refreshInfo(_ urls: [URL]) {
+        Task {
+            let fresh = await Task.detached(priority: .userInitiated) {
+                Dictionary(uniqueKeysWithValues: urls.map { ($0, NightListInfo.read($0)) })
+            }.value
+            for (url, value) in fresh where info[url] != value { info[url] = value }
+        }
+    }
     private var failed: Set<URL> = []
     private var checked: Set<URL> = []
     private var queue: Task<Void, Never>?
@@ -230,6 +261,7 @@ final class NightSummaries: ObservableObject {
 private struct NightRow: View {
     let url: URL
     let summary: NightSummary?
+    let size: String?
     let recording: Bool
     let busy: Bool
     @ObservedObject private var analysis = AnalysisProgress.shared
@@ -268,19 +300,14 @@ private struct NightRow: View {
                         times(summary.start, summary.totalSeconds)))
                     .font(.callout).foregroundStyle(Theme.mist)
             } else {
-                Text(sizeText).font(.callout).foregroundStyle(Theme.mist)
+                Text(size ?? " ").font(.callout).foregroundStyle(Theme.mist)
             }
         }
         .padding(.vertical, 10)
     }
 
     private var startDate: Date? {
-        if let s = summary?.start { return s }
-        let name = url.lastPathComponent.replacingOccurrences(of: "_audio", with: "")
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd_HH-mm"
-        return f.date(from: name)
+        summary?.start ?? DateFormatter.nightName.date(from: url.lastPathComponent.replacingOccurrences(of: "_audio", with: ""))
     }
 
     private var title: String {
@@ -292,12 +319,6 @@ private struct NightRow: View {
     private func times(_ start: Date, _ seconds: Double) -> String {
         let end = start.addingTimeInterval(seconds)
         return tr("%@ bis %@", start.formatted(date: .omitted, time: .shortened), end.formatted(date: .omitted, time: .shortened))
-    }
-
-    private var sizeText: String {
-        let files = (try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: [.fileSizeKey])) ?? []
-        let bytes = files.compactMap { try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize }.reduce(0, +)
-        return ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
     }
 }
 
