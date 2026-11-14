@@ -386,10 +386,12 @@ enum RecordingLimits {
     }
 }
 
-/// Live-Aktivität der Nacht (Dynamic Island, Sperrbildschirm, StandBy)
+/// Live-Aktivität der Nacht (Dynamic Island, Sperrbildschirm, StandBy). Hält nur die Kennung; die
+/// Aktivitäten selbst werden außerhalb des Hauptthreads gesucht und geändert (ActivityKit ist dafür gebaut).
 @MainActor
 final class NightLiveActivity {
-    private var activity: Activity<NightActivityAttributes>?
+    private typealias NightActivity = Activity<NightActivityAttributes>
+    private var activityID: String?
 
     /// Gibt einen Protokolleintrag zurück
     func start(at start: Date, sounds: SleepSoundPlayer) -> String {
@@ -397,13 +399,12 @@ final class NightLiveActivity {
             return tr("Live-Aktivitäten sind aus (Einstellungen → Suya → Live-Aktivitäten)")
         }
         // Reste einer abgebrochenen Nacht aufräumen
-        for old in Activity<NightActivityAttributes>.activities {
-            Task { await old.end(nil, dismissalPolicy: .immediate) }
-        }
+        Task { await Self.endAll(except: nil) }
         do {
-            activity = try Activity.request(
+            let activity = try NightActivity.request(
                 attributes: NightActivityAttributes(start: start),
                 content: .init(state: .init(handled: false), staleDate: nil))
+            activityID = activity.id
             update(sounds: sounds)
             return tr("Live-Aktivität gestartet")
         } catch {
@@ -413,15 +414,27 @@ final class NightLiveActivity {
     }
 
     func update(sounds p: SleepSoundPlayer) {
-        guard let activity else { return }
+        guard let id = activityID else { return }
         let state = NightActivityAttributes.ContentState(
             handled: false, sounds: p.active.isEmpty ? nil : p.activeNames, playing: p.isPlaying,
             fadeStart: p.isPlaying ? p.fadeStart : nil, fadeEnd: p.isPlaying ? p.fadeEnd : nil)
-        Task { await activity.update(.init(state: state, staleDate: nil)) }
+        Task { await Self.update(id: id, state: state) }
     }
 
     func end() {
-        activity = nil
-        for a in Activity<NightActivityAttributes>.activities { Task { await a.end(nil, dismissalPolicy: .immediate) } }
+        activityID = nil
+        Task { await Self.endAll(except: nil) }
+    }
+
+    nonisolated private static func update(id: String, state: NightActivityAttributes.ContentState) async {
+        for a in NightActivity.activities where a.id == id {
+            await a.update(.init(state: state, staleDate: nil))
+        }
+    }
+
+    nonisolated private static func endAll(except keep: String?) async {
+        for a in NightActivity.activities where a.id != keep {
+            await a.end(nil, dismissalPolicy: .immediate)
+        }
     }
 }
