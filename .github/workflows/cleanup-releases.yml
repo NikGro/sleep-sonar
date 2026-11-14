@@ -1,0 +1,38 @@
+name: Releases aufräumen
+
+# Behält den neuesten Release und je Monat den letzten (Meilenstein); alle anderen Releases werden
+# samt Tag gelöscht. Nur von Hand starten: Actions → „Releases aufräumen“ → Run workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Nur anzeigen, nichts löschen"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Releases aufräumen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY: ${{ inputs.dry_run }}
+        run: |
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 1000 --json tagName,createdAt \
+            --jq 'sort_by(.createdAt) | reverse | .[] | "\(.tagName) \(.createdAt[0:7])"' > releases.txt
+          # neuester Release + jeweils der letzte eines Monats bleiben
+          awk 'NR==1 {print $1} !seen[$2]++ {print $1}' releases.txt | sort -u > keep.txt
+          echo "### Bleiben" >> "$GITHUB_STEP_SUMMARY"; sed 's/^/- /' keep.txt >> "$GITHUB_STEP_SUMMARY"
+          n=0
+          while read -r tag month; do
+            grep -qx "$tag" keep.txt && continue
+            n=$((n + 1))
+            if [ "$DRY" = "true" ]; then echo "würde löschen: $tag"; else
+              gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes && echo "gelöscht: $tag"
+            fi
+          done < releases.txt
+          echo "### $( [ "$DRY" = "true" ] && echo 'Würden gelöscht' || echo 'Gelöscht' ): $n Releases" >> "$GITHUB_STEP_SUMMARY"
