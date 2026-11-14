@@ -1,0 +1,58 @@
+name: App-Tests
+
+# Unit-Tests der App im Simulator (Server-Schnittstelle, Weckerspeicher, Nacht-Dateien).
+# Laufen neben dem Build; sie halten kein Release auf.
+on:
+  push:
+    branches: [main, "dev/**"]
+    paths:
+      - "Suya/**"
+      - "SuyaTests/**"
+      - "Shared/**"
+      - "Packages/SonarDSP/Sources/**"
+      - "project.yml"
+      - ".github/workflows/app-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select newest Xcode
+        run: |
+          XC=$(ls -d /Applications/Xcode_*.app | grep -vi beta | sort -V | tail -1)
+          sudo xcode-select -s "$XC"
+      - name: Prepare
+        run: |
+          brew install xcodegen
+          python3 scripts/gen_strings.py
+          xcodegen generate
+      - name: Pick simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json,sys
+          d=json.load(sys.stdin)["devices"]
+          c=[(k,x) for k,v in d.items() if "iOS" in k for x in v if x["name"].startswith("iPhone")]
+          c.sort(key=lambda t:t[0]); print(c[-1][1]["udid"])')
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+      - name: Test
+        run: |
+          set -o pipefail
+          xcodebuild test -project Suya.xcodeproj -scheme Suya -destination "id=$UDID" \
+            -derivedDataPath build/dd CODE_SIGNING_ALLOWED=NO | tee test.log \
+            | grep -E "error:|✘|✔|Test run|passed|failed|TEST (SUCCEEDED|FAILED)" || true
+          grep -q "TEST SUCCEEDED" test.log
+      - name: Log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-log
+          path: test.log

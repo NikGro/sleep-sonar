@@ -15,7 +15,8 @@ targets:
     dependencies:
       - package: SonarDSP
       - target: SuyaWidgets
-    scheme: {}
+    scheme:
+      testTargets: [SuyaTests]
     info:
       path: Suya/Info.plist
       properties:
@@ -63,3 +64,15 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "6.0"
         GENERATE_INFOPLIST_FILE: "NO"
+  SuyaTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [SuyaTests]
+    dependencies:
+      - target: Suya
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: "YES"
+        CODE_SIGNING_ALLOWED: "NO"
+        SWIFT_VERSION: "6.0"
+        PRODUCT_BUNDLE_IDENTIFIER: de.nikgro.sleepsonar.tests

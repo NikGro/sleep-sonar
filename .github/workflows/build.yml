@@ -12,6 +12,8 @@ on:
       - "server/**"
       - ".github/workflows/server-tests.yml"
       - ".github/workflows/cleanup-releases.yml"
+      - ".github/workflows/app-tests.yml"
+      - "SuyaTests/**"
   workflow_dispatch:
 
 permissions:
