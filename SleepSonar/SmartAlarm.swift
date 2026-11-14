@@ -257,7 +257,7 @@ final class SmartAlarm: ObservableObject {
     func latest(_ a: AlarmItem, after from: Date = Date()) -> Date? {
         switch a.mode {
         case .time:
-            return AlarmTimes.next(wakeMinutes: a.wakeMinutes, repeatDays: a.repeatDays, after: from)
+            return AlarmTimes.next(wakeMinutes: a.wakeMinutes, repeatDays: Set(a.repeatDays), after: from)
         case .duration:
             // ab Beginn der Nachtaufnahme; ohne Aufnahme kein Wecker
             guard let start = recordingStart else { return nil }
@@ -465,7 +465,7 @@ final class SmartAlarm: ObservableObject {
         }
         let cal = Calendar.current
         let today = cal.component(.weekday, from: latest)
-        let others = a.repeatDays.subtracting([today])
+        let others = Set(a.repeatDays).subtracting([today])
         if others.isEmpty {
             AlarmBackend.cancelMain(for: a.id)
         } else {
@@ -625,7 +625,7 @@ enum AlarmBackend {
 
     private static func rule(_ a: AlarmItem, at: Date?, days: Set<Int>?) -> Alarm.Schedule {
         if let at { return .fixed(at) }
-        let list: [Locale.Weekday] = (days ?? a.repeatDays).sorted().compactMap(weekday)
+        let list: [Locale.Weekday] = (days.map { Array($0) } ?? a.repeatDays).sorted().compactMap(weekday)
         return .relative(.init(time: .init(hour: a.wakeMinutes / 60, minute: a.wakeMinutes % 60),
                                repeats: list.isEmpty ? .never : .weekly(list)))
     }
