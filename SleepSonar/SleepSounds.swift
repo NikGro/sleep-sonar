@@ -247,7 +247,7 @@ final class SleepSoundPlayer: ObservableObject {
         for s in sounds where Self.cache[s] == nil && !loading.contains(s) {
             loading.insert(s)
             Task {
-                let buf = await Task.detached(priority: .userInitiated) { Self.decode(s) }.value
+                let buf = await Task.detached(priority: .userInitiated) { Self.decode(s) }.value?.buffer
                 loading.remove(s)
                 if let buf { Self.cache[s] = buf }
                 if isPlaying, (volumes[s] ?? 0) > 0.01 { attach(s) }
@@ -255,12 +255,15 @@ final class SleepSoundPlayer: ObservableObject {
         }
     }
 
-    nonisolated private static func decode(_ s: SleepSound) -> AVAudioPCMBuffer? {
+    /// frisch dekodierter Puffer, der nur einmal an den Hauptthread übergeben und dort nur gelesen wird
+    private struct Decoded: @unchecked Sendable { let buffer: AVAudioPCMBuffer }
+
+    nonisolated private static func decode(_ s: SleepSound) -> Decoded? {
         guard let url = Bundle.main.url(forResource: s.rawValue, withExtension: "m4a"),
               let file = try? AVAudioFile(forReading: url),
               let buf = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)),
               (try? file.read(into: buf)) != nil else { return nil }
-        return buf
+        return Decoded(buffer: buf)
     }
 
     /// App geht in den Hintergrund: Probehören endet

@@ -7,9 +7,9 @@ import SonarDSP
 @MainActor
 enum NightFinisher {
     /// so lange bleibt das Spektrogramm einer Nacht auf dem iPhone
-    static let keepMelDays: Double = 7
+    nonisolated static let keepMelDays: Double = 7
     /// so lange bleibt der Ton nach dem Ende der Nacht (Export mit Audio)
-    static let keepAudioHours: Double = 24
+    nonisolated static let keepAudioHours: Double = 24
 
     /// verbleibende Zeit für den Export mit Audio, z. B. „5 Std., 12 Min.“ (in der Sprache des iPhones)
     nonisolated static func exportTimeLeft(_ folder: URL) -> String? {
