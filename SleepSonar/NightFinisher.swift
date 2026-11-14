@@ -43,7 +43,7 @@ enum NightFinisher {
             let created = (try? folder.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
             let young = Date().timeIntervalSince(created) < keepMelDays * 86400   // ältere bräuchten kein Klangbild mehr
             if young, !DonationUploader.hasMel(folder) {
-                let ok = await Task.detached(priority: .utility) { DonationUploader.writeMel(folder: folder, files: files) }.value
+                let ok = await DonationUploader.writeMel(folder: folder, files: files)
                 guard ok else { continue }
             }
             // Ton erst nach 24 Stunden löschen (bis dahin: Export mit Audio)

@@ -29,7 +29,7 @@ enum NightAnalyzer {
 
     /// Schlafphasen der Nacht aus dem Modell (gespeichert oder neu gerechnet, braucht dann den Ton).
     /// Beginn: erste Audiodatei (darauf beziehen sich die 30-s-Epochen des Modells).
-    static func estimate(folder: URL, progress: @escaping @Sendable (Double) -> Void = { _ in }) throws
+    static func estimate(folder: URL, progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws
         -> (start: Date, stages: [SleepStaging.Stage], epochSeconds: Double) {
         guard let start = Night(folder).audioStart else { throw Failure.noModel }
         let stages: [SleepStaging.Stage]
@@ -38,7 +38,7 @@ enum NightAnalyzer {
         } else if Night(folder).audioFiles.isEmpty, let c = NightModel.cachedAnyVersion(folder) {
             stages = c   // Ton schon gelöscht: das zuletzt gerechnete Ergebnis behalten
         } else {
-            guard NightModel.isAvailable, let s = try? NightModel.stages(folder: folder, progress: progress)
+            guard NightModel.isAvailable, let s = try? await NightModel.stages(folder: folder, progress: progress)
             else { throw Failure.noModel }
             stages = s
         }
@@ -50,9 +50,7 @@ enum NightAnalyzer {
     static func analyze(folder: URL, sounds: @escaping @Sendable (Double) -> Void = { _ in },
                         model: @escaping @Sendable (Double) -> Void = { _ in }) async throws -> NightAnalysisResult {
         let events = (try? await SoundEventDetector.analyze(folder: folder, progress: sounds)) ?? []
-        let (first, ours, epochSeconds) = try await Task.detached(priority: .userInitiated) {
-            try estimate(folder: folder, progress: model)
-        }.value
+        let (first, ours, epochSeconds) = try await estimate(folder: folder, progress: model)
         let end = first.addingTimeInterval(Double(ours.count) * epochSeconds)
 
         // Watch-Phasen aus Health (ohne Einträge dieser App)

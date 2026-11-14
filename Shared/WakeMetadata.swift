@@ -12,8 +12,8 @@ struct WakeMetadata: AlarmMetadata {
 /// dann nicht noch einmal (wiederholte Wecker bleiben für die nächsten Tage gestellt).
 @available(iOS 26.0, *)
 struct StopSnoozeIntent: LiveActivityIntent {
-    static var title: LocalizedStringResource = "Schlummern beenden"
-    static var openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Schlummern beenden"
+    static let openAppWhenRun: Bool = false
     @Parameter(title: "Wecker") var alarmID: String
 
     init() {}

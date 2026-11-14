@@ -247,12 +247,12 @@ final class NightSummaries: ObservableObject {
         let previous = queue
         queue = Task {
             await previous?.value
-            let r = try? await Task.detached(priority: .utility) { () -> NightSummary in
-                let e = try NightAnalyzer.estimate(folder: url)
+            let r: NightSummary? = await {
+                guard let e = try? await NightAnalyzer.estimate(folder: url) else { return nil }
                 let s = NightSummary(start: e.start, stages: e.stages, epochSeconds: e.epochSeconds)
                 s.save(url)
                 return s
-            }.value
+            }()
             if let r { items[url] = r } else { failed.insert(url) }
         }
     }

@@ -13,8 +13,6 @@ enum NightModel {
     static let version = 2   // 2: Zeiten mit eigenen Schlafklängen ausgeblendet
 
     private struct Cache: Codable { var version: Int; var stages: String }
-    /// rekursiv: stages(…) hält ihn und ruft melFrames(…), das ihn auch nimmt
-    private static let computeLock = NSRecursiveLock()
 
     static func cached(_ folder: URL) -> [SleepStaging.Stage]? {
         guard let data = try? Data(contentsOf: Night(folder).url(.model)),
@@ -50,17 +48,20 @@ enum NightModel {
     private static var appBuild: String { Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "" }
 
     /// Rechnet die Nacht (dauert je nach iPhone etwa eine Minute). `progress`: 0 … 1
-    static func stages(folder: URL, progress report: @escaping @Sendable (Double) -> Void = { _ in }) throws
+    static func stages(folder: URL, progress report: @escaping @Sendable (Double) -> Void = { _ in }) async throws
         -> [SleepStaging.Stage] {
         if let c = cached(folder) { return c }
+        // nie zwei Nächte gleichzeitig rechnen (Liste, Health-Abgleich, Umwandeln und Detailansicht können
+        // gleichzeitig fragen; je Lauf mehrere hundert MB Speicher) – Wartende warten per await
+        return try await AnalysisQueue.run { try computeStages(folder: folder, progress: report) }
+    }
+
+    private static func computeStages(folder: URL, progress report: @escaping @Sendable (Double) -> Void) throws
+        -> [SleepStaging.Stage] {
         // Fortschritt auch für Liste und Detailansicht, egal wer die Nacht gerade rechnet
         let progress: @Sendable (Double) -> Void = { p in report(p); AnalysisProgress.report(folder, p) }
         AnalysisProgress.start(folder)
         defer { AnalysisProgress.report(folder, 1) }
-        // nie zwei Nächte gleichzeitig rechnen (Liste, Health-Abgleich, Umwandeln und Detailansicht können
-        // gleichzeitig fragen; je Lauf mehrere hundert MB Speicher)
-        computeLock.lock()
-        defer { computeLock.unlock() }
         if let c = cached(folder) { return c }   // inzwischen von einem anderen Aufruf gerechnet
         let files = Night(folder).audioFiles
         guard !files.isEmpty else { throw Failure.noAudio }
@@ -76,7 +77,7 @@ enum NightModel {
         let sequence = try MLModel(contentsOf: seqURL, configuration: config)
 
         // 1) Log-Mel in 10-min-Stücken über alle Dateien hinweg (wie die zusammengefügte Datei im Training)
-        var frames = try melFrames(files: files) { progress(0.7 * $0) }
+        var frames = try computeMelFrames(files: files) { progress(0.7 * $0) }
         let n = frames.count / LogMel.framesPerEpoch
         let values = LogMel.normalize(frames, epochs: n, masked: soundFrames(folder))
         frames = []
@@ -127,9 +128,11 @@ enum NightModel {
 extension NightModel {
     /// Roh-Log-Mel der ganzen Nacht (10 Bilder je Sekunde, 64 Bänder), auf ganze 30-s-Epochen gekürzt –
     /// genau die Eingabe des Trainings. Auch für die Datenspende.
-    static func melFrames(files: [URL], progress: (Double) -> Void = { _ in }) throws -> [[Float]] {
-        computeLock.lock()
-        defer { computeLock.unlock() }
+    static func melFrames(files: [URL], progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws -> [[Float]] {
+        try await AnalysisQueue.run { try computeMelFrames(files: files, progress: progress) }
+    }
+
+    fileprivate static func computeMelFrames(files: [URL], progress: (Double) -> Void) throws -> [[Float]] {
         let sr = LogMel.sampleRate
         let total = files.reduce(0) { $0 + Int((try? AVAudioFile(forReading: $1))?.length ?? 0) }
         let epochs = total / (sr * 30)
@@ -239,5 +242,18 @@ private struct AudioStream {
             }
         }
         return out
+    }
+}
+
+/// Einzige Warteschlange für die schweren Auswertungen (Modell, Spektrogramm): ein eigener Thread statt
+/// des gemeinsamen Pools, eine Nacht nach der anderen. Wer wartet, blockiert keinen Thread, sondern wartet
+/// per `await`.
+enum AnalysisQueue {
+    private static let queue = DispatchQueue(label: "de.nikgro.sleepsonar.analysis", qos: .utility)
+
+    static func run<T: Sendable>(_ work: @escaping @Sendable () throws -> T) async throws -> T {
+        try await withCheckedThrowingContinuation { continuation in
+            queue.async { continuation.resume(with: Result { try work() }) }
+        }
     }
 }

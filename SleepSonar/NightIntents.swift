@@ -5,9 +5,9 @@ import AppIntents
 /// Ausführen – die Hintergrund-Variante als `AudioRecordingIntent` hat in Automationen jedes Mal
 /// „Erlauben / Abbrechen“ gezeigt).
 struct StartNightRecordingIntent: AppIntent {
-    static var title: LocalizedStringResource = "Schlafaufnahme starten"
-    static var description = IntentDescription("Startet die Nachtaufnahme von Suya (nur Mikrofon).")
-    static var openAppWhenRun: Bool = true
+    static let title: LocalizedStringResource = "Schlafaufnahme starten"
+    static let description = IntentDescription("Startet die Nachtaufnahme von Suya (nur Mikrofon).")
+    static let openAppWhenRun: Bool = true
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
@@ -24,9 +24,9 @@ struct StartNightRecordingIntent: AppIntent {
 }
 
 struct StopNightRecordingIntent: AppIntent {
-    static var title: LocalizedStringResource = "Schlafaufnahme beenden"
-    static var description = IntentDescription("Beendet die laufende Nachtaufnahme von Suya.")
-    static var openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Schlafaufnahme beenden"
+    static let description = IntentDescription("Beendet die laufende Nachtaufnahme von Suya.")
+    static let openAppWhenRun: Bool = false
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {

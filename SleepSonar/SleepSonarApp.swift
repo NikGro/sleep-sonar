@@ -14,9 +14,9 @@ struct SleepSonarApp: App {
         CrashLog.shared.start()   // Absturzprotokolle von iOS für „Fehler melden“ bereithalten
         SmartAlarm.shared.watchSnooze()
         // „Ausblenden“ in der Live-Aktivität
-        FadeSoundsAction.run = { await MainActor.run { SleepSoundPlayer.shared.stop(fade: true) } }
-        PlaySoundsAction.run = { await MainActor.run { SleepSoundPlayer.shared.play() } }
-        StopSoundsAction.run = { await MainActor.run { SleepSoundPlayer.shared.stopSoft() } }
+        FadeSoundsAction.run.set { await MainActor.run { SleepSoundPlayer.shared.stop(fade: true) } }
+        PlaySoundsAction.run.set { await MainActor.run { SleepSoundPlayer.shared.play() } }
+        StopSoundsAction.run.set { await MainActor.run { SleepSoundPlayer.shared.stopSoft() } }
         // Ab iOS 26 schwebende Glas-Tab-Leiste vom System; davor in Nachttinte statt System-Grau
         if #unavailable(iOS 26) {
             let tab = UITabBarAppearance()

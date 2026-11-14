@@ -16,9 +16,9 @@ enum HealthSync {
     static let rulesKey = "SuyaRules"
     /// kürzere Aufnahmen (z. B. Tests) nicht eintragen
     private static let minAsleep: TimeInterval = 60 * 60
-    private static var running = false
+    @MainActor private static var running = false
 
-    static func syncRecent() async {
+    @MainActor static func syncRecent() async {
         guard HKHealthStore.isHealthDataAvailable(), !running else { return }
         running = true
         defer { running = false }
@@ -26,7 +26,7 @@ enum HealthSync {
         let dirs = (try? FileManager.default.contentsOfDirectory(
             at: NightStore.nightsFolder, includingPropertiesForKeys: [.creationDateKey])) ?? []
         let cutoff = Date().addingTimeInterval(-7 * 86400)
-        let engine = await MainActor.run { (PassiveNightEngine.shared.isRunning, PassiveNightEngine.shared.folder) }
+        let engine = (PassiveNightEngine.shared.isRunning, PassiveNightEngine.shared.folder)
         for url in dirs where url.hasDirectoryPath {
             if engine.0 && engine.1 == url { continue }   // läuft noch
             let created = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
@@ -41,9 +41,7 @@ enum HealthSync {
         if let c = NightSummary.cached(folder), c.isCurrent(for: folder) {
             night = (c.start, c.stages, c.epochSeconds)
         } else {
-            guard let e = try? await Task.detached(priority: .utility, operation: {
-                try NightAnalyzer.estimate(folder: folder)
-            }).value else { return }
+            guard let e = try? await NightAnalyzer.estimate(folder: folder) else { return }
             NightSummary(start: e.start, stages: e.stages, epochSeconds: e.epochSeconds).save(folder)
             night = e
         }

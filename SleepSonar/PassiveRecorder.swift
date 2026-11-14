@@ -99,6 +99,7 @@ final class PassiveRecorder: @unchecked Sendable {
             let ratio = Self.sampleRate / buffer.format.sampleRate
             let capacity = AVAudioFrameCount(Double(buffer.frameLength) * ratio) + 64
             guard let out = AVAudioPCMBuffer(pcmFormat: outFormat, frameCapacity: capacity) else { return }
+            // convert(…) ruft den Block synchron auf diesem Thread; die Klasse trägt nur das Flag hinein
             final class Once: @unchecked Sendable { var done = false }
             let once = Once()
             var err: NSError?

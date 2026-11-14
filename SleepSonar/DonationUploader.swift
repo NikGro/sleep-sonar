@@ -172,16 +172,16 @@ final class DonationUploader: ObservableObject {
         let seconds = files.reduce(0.0) { $0 + ((try? audioSeconds($1)) ?? 0) }
         guard seconds >= Self.minSeconds else { return NightDonationState.short }
         report(tr("Klangbild wird erstellt"), 0)
-        let ok = await Task.detached(priority: .utility) {
-            Self.writeMel(folder: folder, files: files) { p in Task { @MainActor in DonationUploader.shared.report(tr("Klangbild wird erstellt"), p) } }
-        }.value
+        let ok = await Self.writeMel(folder: folder, files: files) { p in
+            Task { @MainActor in DonationUploader.shared.report(tr("Klangbild wird erstellt"), p) }
+        }
         _ = ok   // klappt es nicht, beim nächsten Mal wieder; den Ton löscht NightFinisher nach 24 h
         return nil
     }
 
     /// Spektrogramm (Roh-Log-Mel, Float16) der ganzen Nacht in die Datei schreiben
-    nonisolated static func writeMel(folder: URL, files: [URL], progress: @escaping (Double) -> Void = { _ in }) -> Bool {
-        guard let frames = try? NightModel.melFrames(files: files, progress: progress) else { return false }
+    nonisolated static func writeMel(folder: URL, files: [URL], progress: @escaping @Sendable (Double) -> Void = { _ in }) async -> Bool {
+        guard let frames = try? await NightModel.melFrames(files: files, progress: progress) else { return false }
         var data = Data(capacity: frames.count * LogMel.bands * 2)
         var half = [Float16](repeating: 0, count: LogMel.bands)
         for f in frames {

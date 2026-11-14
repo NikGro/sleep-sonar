@@ -344,6 +344,7 @@ final class SleepSoundPlayer: ObservableObject {
             } catch {
                 ok = false
             }
+            // Übergabe an den Hauptthread: Engine und Knoten werden danach nur noch dort benutzt
             nonisolated(unsafe) let e = engine
             nonisolated(unsafe) let m = made
             DispatchQueue.main.async { [weak self] in
