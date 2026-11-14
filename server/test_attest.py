@@ -1,7 +1,7 @@
 """Tests für App Attest: Prüfung von Attestation und Assertion mit einer selbst erzeugten Zertifikatskette
 und der Ablauf am Server (Registrieren, Teile mit Assertion, Wiederholung, Löschen).
 Läuft in der CI: python -m unittest test_server test_attest"""
-import base64, datetime, hashlib, importlib, json, os, sys, tempfile, threading, unittest, urllib.error, urllib.request
+import base64, datetime, hashlib, json, os, sys, tempfile, threading, unittest, urllib.error, urllib.request
 from http.server import ThreadingHTTPServer
 
 import cbor2
@@ -11,10 +11,10 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import NameOID
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-if "suya_server" not in sys.modules:
-    os.environ.update(DATA=tempfile.mkdtemp(), SITE=tempfile.mkdtemp(), MIN_FREE="0", ATTEST="optional")
-srv = importlib.import_module("suya_server")
-import appattest
+from suya import api, appattest, config, limits, storage
+
+if not config.DATA.startswith(tempfile.gettempdir()):
+    config.DATA, config.SITE, config.MIN_FREE = tempfile.mkdtemp(), tempfile.mkdtemp(), 0
 
 APP = "TEAM123456.de.nikgro.sleepsonar"
 NOW = datetime.datetime.now(datetime.timezone.utc)
@@ -123,22 +123,21 @@ def call(base, path, data=None, headers=None):
 class ServerFlow(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.saved = (srv.APP_ID, srv.appattest, srv.ATTEST, appattest.ROOT_PEM)
-        srv.APP_ID, srv.appattest = APP, appattest
+        cls.saved = (config.APP_ID, config.ATTEST, appattest.ROOT_PEM)
+        config.APP_ID = APP
         appattest.ROOT_PEM = _root_pem
-        cls.httpd = ThreadingHTTPServer(("127.0.0.1", 0), srv.H)
+        cls.httpd = ThreadingHTTPServer(("127.0.0.1", 0), api.Handler)
         threading.Thread(target=cls.httpd.serve_forever, daemon=True).start()
         cls.base = f"http://127.0.0.1:{cls.httpd.server_address[1]}"
 
     @classmethod
     def tearDownClass(cls):
         cls.httpd.shutdown(); cls.httpd.server_close()
-        srv.APP_ID, srv.appattest, srv.ATTEST, appattest.ROOT_PEM = cls.saved
+        config.APP_ID, config.ATTEST, appattest.ROOT_PEM = cls.saved
 
     def setUp(self):
-        srv.ip_hits.clear(); srv.donor_bytes.clear()
-        srv.day.update(date="", bytes=0)
-        srv.ATTEST = "optional"
+        limits.reset()
+        config.ATTEST = "optional"
 
     def challenge(self):
         code, j = call(self.base, "/api/attest/challenge")
@@ -180,7 +179,7 @@ class ServerFlow(unittest.TestCase):
         self.assertEqual(self.part(donor, key, night, 1, 3, parts[1], full, a)[0], 403)
         code, j = self.part(donor, key, night, 1, 3, parts[1], full, self.sign(kk, 3, "nacht", donor, night, full))
         self.assertEqual(code, 201, j)
-        path = os.path.join(srv.ROOT, "spender", donor, "naechte", night + ".suya")
+        path = storage.night_file(donor, night)
         self.assertEqual(os.path.getsize(path), 10000)
         # Löschen mit Assertion
         code, j = call(self.base, "/api/spende/loeschen", b"",
@@ -190,7 +189,7 @@ class ServerFlow(unittest.TestCase):
         self.assertFalse(os.path.exists(path))
 
     def test_required_mode(self):
-        srv.ATTEST = "required"
+        config.ATTEST = "required"
         body = os.urandom(100)
         full = hashlib.sha256(body).hexdigest()
         # ohne registrierten Schlüssel kein Hochladen …
