@@ -377,6 +377,13 @@ private struct StageRow: View {
 
 /// Hypnogramm: Phasen als Stufen (Wach oben, Tief unten), wie man es von Schlafberichten kennt.
 struct Hypnogram: View {
+    /// nur die Zahl der Stunde: „23“, „0“, „1“ … – im 12-h-Format „11“, „12“, „1“ …
+    static func hourLabel(_ d: Date) -> String {
+        let h = Calendar.current.component(.hour, from: d)
+        let twelve = (DateFormatter.dateFormat(fromTemplate: "j", options: 0, locale: .current) ?? "").contains("a")
+        return twelve ? "\((h + 11) % 12 + 1)" : "\(h)"
+    }
+
     let stages: [SleepStaging.Stage?]
     let start: Date
     let epochSeconds: Double
@@ -449,7 +456,7 @@ struct Hypnogram: View {
             AxisMarks(values: .stride(by: .hour, count: hourStep)) { v in
                 AxisGridLine().foregroundStyle(Theme.hairline)
                 AxisValueLabel(centered: false, anchor: .top) {
-                    if let d = v.as(Date.self) { Text(d.formatted(.dateTime.hour(.defaultDigits(amPM: .omitted)))) }
+                    if let d = v.as(Date.self) { Text(Self.hourLabel(d)) }
                 }
                 .foregroundStyle(Theme.mist)
             }
